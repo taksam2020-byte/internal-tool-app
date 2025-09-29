@@ -15,6 +15,7 @@ export interface AppSettings {
     evaluationTargets: string[];
     isEvaluationOpen: boolean;
     evaluationMonth: string;
+    evaluationDeadline: string;
 }
 
 interface SettingsContextType {
@@ -34,6 +35,7 @@ const defaultSettings: AppSettings = {
     evaluationTargets: [],
     isEvaluationOpen: true,
     evaluationMonth: (new Date().getMonth() + 1).toString(),
+    evaluationDeadline: '',
 };
 
 const SettingsContext = createContext<SettingsContextType>({
