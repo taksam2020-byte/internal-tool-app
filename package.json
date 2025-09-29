@@ -9,17 +9,29 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@types/react-datepicker": "^6.2.0",
+    "@vercel/postgres": "^0.10.0",
+    "axios": "^1.12.2",
+    "bootstrap": "^5.3.8",
+    "chart.js": "^4.5.0",
+    "next": "15.5.4",
+    "nodemailer": "^7.0.6",
+    "rc-slider": "^11.1.9",
     "react": "19.1.0",
+    "react-bootstrap": "^2.10.10",
+    "react-bootstrap-icons": "^1.11.6",
+    "react-chartjs-2": "^5.3.0",
+    "react-datepicker": "^8.7.0",
     "react-dom": "19.1.0",
-    "next": "15.5.4"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
-    "@eslint/eslintrc": "^3"
+    "typescript": "^5"
   }
 }
