@@ -59,8 +59,9 @@ export default function AdminPage() {
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
-        if (e.target instanceof HTMLInputElement && e.target.type === 'checkbox') {
-            setSettings(prev => ({ ...prev, [name]: e.target.checked }));
+        const target = e.target as HTMLInputElement;
+        if (target.type === 'checkbox') {
+            setSettings(prev => ({ ...prev, [name]: target.checked }));
         } else {
             setSettings(prev => ({ ...prev, [name]: value }));
         }
