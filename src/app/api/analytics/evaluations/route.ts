@@ -19,6 +19,12 @@ interface EvaluationFromDb {
     submitted_at: string;
 }
 
+interface MonthlyAverages {
+    month: string;
+    averageTotal100: number;
+    itemAverages: { [key: string]: number };
+}
+
 export async function GET() {
   try {
     const { rows: evaluations } = await sql<EvaluationFromDb>`SELECT id, scores_json, total_score, submitted_at FROM evaluations ORDER BY submitted_at;`;
@@ -37,7 +43,7 @@ export async function GET() {
         monthlyData[month].total_scores.push(e.total_score);
     });
 
-    const processedData: { [month: string]: any } = {};
+    const processedData: { [month: string]: MonthlyAverages } = {};
     const sortedMonths = Object.keys(monthlyData).sort();
 
     for (const month of sortedMonths) {
