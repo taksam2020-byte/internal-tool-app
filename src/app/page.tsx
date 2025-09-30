@@ -59,7 +59,7 @@ export default function HomePage() {
         {menuItems.filter(item => item.show).map((item, idx) => (
           <Col key={idx}>
             <Link href={item.href} passHref legacyBehavior>
-              <Card as="a" {...(item.bg && {bg: item.bg})} text="white" className={`h-100 text-decoration-none ${item.className || ''}`} style={item.style}>
+              <Card as="a" {...(item.bg && {bg: item.bg})} text="white" className="h-100 text-decoration-none" style={item.style}>
                 <Card.Body className="d-flex align-items-center">
                   <div className="me-3">{item.icon}</div>
                   <div>
