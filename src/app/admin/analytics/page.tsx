@@ -1,12 +1,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Spinner, Alert } from 'react-bootstrap';
+import { Card, Row, Col, Spinner, Alert, Table } from 'react-bootstrap';
 import axios from 'axios';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  RadialLinearScale,
+  Filler,
+} from 'chart.js';
+import { Line, Radar } from 'react-chartjs-2';
 
-// TODO: Define the structure of the analytics data
+ChartJS.register(
+  CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, RadialLinearScale, Filler
+);
+
 interface AnalyticsData {
-    // Define properties for charts and tables
+    monthlyData: { [month: string]: any };
+    latestMonth: any;
+    chartJsData: any;
 }
 
 export default function AnalyticsPage() {
@@ -17,10 +35,8 @@ export default function AnalyticsPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // TODO: Create and call the actual analytics API endpoint
-                // const res = await axios.get('/api/analytics/evaluations');
-                // setData(res.data);
-                console.log("Analytics page mounted. API call is commented out for now.");
+                const res = await axios.get('/api/analytics/evaluations');
+                setData(res.data);
             } catch (err) {
                 setError('データの読み込みに失敗しました。');
                 console.error(err);
@@ -32,45 +48,87 @@ export default function AnalyticsPage() {
     }, []);
 
     if (loading) {
-        return <div className="text-center"><Spinner animation="border" /> <p>分析データを読み込み中...</p></div>;
+        return <div className="text-center vh-100 d-flex flex-column align-items-center justify-content-center"><Spinner animation="border" /> <p className="mt-3">分析データを読み込み中...</p></div>;
     }
 
     if (error) {
         return <Alert variant="danger">{error}</Alert>;
     }
 
+    if (!data || !data.latestMonth) {
+        return <Alert variant="info">まだ分析できる評価データがありません。</Alert>;
+    }
+
+    const radarChartData = {
+        labels: data.chartJsData.datasets.map((ds: any) => ds.label),
+        datasets: [{
+            label: `${data.latestMonth.month} 平均点`,
+            data: Object.values(data.latestMonth.itemAverages),
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1,
+        }],
+    };
+
+    const lineChartOptions = {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top' as const,
+            },
+            title: {
+                display: true,
+                text: '項目別平均点の月次推移',
+            },
+        },
+    };
+
     return (
         <div>
-            <h1 className="mb-4">集計・分析</h1>
-            <p>このページでは、新人考課のデータを様々な角度から分析します。</p>
+            <h1 className="mb-4">新人考課 集計・分析</h1>
             
-            {/* TODO: Add Chart.js components for line and radar charts */}
             <Row>
-                <Col md={8}>
-                    <Card className="mb-4">
+                <Col lg={8} className="mb-4">
+                    <Card>
                         <Card.Body>
-                            <Card.Title>月別平均点の推移</Card.Title>
-                            {/* Line Chart Component Here */}
-                            <div style={{height: '300px'}} className="d-flex align-items-center justify-content-center bg-light text-muted">[折れ線グラフ]</div>
+                            <Line options={lineChartOptions} data={data.chartJsData} />
                         </Card.Body>
                     </Card>
                 </Col>
-                <Col md={4}>
-                    <Card className="mb-4">
+                <Col lg={4} className="mb-4">
+                    <Card>
                         <Card.Body>
-                            <Card.Title>最新月の評価項目</Card.Title>
-                            {/* Radar Chart Component Here */}
-                            <div style={{height: '300px'}} className="d-flex align-items-center justify-content-center bg-light text-muted">[レーダーチャート]</div>
+                             <Card.Title className="text-center mb-3">{data.latestMonth.month} 平均点</Card.Title>
+                            <Radar data={radarChartData} />
                         </Card.Body>
                     </Card>
                 </Col>
             </Row>
 
-            {/* TODO: Add tables for cross-tabulation and monthly averages */}
             <Card>
+                <Card.Header as="h5">月別サマリー</Card.Header>
                 <Card.Body>
-                    <Card.Title>月別平均点（表）</Card.Title>
-                    <div className="d-flex align-items-center justify-content-center bg-light text-muted" style={{height: '200px'}}>[月別平均点のテーブル]</div>
+                    <Table striped bordered hover responsive>
+                        <thead>
+                            <tr>
+                                <th>月</th>
+                                <th>平均点 (100点換算)</th>
+                                {/* Add item average headers */}
+                                {data.chartJsData.datasets.map((ds: any) => <th key={ds.label}>{ds.label}</th>)}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {Object.values(data.monthlyData).map((monthData: any) => (
+                                <tr key={monthData.month}>
+                                    <td>{monthData.month}</td>
+                                    <td>{monthData.averageTotal100.toFixed(1)}</td>
+                                    {Object.values(monthData.itemAverages).map((avg: any, index: number) => (
+                                        <td key={index}>{avg.toFixed(1)}</td>
+                                    ))}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </Table>
                 </Card.Body>
             </Card>
 
