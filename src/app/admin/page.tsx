@@ -3,9 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Form, Button, Card, Row, Col, Alert, InputGroup } from 'react-bootstrap';
-import { useSettings, AppSettings } from '@/context/SettingsContext';
-import { useAuth } from '@/context/AuthContext';
-import * as XLSX from 'xlsx';
+import { useSettings } from '@/context/SettingsContext';
 
 // Generic component for editing a list of strings
 function StringListEditor({ title, list, setList, placeholder }: { title: string, list: string[], setList: (list: string[]) => void, placeholder: string }) {
@@ -49,7 +47,6 @@ export default function AdminPage() {
     const { isAuthenticated } = useAuth();
     const router = useRouter();
     const [showSuccess, setShowSuccess] = useState(false);
-    const [exportYear, setExportYear] = useState(new Date().getFullYear().toString());
 
     useEffect(() => {
         if (isSettingsLoaded && !isAuthenticated) {
@@ -72,7 +69,6 @@ export default function AdminPage() {
         setTimeout(() => setShowSuccess(false), 3000);
     };
 
-    const handleExportProposals = () => { /* ... as before ... */ };
 
     if (!isSettingsLoaded || !isAuthenticated) {
         return <div>読み込み中...</div>;
@@ -93,7 +89,42 @@ export default function AdminPage() {
 
             <Card className="mb-4">
                 <Card.Header as="h5">催事提案フォーム設定</Card.Header>
-                {/* ... proposal settings ... */}
+                <Card.Body>
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm={3}>受付状況</Form.Label>
+                        <Col sm={9}>
+                            <Form.Check
+                                type="switch"
+                                name="isProposalOpen"
+                                label={settings.isProposalOpen ? "受付中" : "停止中"}
+                                checked={settings.isProposalOpen}
+                                onChange={handleInputChange}
+                            />
+                        </Col>
+                    </Form.Group>
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm={3}>提案年度</Form.Label>
+                        <Col sm={9}>
+                            <Form.Control
+                                type="number"
+                                name="proposalYear"
+                                value={settings.proposalYear}
+                                onChange={handleInputChange}
+                            />
+                        </Col>
+                    </Form.Group>
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm={3}>締切日</Form.Label>
+                        <Col sm={9}>
+                            <Form.Control
+                                type="date"
+                                name="proposalDeadline"
+                                value={settings.proposalDeadline || ''}
+                                onChange={handleInputChange}
+                            />
+                        </Col>
+                    </Form.Group>
+                </Card.Body>
             </Card>
 
             <Card className="mb-4">

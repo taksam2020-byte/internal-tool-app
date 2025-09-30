@@ -76,6 +76,7 @@ export default function ReservationsPage() {
       setStartTime(null);
       setEndTime(null);
     } catch (error) {
+      console.error("Submit error:", error);
       setSubmitStatus({ success: false, message: '申請の送信に失敗しました。' });
     } finally {
       setIsSubmitting(false);
@@ -197,7 +198,13 @@ export default function ReservationsPage() {
         <Modal.Header closeButton>
           <Modal.Title>{submitStatus?.success ? '送信完了' : '送信エラー'}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>{submitStatus?.message}</Modal.Body>
+        <Modal.Body>
+            {submitStatus && (
+                <Alert variant={submitStatus.success ? 'success' : 'danger'} className="mb-0">
+                    {submitStatus.message}
+                </Alert>
+            )}
+        </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={() => setShowStatusModal(false)}>
             閉じる

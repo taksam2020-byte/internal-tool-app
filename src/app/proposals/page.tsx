@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Form, Button, Row, Col, Card, CloseButton, Alert, Spinner, Modal } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
@@ -23,12 +23,13 @@ export default function ProposalsPage() {
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
 
-  const getDraftKey = () => `proposalDraft-${settings.proposalYear}-${proposerName || 'unknown'}`;
+  const getDraftKey = useCallback(() => `proposalDraft-${settings.proposalYear}-${proposerName || 'unknown'}`, [settings.proposalYear, proposerName]);
 
   useEffect(() => {
     if (isSettingsLoaded) {
         try {
-            const savedData = localStorage.getItem(getDraftKey());
+            const draftKey = getDraftKey();
+            const savedData = localStorage.getItem(draftKey);
             if (savedData) {
                 const { proposerName: savedName, proposals: savedProposals, year: savedYear } = JSON.parse(savedData);
                 if (savedYear === settings.proposalYear) {
@@ -40,6 +41,9 @@ export default function ProposalsPage() {
                         setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, timing: '', type: '', content: '' })));
                     }
                 } else {
+                    // Year mismatch, clear old data
+                    localStorage.removeItem(draftKey);
+                    setProposerName('');
                     setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, timing: '', type: '', content: '' })));
                 }
             } else {
@@ -51,7 +55,7 @@ export default function ProposalsPage() {
         }
         setIsLoaded(true);
     }
-  }, [isSettingsLoaded, proposerName, settings.proposalYear]);
+  }, [isSettingsLoaded, getDraftKey, settings.proposalYear]);
 
   const handleProposalChange = (index: number, field: keyof Omit<ProposalItem, 'id'>, value: string) => {
     const newProposals = proposals.map((p, i) => {

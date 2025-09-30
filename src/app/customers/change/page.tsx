@@ -77,6 +77,7 @@ export default function ChangeCustomerPage() {
         alert('該当する住所が見つかりませんでした。');
       }
     } catch (error) {
+      console.error("Zip code fetch error:", error);
       alert('住所の取得に失敗しました。');
     } finally {
       setIsFetchingAddress(false);
@@ -120,6 +121,7 @@ export default function ChangeCustomerPage() {
       setZipCode('');
       setAddress1('');
     } catch (error) {
+      console.error("Submit error:", error);
       setSubmitStatus({ success: false, message: '申請の送信に失敗しました。' });
     } finally {
       setIsSubmitting(false);
@@ -296,7 +298,13 @@ export default function ChangeCustomerPage() {
         <Modal.Header closeButton>
           <Modal.Title>{submitStatus?.success ? '送信完了' : '送信エラー'}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>{submitStatus?.message}</Modal.Body>
+        <Modal.Body>
+            {submitStatus && (
+                <Alert variant={submitStatus.success ? 'success' : 'danger'} className="mb-0">
+                    {submitStatus.message}
+                </Alert>
+            )}
+        </Modal.Body>
         <Modal.Footer>
           <Button variant="primary" onClick={() => setShowStatusModal(false)}>
             閉じる
