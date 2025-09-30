@@ -128,7 +128,7 @@ export default function EvaluationPage() {
                             return (
                                 <Form.Group as={Row} key={item.id} className="mb-5 align-items-start">
                                     <Col sm={3} className="text-md-end">
-                                        <Form.Label column><strong>{item.label}</strong> ({item.maxScore}点満点)</Form.Label>
+                                        <Form.Label column><strong>{item.label}</strong></Form.Label>
                                         <p className="text-muted small pe-md-2">{item.description}</p>
                                     </Col>
                                     <Col sm={7}>
