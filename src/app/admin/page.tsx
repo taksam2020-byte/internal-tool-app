@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Form, Button, Card, Row, Col, Alert, InputGroup, ListGroup, Spinner } from 'react-bootstrap';
+import { Form, Button, Card, Row, Col, Alert, InputGroup, ListGroup, Spinner, Toast, ToastContainer } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
@@ -151,7 +151,6 @@ export default function AdminPage() {
 
     const handleSave = () => {
         setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
     };
 
 
@@ -162,8 +161,16 @@ export default function AdminPage() {
     return (
         <div>
             <h1 className="mb-4">管理画面</h1>
-            {showSuccess && <Alert variant="success">設定は自動的に保存されました。</Alert>}
             
+            <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1 }}>
+                <Toast onClose={() => setShowSuccess(false)} show={showSuccess} delay={3000} autohide>
+                    <Toast.Header closeButton={false}>
+                        <strong className="me-auto">通知</strong>
+                    </Toast.Header>
+                    <Toast.Body>設定は自動的に保存されました。</Toast.Body>
+                </Toast>
+            </ToastContainer>
+
             <UserManagement />
 
             <Card className="mb-4">
