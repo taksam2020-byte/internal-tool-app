@@ -57,7 +57,7 @@ export default function AdminPage() {
         }
     }, [isAuthenticated, isSettingsLoaded, router]);
 
-    const handleInputChange = (e: React.ChangeEvent<any>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         const target = e.target as HTMLInputElement;
         if (target.type === 'checkbox') {
