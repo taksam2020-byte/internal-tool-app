@@ -12,16 +12,34 @@ interface ProposalItem {
   content: string;
 }
 
+interface User {
+    id: number;
+    name: string;
+}
+
 let nextId = 5;
 
 export default function ProposalsPage() {
   const { settings, isSettingsLoaded } = useSettings();
+  const [users, setUsers] = useState<User[]>([]);
   const [proposerName, setProposerName] = useState('');
   const [proposals, setProposals] = useState<ProposalItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+        try {
+            const res = await axios.get('/api/users');
+            setUsers(res.data);
+        } catch (err) {
+            console.error("Failed to fetch users", err);
+        }
+    };
+    fetchUsers();
+  }, []);
 
   const getDraftKey = useCallback(() => `proposalDraft-${settings.proposalYear}-${proposerName || 'unknown'}`, [settings.proposalYear, proposerName]);
 
@@ -105,14 +123,14 @@ export default function ProposalsPage() {
     setSubmitStatus(null);
 
     const subject = `【社内ツール】${settings.proposalYear}年度 催事提案`;
-    let body = `提案年度: ${settings.proposalYear}\n提案者: ${proposerName}\n\n`;
-    body += proposals.map((p, i) => {
+    let body = proposals.map((p, i) => {
         return `--- 提案 ${i + 1} ---\n時期: ${p.timing}\n種別: ${p.type}\n内容: ${p.content}`;
     }).join('\n\n');
 
     try {
-      await axios.post('/api/send-email', {
-        to: settings.proposalEmails,
+      await axios.post('/api/proposals', {
+        proposerName: proposerName,
+        proposalYear: settings.proposalYear,
         subject,
         body,
       });
@@ -156,7 +174,12 @@ export default function ProposalsPage() {
                 <Form.Group as={Row} className="align-items-center">
                     <Form.Label column sm={2} className="fw-bold">氏名</Form.Label>
                     <Col sm={10}>
-                        <Form.Control required type="text" placeholder="山田 太郎" value={proposerName} onChange={(e) => setProposerName(e.target.value)} />
+                        <Form.Select required value={proposerName} onChange={(e) => setProposerName(e.target.value)}>
+                            <option value="">選択してください...</option>
+                            {users.map(user => (
+                                <option key={user.id} value={user.name}>{user.name}</option>
+                            ))}
+                        </Form.Select>
                     </Col>
                 </Form.Group>
             </Card.Body>

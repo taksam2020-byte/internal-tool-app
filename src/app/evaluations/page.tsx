@@ -1,11 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Button, Row, Col, Card, Spinner, Modal, Alert } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
+
+interface User {
+    id: number;
+    name: string;
+}
 
 const evaluationItems = [
     { id: 'accuracy', label: '正確性', description: '仕事は、正確に・迅速に処理する能力を有しているか。同じミスを繰り返していないか。', maxScore: 5 },
@@ -27,12 +32,26 @@ const initialScores = evaluationItems.reduce((acc, item) => {
 
 export default function EvaluationPage() {
     const { settings, isSettingsLoaded } = useSettings();
+    const [users, setUsers] = useState<User[]>([]);
     const [validated, setValidated] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
     const [showStatusModal, setShowStatusModal] = useState(false);
     const [scores, setScores] = useState(initialScores);
     const [comment, setComment] = useState('');
+
+    useEffect(() => {
+        const fetchUsers = async () => {
+            try {
+                const res = await axios.get('/api/users');
+                setUsers(res.data);
+            } catch (err) {
+                console.error("Failed to fetch users", err);
+                // Optionally, show an error to the user
+            }
+        };
+        fetchUsers();
+    }, []);
 
     const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
     const maxTotalScore = evaluationItems.reduce((sum, item) => sum + item.maxScore, 0);
@@ -118,9 +137,14 @@ export default function EvaluationPage() {
                             </Form.Group>
                             <Form.Group as={Col} md={6}>
                                 <Form.Label>回答者<span className="text-danger">*</span></Form.Label>
-                                <Form.Control required type="text" name="evaluator" placeholder="山田 太郎" />
+                                <Form.Select required name="evaluator" defaultValue="">
+                                    <option value="" disabled>選択してください...</option>
+                                    {users.map(user => (
+                                        <option key={user.id} value={user.name}>{user.name}</option>
+                                    ))}
+                                </Form.Select>
                                 <Form.Control.Feedback type="invalid">
-                                    回答者を入力してください。
+                                    回答者を選択してください。
                                 </Form.Control.Feedback>
                             </Form.Group>
                         </Row>

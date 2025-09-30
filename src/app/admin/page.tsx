@@ -2,9 +2,88 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Form, Button, Card, Row, Col, Alert, InputGroup } from 'react-bootstrap';
+import { Form, Button, Card, Row, Col, Alert, InputGroup, ListGroup, Spinner } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
+import axios from 'axios';
+
+// --- User Management Component ---
+interface User {
+  id: number;
+  name: string;
+}
+
+function UserManagement() {
+    const [users, setUsers] = useState<User[]>([]);
+    const [newUserName, setNewUserName] = useState('');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
+
+    const fetchUsers = async () => {
+        try {
+            setLoading(true);
+            const res = await axios.get('/api/users');
+            setUsers(res.data);
+        } catch (err) {
+            setError('ユーザーの読み込みに失敗しました。');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchUsers();
+    }, []);
+
+    const handleAddUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newUserName.trim()) {
+            setError('ユーザー名を入力してください。');
+            return;
+        }
+        try {
+            setError('');
+            await axios.post('/api/users', { name: newUserName.trim() });
+            setNewUserName('');
+            await fetchUsers(); // Refresh the list
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'ユーザーの追加に失敗しました。');
+            console.error(err);
+        }
+    };
+
+    return (
+        <Card className="mb-4">
+            <Card.Header as="h5">ユーザー管理</Card.Header>
+            <Card.Body>
+                <p className="text-muted">各フォームの氏名選択肢に表示されるユーザーを管理します。</p>
+                {error && <Alert variant="danger">{error}</Alert>}
+                {loading ? (
+                    <div className="text-center"><Spinner animation="border" /></div>
+                ) : (
+                    <ListGroup className="mb-3">
+                        {users.map(user => (
+                            <ListGroup.Item key={user.id}>{user.name}</ListGroup.Item>
+                        ))}
+                    </ListGroup>
+                )}
+                <Form onSubmit={handleAddUser}>
+                    <InputGroup>
+                        <Form.Control
+                            type="text"
+                            value={newUserName}
+                            onChange={(e) => setNewUserName(e.target.value)}
+                            placeholder="新しいユーザー名"
+                        />
+                        <Button type="submit" variant="outline-primary">追加</Button>
+                    </InputGroup>
+                </Form>
+            </Card.Body>
+        </Card>
+    );
+}
+
 
 // Generic component for editing a list of strings
 function StringListEditor({ title, list, setList, placeholder }: { title: string, list: string[], setList: (list: string[]) => void, placeholder: string }) {
@@ -79,6 +158,9 @@ export default function AdminPage() {
         <div>
             <h1 className="mb-4">管理画面</h1>
             {showSuccess && <Alert variant="success">設定は自動的に保存されました。</Alert>}
+            
+            <UserManagement />
+
             <Card className="mb-4">
                 <Card.Header as="h5">通知先メールアドレス設定</Card.Header>
                 <Card.Body>
