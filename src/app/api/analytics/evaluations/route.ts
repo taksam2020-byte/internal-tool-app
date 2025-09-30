@@ -68,7 +68,7 @@ export async function GET() {
         
         const totals = {
             totalScore100: 0,
-            items: evaluationItemKeys.reduce((acc, key) => ({ ...acc, [key]: 0 }), {})
+            items: evaluationItemKeys.reduce((acc, key) => ({ ...acc, [key]: 0 }), {} as { [key: string]: number })
         };
 
         monthEvals.forEach(ev => {
