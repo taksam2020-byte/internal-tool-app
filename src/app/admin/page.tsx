@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Form, Button, Card, Row, Col, Alert, InputGroup } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
+import { useAuth } from '@/context/AuthContext';
 
 // Generic component for editing a list of strings
 function StringListEditor({ title, list, setList, placeholder }: { title: string, list: string[], setList: (list: string[]) => void, placeholder: string }) {
