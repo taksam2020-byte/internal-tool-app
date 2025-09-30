@@ -58,10 +58,12 @@ export default function EvaluationPage() {
 
         const formData = new FormData(form);
         const targetEmployee = formData.get('targetEmployee') as string;
+        const evaluator = formData.get('evaluator') as string;
 
         try {
             await axios.post('/api/evaluations', {
                 targetEmployee,
+                evaluator,
                 scores,
                 comment,
                 totalScore,
@@ -112,6 +114,13 @@ export default function EvaluationPage() {
                                 </Form.Select>
                                 <Form.Control.Feedback type="invalid">
                                     考課対象者を選択してください。
+                                </Form.Control.Feedback>
+                            </Form.Group>
+                            <Form.Group as={Col} md={6}>
+                                <Form.Label>回答者<span className="text-danger">*</span></Form.Label>
+                                <Form.Control required type="text" name="evaluator" placeholder="山田 太郎" />
+                                <Form.Control.Feedback type="invalid">
+                                    回答者を入力してください。
                                 </Form.Control.Feedback>
                             </Form.Group>
                         </Row>

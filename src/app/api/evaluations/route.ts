@@ -3,11 +3,12 @@ import { NextResponse } from 'next/server';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { targetEmployee, scores, evaluationMonth, comment, totalScore } = body;
+    const { targetEmployee, evaluator, scores, evaluationMonth, comment, totalScore } = body;
 
     // TODO: Save the evaluation data to a database
     console.log('Received evaluation submission:');
     console.log('Month:', evaluationMonth);
+    console.log('Evaluator:', evaluator);
     console.log('Employee:', targetEmployee);
     console.log('Scores:', scores);
     console.log('Total Score:', totalScore);
