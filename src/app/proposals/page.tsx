@@ -123,7 +123,7 @@ export default function ProposalsPage() {
     setSubmitStatus(null);
 
     const subject = `【社内ツール】${settings.proposalYear}年度 催事提案`;
-    let body = proposals.map((p, i) => {
+    const body = proposals.map((p, i) => {
         return `--- 提案 ${i + 1} ---\n時期: ${p.timing}\n種別: ${p.type}\n内容: ${p.content}`;
     }).join('\n\n');
 

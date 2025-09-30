@@ -48,8 +48,12 @@ function UserManagement() {
             await axios.post('/api/users', { name: newUserName.trim() });
             setNewUserName('');
             await fetchUsers(); // Refresh the list
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'ユーザーの追加に失敗しました。');
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response) {
+                setError(err.response.data.message || 'ユーザーの追加に失敗しました。');
+            } else {
+                setError('予期せぬエラーが発生しました。');
+            }
             console.error(err);
         }
     };

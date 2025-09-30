@@ -26,8 +26,8 @@ export async function POST(request: Request) {
     const result = await db.run('INSERT INTO users (name) VALUES (?)', [name]);
     await db.close();
     return NextResponse.json({ id: result.lastID, name });
-  } catch (error: any) {
-    if (error.code === 'SQLITE_CONSTRAINT') {
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'SQLITE_CONSTRAINT') {
       return NextResponse.json({ message: 'User with this name already exists' }, { status: 409 });
     }
     console.error('Failed to create user:', error);

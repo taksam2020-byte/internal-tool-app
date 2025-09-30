@@ -14,10 +14,31 @@ const evaluationItemLabels: { [key: string]: string } = {
     judgment: '判断力', expression: '表現力', comprehension: '理解力', interpersonal: '対人性', potential: '将来性'
 };
 
+interface RawEvaluation {
+    id: number;
+    evaluator_name: string;
+    target_employee_name: string;
+    evaluation_month: string;
+    total_score: number;
+    comment: string | null;
+    scores_json: string;
+    submitted_at: string;
+}
+
+interface ParsedEvaluation extends Omit<RawEvaluation, 'scores_json'> {
+    scores: { [key: string]: number };
+}
+
+interface MonthlyAverages {
+    month: string;
+    averageTotal100: number;
+    itemAverages: { [key: string]: number };
+}
+
 export async function GET() {
   try {
     const db = await openDb();
-    const evaluations = await db.all('SELECT * FROM evaluations ORDER BY submitted_at');
+    const evaluations = await db.all<RawEvaluation[]>('SELECT * FROM evaluations ORDER BY submitted_at');
     await db.close();
 
     if (evaluations.length === 0) {
@@ -25,7 +46,7 @@ export async function GET() {
     }
 
     // Group evaluations by month (e.g., "2023-10")
-    const monthlyData: { [month: string]: any[] } = {};
+    const monthlyData: { [month: string]: ParsedEvaluation[] } = {};
     evaluations.forEach(e => {
         const month = new Date(e.submitted_at).toISOString().slice(0, 7); // YYYY-MM
         if (!monthlyData[month]) {
@@ -37,7 +58,7 @@ export async function GET() {
         });
     });
 
-    const processedData: { [month: string]: any } = {};
+    const processedData: { [month: string]: MonthlyAverages } = {};
     const sortedMonths = Object.keys(monthlyData).sort();
 
     // Calculate averages for each month

@@ -21,10 +21,24 @@ ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, RadialLinearScale, Filler
 );
 
+interface MonthlyAverages {
+    month: string;
+    averageTotal100: number;
+    itemAverages: { [key: string]: number };
+}
+
+interface ChartJsDataset {
+    label: string;
+    data: number[];
+}
+
 interface AnalyticsData {
-    monthlyData: { [month: string]: any };
-    latestMonth: any;
-    chartJsData: any;
+    monthlyData: { [month: string]: MonthlyAverages };
+    latestMonth: MonthlyAverages;
+    chartJsData: {
+        labels: string[];
+        datasets: ChartJsDataset[];
+    };
 }
 
 export default function AnalyticsPage() {
@@ -35,7 +49,7 @@ export default function AnalyticsPage() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const res = await axios.get('/api/analytics/evaluations');
+                const res = await axios.get<AnalyticsData>('/api/analytics/evaluations');
                 setData(res.data);
             } catch (err) {
                 setError('データの読み込みに失敗しました。');
@@ -60,7 +74,7 @@ export default function AnalyticsPage() {
     }
 
     const radarChartData = {
-        labels: data.chartJsData.datasets.map((ds: any) => ds.label),
+        labels: data.chartJsData.datasets.map((ds) => ds.label),
         datasets: [{
             label: `${data.latestMonth.month} 平均点`,
             data: Object.values(data.latestMonth.itemAverages),
@@ -113,16 +127,15 @@ export default function AnalyticsPage() {
                             <tr>
                                 <th>月</th>
                                 <th>平均点 (100点換算)</th>
-                                {/* Add item average headers */}
-                                {data.chartJsData.datasets.map((ds: any) => <th key={ds.label}>{ds.label}</th>)}
+                                {data.chartJsData.datasets.map((ds) => <th key={ds.label}>{ds.label}</th>)}
                             </tr>
                         </thead>
                         <tbody>
-                            {Object.values(data.monthlyData).map((monthData: any) => (
+                            {Object.values(data.monthlyData).map((monthData) => (
                                 <tr key={monthData.month}>
                                     <td>{monthData.month}</td>
                                     <td>{monthData.averageTotal100.toFixed(1)}</td>
-                                    {Object.values(monthData.itemAverages).map((avg: any, index: number) => (
+                                    {Object.values(monthData.itemAverages).map((avg, index) => (
                                         <td key={index}>{avg.toFixed(1)}</td>
                                     ))}
                                 </tr>
