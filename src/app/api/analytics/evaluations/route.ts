@@ -1,10 +1,8 @@
 import { NextResponse } from 'next/server';
-import { openDb } from '@/lib/db';
+import { sql } from '@vercel/postgres';
 
-// A helper to get the max possible score for the 100-point conversion
 const MAX_TOTAL_SCORE = 65; // 9 items * 5 points + 1 item * 10 points
 
-// To match the items on the frontend
 const evaluationItemKeys = [
     'accuracy', 'discipline', 'cooperation', 'proactiveness', 'agility', 
     'judgment', 'expression', 'comprehension', 'interpersonal', 'potential'
@@ -14,87 +12,63 @@ const evaluationItemLabels: { [key: string]: string } = {
     judgment: '判断力', expression: '表現力', comprehension: '理解力', interpersonal: '対人性', potential: '将来性'
 };
 
-interface RawEvaluation {
+interface EvaluationFromDb {
     id: number;
-    evaluator_name: string;
-    target_employee_name: string;
-    evaluation_month: string;
+    scores_json: { [key: string]: number };
     total_score: number;
-    comment: string | null;
-    scores_json: string;
     submitted_at: string;
-}
-
-interface ParsedEvaluation extends Omit<RawEvaluation, 'scores_json'> {
-    scores: { [key: string]: number };
-}
-
-interface MonthlyAverages {
-    month: string;
-    averageTotal100: number;
-    itemAverages: { [key: string]: number };
 }
 
 export async function GET() {
   try {
-    const db = await openDb();
-    const evaluations = await db.all<RawEvaluation[]>('SELECT * FROM evaluations ORDER BY submitted_at');
-    await db.close();
+    const { rows: evaluations } = await sql<EvaluationFromDb>`SELECT id, scores_json, total_score, submitted_at FROM evaluations ORDER BY submitted_at;`;
 
     if (evaluations.length === 0) {
         return NextResponse.json({ monthlyData: {}, latestMonth: null, chartJsData: { labels: [], datasets: [] } });
     }
 
-    // Group evaluations by month (e.g., "2023-10")
-    const monthlyData: { [month: string]: ParsedEvaluation[] } = {};
+    const monthlyData: { [month: string]: { scores: { [key: string]: number }[], total_scores: number[] } } = {};
     evaluations.forEach(e => {
         const month = new Date(e.submitted_at).toISOString().slice(0, 7); // YYYY-MM
         if (!monthlyData[month]) {
-            monthlyData[month] = [];
+            monthlyData[month] = { scores: [], total_scores: [] };
         }
-        monthlyData[month].push({
-            ...e,
-            scores: JSON.parse(e.scores_json)
-        });
+        monthlyData[month].scores.push(e.scores_json);
+        monthlyData[month].total_scores.push(e.total_score);
     });
 
-    const processedData: { [month: string]: MonthlyAverages } = {};
+    const processedData: { [month: string]: any } = {};
     const sortedMonths = Object.keys(monthlyData).sort();
 
-    // Calculate averages for each month
     for (const month of sortedMonths) {
         const monthEvals = monthlyData[month];
-        const entryCount = monthEvals.length;
+        const entryCount = monthEvals.scores.length;
         
-        const totals = {
-            totalScore100: 0,
-            items: evaluationItemKeys.reduce((acc, key) => ({ ...acc, [key]: 0 }), {} as { [key: string]: number })
-        };
+        const itemTotals = evaluationItemKeys.reduce((acc, key) => ({ ...acc, [key]: 0 }), {} as { [key: string]: number });
+        let totalScoreSum = 0;
 
-        monthEvals.forEach(ev => {
-            totals.totalScore100 += (ev.total_score / MAX_TOTAL_SCORE) * 100;
+        monthEvals.scores.forEach(scoreSet => {
             for (const key of evaluationItemKeys) {
-                totals.items[key] += ev.scores[key] || 0;
+                itemTotals[key] += scoreSet[key] || 0;
             }
         });
+        monthEvals.total_scores.forEach(s => totalScoreSum += s);
 
         processedData[month] = {
             month: month,
-            averageTotal100: (totals.totalScore100 / entryCount),
+            averageTotal100: ((totalScoreSum / entryCount) / MAX_TOTAL_SCORE) * 100,
             itemAverages: evaluationItemKeys.reduce((acc, key) => ({
                 ...acc,
-                [key]: (totals.items[key] / entryCount)
+                [key]: (itemTotals[key] / entryCount)
             }), {})
         };
     }
 
-    // Prepare data for Chart.js
     const chartJsData = {
         labels: sortedMonths,
         datasets: evaluationItemKeys.map(key => ({
             label: evaluationItemLabels[key],
             data: sortedMonths.map(month => processedData[month].itemAverages[key]),
-            // You can add styling here, e.g., borderColor, backgroundColor
         }))
     };
 

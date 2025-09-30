@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { openDb } from '@/lib/db';
+import { sql } from '@vercel/postgres';
 
 export async function POST(request: Request) {
   try {
@@ -10,13 +10,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
     }
 
-    const db = await openDb();
-    await db.run(
-      `INSERT INTO proposals (proposer_name, proposal_year, subject, body)
-       VALUES (?, ?, ?, ?)`, 
-      [proposerName, proposalYear, subject, proposalBody]
-    );
-    await db.close();
+    await sql`
+      INSERT INTO proposals (proposer_name, proposal_year, subject, body)
+      VALUES (${proposerName}, ${proposalYear}, ${subject}, ${proposalBody});
+    `;
 
     return NextResponse.json({ message: 'Proposal submitted successfully' }, { status: 201 });
   } catch (error) {

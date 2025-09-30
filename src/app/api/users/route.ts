@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
-import { openDb } from '@/lib/db';
+import { sql } from '@vercel/postgres';
 
 export async function GET() {
   try {
-    const db = await openDb();
-    const users = await db.all('SELECT * FROM users ORDER BY name');
-    await db.close();
+    const { rows: users } = await sql`SELECT * FROM users ORDER BY name;`;
     return NextResponse.json(users);
   } catch (error) {
     console.error('Failed to get users:', error);
@@ -14,20 +12,16 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { name } = await request.json();
-
-  if (!name) {
-    return NextResponse.json({ message: 'Name is required' }, { status: 400 });
-  }
-
   try {
-    const db = await openDb();
-    // Use a prepared statement to prevent SQL injection
-    const result = await db.run('INSERT INTO users (name) VALUES (?)', [name]);
-    await db.close();
-    return NextResponse.json({ id: result.lastID, name });
-  } catch (error) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === 'SQLITE_CONSTRAINT') {
+    const { name } = await request.json();
+    if (!name) {
+      return NextResponse.json({ message: 'Name is required' }, { status: 400 });
+    }
+    await sql`INSERT INTO users (name) VALUES (${name});`;
+    const { rows: users } = await sql`SELECT * FROM users WHERE name = ${name};`;
+    return NextResponse.json(users[0], { status: 201 });
+  } catch (error: unknown) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === '23505') { // 23505 is the code for unique_violation in Postgres
       return NextResponse.json({ message: 'User with this name already exists' }, { status: 409 });
     }
     console.error('Failed to create user:', error);
