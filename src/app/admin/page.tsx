@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Form, Button, Card, Row, Col, Alert, InputGroup, ListGroup, Spinner } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
@@ -238,7 +239,9 @@ export default function AdminPage() {
                     <Form.Group as={Row} className="mb-3">
                         <Form.Label column sm={3}>集計・分析</Form.Label>
                         <Col sm={9}>
-                            <Button variant="info">集計データを表示</Button>
+                            <Link href="/admin/analytics" passHref legacyBehavior>
+                                <Button as="a" variant="info">集計データを表示</Button>
+                            </Link>
                         </Col>
                     </Form.Group>
                 </Card.Body>
