@@ -126,32 +126,34 @@ export default function EvaluationPage() {
                             }
 
                             return (
-                                <Form.Group as={Row} key={item.id} className="mb-5 align-items-start">
-                                    <Col sm={3} className="text-md-end">
-                                        <Form.Label column><strong>{item.label}</strong></Form.Label>
-                                        <p className="text-muted small pe-md-2">{item.description}</p>
-                                    </Col>
-                                    <Col sm={7}>
-                                        <Slider
-                                            min={1}
-                                            max={item.maxScore}
-                                            marks={marks}
-                                            value={scores[item.id]}
-                                            onChange={(value) => handleScoreChange(item.id, value as number)}
-                                            className="mt-2"
-                                            trackStyle={{ backgroundColor: isMax10 ? '#ff8c00' : '#0d6efd', height: 10 }}
-                                            railStyle={{ height: 10 }}
-                                            handleStyle={{
-                                                borderColor: isMax10 ? '#ff8c00' : '#0d6efd',
-                                                height: 20,
-                                                width: 20,
-                                                marginTop: -5,
-                                            }}
-                                        />
-                                    </Col>
-                                    <Col sm={2} className="d-flex align-items-center justify-content-center">
-                                        <span className="fw-bold fs-4">{scores[item.id]}</span>
-                                    </Col>
+                                <Form.Group key={item.id} className="mb-5">
+                                    <div>
+                                        <Form.Label><strong>{item.label}</strong></Form.Label>
+                                        <p className="text-muted small">{item.description}</p>
+                                    </div>
+                                    <Row className="align-items-center">
+                                        <Col xs={10}>
+                                            <Slider
+                                                min={1}
+                                                max={item.maxScore}
+                                                marks={marks}
+                                                value={scores[item.id]}
+                                                onChange={(value) => handleScoreChange(item.id, value as number)}
+                                                className="mt-2"
+                                                trackStyle={{ backgroundColor: isMax10 ? '#ff8c00' : '#0d6efd', height: 10 }}
+                                                railStyle={{ height: 10 }}
+                                                handleStyle={{
+                                                    borderColor: isMax10 ? '#ff8c00' : '#0d6efd',
+                                                    height: 20,
+                                                    width: 20,
+                                                    marginTop: -5,
+                                                }}
+                                            />
+                                        </Col>
+                                        <Col xs={2} className="text-center">
+                                            <span className="fw-bold fs-4">{scores[item.id]}</span>
+                                        </Col>
+                                    </Row>
                                 </Form.Group>
                             );
                         })}
