@@ -23,8 +23,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ message: 'Proposals submitted successfully' }, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error('API Error:', error);
-    return NextResponse.json({ message: 'Error submitting proposals' }, { status: 500 });
+    return NextResponse.json({ message: 'Error submitting proposals', error: error.message }, { status: 500 });
   }
 }

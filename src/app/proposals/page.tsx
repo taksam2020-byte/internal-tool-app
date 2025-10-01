@@ -140,9 +140,10 @@ export default function ProposalsPage() {
       setProposerName('');
       setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
       localStorage.removeItem(getDraftKey());
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to submit proposal", error);
-      setSubmitStatus({ success: false, message: '提案の送信に失敗しました。' });
+      const errorMessage = error.response?.data?.error || '提案の送信に失敗しました。';
+      setSubmitStatus({ success: false, message: errorMessage });
     } finally {
       setIsSubmitting(false);
       setShowStatusModal(true);
