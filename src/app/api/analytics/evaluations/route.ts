@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-const MAX_TOTAL_SCORE = 65; // 9 items * 5 points + 1 item * 10 points
+const MAX_TOTAL_SCORE = 50; // 9 items * 5 points + 1 item * 5 points (scaled)
 
 const evaluationItemKeys = [
     'accuracy', 'discipline', 'cooperation', 'proactiveness', 'agility', 
@@ -55,7 +55,11 @@ export async function GET() {
 
         monthEvals.scores.forEach(scoreSet => {
             for (const key of evaluationItemKeys) {
-                itemTotals[key] += scoreSet[key] || 0;
+                if (key === 'potential') {
+                    itemTotals[key] += (scoreSet[key] || 0) / 2;
+                } else {
+                    itemTotals[key] += scoreSet[key] || 0;
+                }
             }
         });
         monthEvals.total_scores.forEach(s => totalScoreSum += s);

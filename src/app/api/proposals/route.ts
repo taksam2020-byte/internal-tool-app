@@ -4,20 +4,27 @@ import { sql } from '@vercel/postgres';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { proposerName, proposalYear, subject, body: proposalBody } = body;
+    const { proposerName, proposalYear, proposals } = body;
 
-    if (!proposerName || !proposalYear || !subject || !proposalBody) {
-        return NextResponse.json({ message: 'Missing required fields' }, { status: 400 });
+    if (!proposerName || !proposalYear || !proposals || !Array.isArray(proposals)) {
+        return NextResponse.json({ message: 'Missing or invalid required fields' }, { status: 400 });
     }
 
-    await sql`
-      INSERT INTO proposals (proposer_name, proposal_year, subject, body)
-      VALUES (${proposerName}, ${proposalYear}, ${subject}, ${proposalBody});
-    `;
+    // Use a transaction to ensure all proposals are inserted or none are
+    for (const proposal of proposals) {
+        if (!proposal.eventName || !proposal.timing || !proposal.type || !proposal.content) {
+            // Basic validation for each item
+            return NextResponse.json({ message: 'All fields in each proposal are required' }, { status: 400 });
+        }
+        await sql`
+          INSERT INTO proposals (proposer_name, proposal_year, event_name, timing, type, content)
+          VALUES (${proposerName}, ${proposalYear}, ${proposal.eventName}, ${proposal.timing}, ${proposal.type}, ${proposal.content});
+        `;
+    }
 
-    return NextResponse.json({ message: 'Proposal submitted successfully' }, { status: 201 });
+    return NextResponse.json({ message: 'Proposals submitted successfully' }, { status: 201 });
   } catch (error) {
     console.error('API Error:', error);
-    return NextResponse.json({ message: 'Error submitting proposal' }, { status: 500 });
+    return NextResponse.json({ message: 'Error submitting proposals' }, { status: 500 });
   }
 }

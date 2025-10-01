@@ -7,6 +7,7 @@ import axios from 'axios';
 
 interface ProposalItem {
   id: number;
+  eventName: string;
   timing: string;
   type: string;
   content: string;
@@ -56,7 +57,7 @@ export default function ProposalsPage() {
                         setProposals(savedProposals);
                         nextId = Math.max(...savedProposals.map((p: ProposalItem) => p.id)) + 1;
                     } else {
-                        setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, timing: '', type: '', content: '' })));
+                        setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
                     }
                 } else {
                     // Year mismatch, clear old data
@@ -86,7 +87,7 @@ export default function ProposalsPage() {
   };
 
   const addProposal = () => {
-    setProposals([...proposals, { id: nextId++, timing: '', type: '', content: '' }]);
+    setProposals([...proposals, { id: nextId++, eventName: '', timing: '', type: '', content: '' }]);
   };
 
   const removeProposal = (id: number) => {
@@ -112,27 +113,28 @@ export default function ProposalsPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const allFilled = proposals.every(p => p.timing && p.type && p.content);
+    const allFilled = proposals.every(p => p.eventName && p.timing && p.type && p.content);
 
     if (!proposerName || !allFilled) {
-        alert('氏名と、すべての提案項目（時期、種別、内容）を入力してください。');
+        alert('氏名と、すべての提案項目（企画名、時期、種別、内容）を入力してください。');
         return;
     }
 
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-    const subject = `【社内ツール】${settings.proposalYear}年度 催事提案`;
-    const body = proposals.map((p, i) => {
-        return `--- 提案 ${i + 1} ---\n時期: ${p.timing}\n種別: ${p.type}\n内容: ${p.content}`;
-    }).join('\n\n');
+    const body = proposals.map(p => ({ 
+        eventName: p.eventName,
+        timing: p.timing, 
+        type: p.type, 
+        content: p.content 
+    }));
 
     try {
       await axios.post('/api/proposals', {
         proposerName: proposerName,
         proposalYear: settings.proposalYear,
-        subject,
-        body,
+        proposals: body, // Send the array of objects
       });
       setSubmitStatus({ success: true, message: '提案が正常に送信されました。' });
       setProposerName('');
@@ -196,6 +198,10 @@ export default function ProposalsPage() {
                 </div>
             </Card.Header>
             <Card.Body>
+              <Form.Group className="mb-3">
+                <Form.Label>企画(行事)名</Form.Label>
+                <Form.Control required type="text" placeholder="例: 春のトレンドカラーセミナー" value={proposal.eventName} onChange={(e) => handleProposalChange(index, 'eventName', e.target.value)} />
+              </Form.Group>
               <Row>
                 <Form.Group as={Col} md="6" className="mb-3">
                   <Form.Label>時期</Form.Label>

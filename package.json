@@ -7,7 +7,7 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "eslint",
-    "db:init": "node scripts/initialize-pg-db.mjs"
+    "db:init": "node scripts/update-pg-schema.mjs"
   },
   "dependencies": {
     "@types/react-datepicker": "^6.2.0",

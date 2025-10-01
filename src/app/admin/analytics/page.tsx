@@ -119,6 +119,10 @@ export default function AnalyticsPage() {
                 </Col>
             </Row>
 
+            <Alert variant="light" className="text-center small">
+                ※グラフおよび表内の「将来性」項目は、他の項目との比較のため5点満点に換算して表示しています。
+            </Alert>
+
             <Card>
                 <Card.Header as="h5">月別サマリー</Card.Header>
                 <Card.Body>

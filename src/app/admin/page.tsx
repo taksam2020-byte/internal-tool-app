@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Form, Button, Card, Row, Col, Alert, InputGroup, ListGroup, Spinner, Toast, ToastContainer } from 'react-bootstrap';
+import { Form, Button, Card, Row, Col, Alert, InputGroup, ListGroup, Spinner, Modal } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
@@ -58,6 +58,19 @@ function UserManagement() {
         }
     };
 
+    const handleDeleteUser = async (userId: number, userName: string) => {
+        if (window.confirm(`本当に「${userName}」を削除しますか？`)) {
+            try {
+                setError('');
+                await axios.delete(`/api/users/${userId}`);
+                await fetchUsers(); // Refresh the list
+            } catch (err) {
+                setError('ユーザーの削除に失敗しました。');
+                console.error(err);
+            }
+        }
+    };
+
     return (
         <Card className="mb-4">
             <Card.Header as="h5">ユーザー管理</Card.Header>
@@ -69,7 +82,10 @@ function UserManagement() {
                 ) : (
                     <ListGroup className="mb-3">
                         {users.map(user => (
-                            <ListGroup.Item key={user.id}>{user.name}</ListGroup.Item>
+                            <ListGroup.Item key={user.id} className="d-flex justify-content-between align-items-center">
+                                {user.name}
+                                <Button variant="outline-danger" size="sm" onClick={() => handleDeleteUser(user.id, user.name)}>削除</Button>
+                            </ListGroup.Item>
                         ))}
                     </ListGroup>
                 )}
@@ -131,7 +147,7 @@ export default function AdminPage() {
     const { settings, setSettings, isSettingsLoaded } = useSettings();
     const { isAuthenticated } = useAuth();
     const router = useRouter();
-    const [showSuccess, setShowSuccess] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     useEffect(() => {
         if (isSettingsLoaded && !isAuthenticated) {
@@ -150,7 +166,9 @@ export default function AdminPage() {
     };
 
     const handleSave = () => {
-        setShowSuccess(true);
+        // The useSettings context automatically saves on change.
+        // This button just provides user feedback.
+        setShowSuccessModal(true);
     };
 
 
@@ -162,15 +180,6 @@ export default function AdminPage() {
         <div>
             <h1 className="mb-4">管理画面</h1>
             
-            <ToastContainer position="top-end" className="p-3" style={{ zIndex: 1 }}>
-                <Toast onClose={() => setShowSuccess(false)} show={showSuccess} delay={3000} autohide>
-                    <Toast.Header closeButton={false}>
-                        <strong className="me-auto">通知</strong>
-                    </Toast.Header>
-                    <Toast.Body>設定は自動的に保存されました。</Toast.Body>
-                </Toast>
-            </ToastContainer>
-
             <UserManagement />
 
             <Card className="mb-4">
@@ -181,6 +190,104 @@ export default function AdminPage() {
                     <StringListEditor title="催事提案" list={settings.proposalEmails} setList={(emails) => setSettings(s => ({...s, proposalEmails: emails}))} placeholder="name@example.com" />
                 </Card.Body>
             </Card>
+
+            <Card className="mb-4">
+                <Card.Header as="h5">催事提案フォーム設定</Card.Header>
+                <Card.Body>
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm={3}>受付状況</Form.Label>
+                        <Col sm={9}>
+                            <Form.Check
+                                type="switch"
+                                name="isProposalOpen"
+                                label={settings.isProposalOpen ? "受付中" : "停止中"}
+                                checked={settings.isProposalOpen}
+                                onChange={handleInputChange}
+                            />
+                        </Col>
+                    </Form.Group>
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm={3}>提案年度</Form.Label>
+                        <Col sm={9}>
+                            <Form.Control
+                                type="number"
+                                name="proposalYear"
+                                value={settings.proposalYear}
+                                onChange={handleInputChange}
+                            />
+                        </Col>
+                    </Form.Group>
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm={3}>締切日</Form.Label>
+                        <Col sm={9}>
+                            <Form.Control
+                                type="date"
+                                name="proposalDeadline"
+                                value={settings.proposalDeadline || ''}
+                                onChange={handleInputChange}
+                            />
+                        </Col>
+                    </Form.Group>
+                </Card.Body>
+            </Card>
+
+            <Card className="mb-4">
+                <Card.Header as="h5">新人考課設定</Card.Header>
+                <Card.Body>
+                    <StringListEditor title="考課対象者" list={settings.evaluationTargets} setList={(targets) => setSettings(s => ({...s, evaluationTargets: targets}))} placeholder="対象者名" />
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm={3}>受付状況</Form.Label>
+                        <Col sm={9}>
+                            <Form.Check type="switch" name="isEvaluationOpen" label={settings.isEvaluationOpen ? "受付中" : "停止中"} checked={settings.isEvaluationOpen} onChange={handleInputChange} />
+                        </Col>
+                    </Form.Group>
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm={3}>対象月度</Form.Label>
+                        <Col sm={9}>
+                            <Form.Select name="evaluationMonth" value={settings.evaluationMonth} onChange={handleInputChange}>
+                                {Array.from({ length: 12 }, (_, i) => <option key={i+1} value={i+1}>{i+1}月</option>)}
+                            </Form.Select>
+                        </Col>
+                    </Form.Group>
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm={3}>締切日</Form.Label>
+                        <Col sm={9}>
+                            <Form.Control type="date" name="evaluationDeadline" value={settings.evaluationDeadline || ''} onChange={handleInputChange} />
+                        </Col>
+                    </Form.Group>
+                     <hr />
+                    <Form.Group as={Row} className="mb-3">
+                        <Form.Label column sm={3}>集計・分析</Form.Label>
+                        <Col sm={9}>
+                            <Link href="/admin/analytics" passHref legacyBehavior>
+                                <Button as="a" variant="info">集計データを表示</Button>
+                            </Link>
+                        </Col>
+                    </Form.Group>
+                </Card.Body>
+            </Card>
+
+            <div className="mt-4 d-grid">
+                <Button variant="primary" size="lg" onClick={handleSave}>すべての設定を保存</Button>
+            </div>
+
+            <Modal show={showSuccessModal} onHide={() => setShowSuccessModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>保存完了</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Alert variant="success" className="mb-0">
+                        設定は自動的に保存されました。
+                    </Alert>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowSuccessModal(false)}>
+                        閉じる
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </div>
+    );
 
             <Card className="mb-4">
                 <Card.Header as="h5">催事提案フォーム設定</Card.Header>
