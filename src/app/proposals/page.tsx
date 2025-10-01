@@ -70,7 +70,7 @@ export default function ProposalsPage() {
             }
         } catch (error) {
             console.error("Failed to load draft from localStorage", error);
-            setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, timing: '', type: '', content: '' })));
+            setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
         }
         setIsLoaded(true);
     }
