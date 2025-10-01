@@ -25,6 +25,7 @@ interface MonthlyAverages {
     month: string;
     averageTotal100: number;
     itemAverages: { [key: string]: number };
+    rawItemAverages: { [key: string]: number };
 }
 
 interface ChartJsDataset {
