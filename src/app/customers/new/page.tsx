@@ -188,7 +188,7 @@ export default function NewCustomerPage() {
                     <Form.Label>締日<span className="text-danger">*</span></Form.Label>
                     <div>
                         <Form.Check inline label="20日" type="radio" name="closingDay" value="20" required />
-                        <Form.Check inline label="末日" type="radio" name="closingDay" value="末日" required />
+                        <Form.Check inline label="末日" type="radio" name="closingDay" value="末日" required defaultChecked />
                     </div>
                 </Form.Group>
                 <Form.Group as={Col} md="6">
@@ -200,8 +200,8 @@ export default function NewCustomerPage() {
             <Form.Group className="mb-3">
                 <Form.Label>請求先<span className="text-danger">*</span></Form.Label>
                 <div>
-                    <Form.Check inline label="この得意先へ請求" name="billingTarget" type="radio" value="self" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} />
-                    <Form.Check inline label="別の得意先へ請求" name="billingTarget" type="radio" value="other" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} />
+                    <Form.Check inline label="この得意先へ請求" name="billingTarget" type="radio" value="この得意先へ請求" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} />
+                    <Form.Check inline label="別の得意先へ請求" name="billingTarget" type="radio" value="別の得意先へ請求" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} />
                 </div>
                 {billingTarget === 'other' && (
                     <Row className="mt-2">

@@ -40,6 +40,7 @@ interface AnalyticsData {
         labels: string[];
         datasets: ChartJsDataset[];
     };
+    cumulativeAverage: string;
 }
 
 export default function AnalyticsPage() {
@@ -101,6 +102,13 @@ export default function AnalyticsPage() {
     return (
         <div>
             <h1 className="mb-4">新人考課 集計・分析</h1>
+
+            <Card className="mb-4 text-center">
+                <Card.Header>累計平均点 (100点換算)</Card.Header>
+                <Card.Body>
+                    <h2 className="display-4 fw-bold">{data.cumulativeAverage}</h2>
+                </Card.Body>
+            </Card>
             
             <Row>
                 <Col lg={8} className="mb-4">

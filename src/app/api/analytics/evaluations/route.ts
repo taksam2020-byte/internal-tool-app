@@ -93,10 +93,16 @@ export async function GET() {
     const latestMonthKey = sortedMonths[sortedMonths.length - 1];
     const latestMonthData = processedData[latestMonthKey];
 
+    // Calculate cumulative average
+    let cumulativeTotalScore = 0;
+    evaluations.forEach(e => cumulativeTotalScore += e.total_score);
+    const cumulativeAverage = ((cumulativeTotalScore / evaluations.length) / MAX_TOTAL_SCORE) * 100;
+
     return NextResponse.json({ 
         monthlyData: processedData, 
         latestMonth: latestMonthData,
-        chartJsData 
+        chartJsData,
+        cumulativeAverage: cumulativeAverage.toFixed(1)
     });
 
   } catch (error) {

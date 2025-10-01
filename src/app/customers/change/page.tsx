@@ -266,8 +266,8 @@ export default function ChangeCustomerPage() {
                 <Form.Group className="mb-3">
                     <Form.Label>{changeableFields.billing}</Form.Label>
                     <div>
-                        <Form.Check inline label="この得意先へ請求" name="billingTarget" type="radio" value="self" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} />
-                        <Form.Check inline label="別の得意先へ請求" name="billingTarget" type="radio" value="other" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} />
+                        <Form.Check inline label="この得意先へ請求" name="billingTarget" type="radio" value="この得意先へ請求" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} />
+                        <Form.Check inline label="別の得意先へ請求" name="billingTarget" type="radio" value="別の得意先へ請求" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} />
                     </div>
                     {billingTarget === 'other' && (
                         <Row className="mt-2">
