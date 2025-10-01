@@ -92,7 +92,7 @@ export default function NewCustomerPage() {
         subject,
         body,
       });
-      setSubmitStatus({ success: true, message: '申請が正常に送信されました。' });
+      setSubmitStatus({ success: true, message: `申請が正常に送信されました。\n送信先: ${settings.customerEmails.join(', ')}` });
       form.reset();
       setValidated(false);
       setZipCode('');
