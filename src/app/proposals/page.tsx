@@ -63,10 +63,10 @@ export default function ProposalsPage() {
                     // Year mismatch, clear old data
                     localStorage.removeItem(draftKey);
                     setProposerName('');
-                    setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, timing: '', type: '', content: '' })));
+                    setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
                 }
             } else {
-              setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, timing: '', type: '', content: '' })));
+              setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
             }
         } catch (error) {
             console.error("Failed to load draft from localStorage", error);
@@ -138,7 +138,7 @@ export default function ProposalsPage() {
       });
       setSubmitStatus({ success: true, message: '提案が正常に送信されました。' });
       setProposerName('');
-      setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, timing: '', type: '', content: '' })));
+      setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
       localStorage.removeItem(getDraftKey());
     } catch (error) {
       console.error("Failed to submit proposal", error);
