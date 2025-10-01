@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, Row, Col, Spinner, Alert, Table } from 'react-bootstrap';
+import { Card, Row, Col, Spinner, Alert, Table, Form } from 'react-bootstrap';
 import axios from 'axios';
 import {
   Chart as ChartJS,
@@ -99,7 +99,7 @@ export default function AnalyticsPage() {
     };
 
     const radarChartData = data.latestMonth ? {
-        labels: data.chartJsData.datasets.map((ds) => ds.label),
+        labels: data.chartJsData.datasets.map((ds: ChartJsDataset) => ds.label),
         datasets: [{
             label: `${data.latestMonth.month} 平均点`,
             data: Object.values(data.latestMonth.itemAverages),

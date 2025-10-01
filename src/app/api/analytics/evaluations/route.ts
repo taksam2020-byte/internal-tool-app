@@ -34,27 +34,7 @@ export async function GET(request: NextRequest) {
     const month = searchParams.get('month'); // e.g., '2023-10'
     const target = searchParams.get('target');
 
-    let evaluations: EvaluationFromDb[];
-
-    // Build query with filters
-    let query = `SELECT id, evaluator_name, target_employee_name, scores_json, total_score, submitted_at FROM evaluations`;
-    const conditions = [];
-    const params = [];
-    if (month) {
-        conditions.push(`to_char(submitted_at, 'YYYY-MM') = ${params.length + 1}`);
-        params.push(month);
-    }
-    if (target) {
-        conditions.push(`target_employee_name = ${params.length + 1}`);
-        params.push(target);
-    }
-    if (conditions.length > 0) {
-        query += ' WHERE ' + conditions.join(' AND ');
-    }
-    query += ' ORDER BY submitted_at;';
-
-    const { rows } = await sql.query(query, params);
-    evaluations = rows as EvaluationFromDb[];
+    const { rows: evaluations } = await sql.query(query, params);
 
     if (evaluations.length === 0) {
         return NextResponse.json({ 
@@ -137,7 +117,7 @@ export async function GET(request: NextRequest) {
     // --- Crosstab Logic ---
     const evaluators = [...new Set(evaluations.map(e => e.evaluator_name))].sort();
     const crossTabRows = evaluationItemKeys.map(itemKey => {
-        const row: { [key: string]: any } = { item: evaluationItemLabels[itemKey] };
+        const row: { [key: string]: string | number } = { item: evaluationItemLabels[itemKey] };
         evaluators.forEach(evaluator => {
             const specificEval = evaluations.find(e => e.evaluator_name === evaluator);
             row[evaluator] = specificEval ? specificEval.scores_json[itemKey] : '-';
