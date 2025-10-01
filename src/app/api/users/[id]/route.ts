@@ -1,9 +1,10 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const id = parseInt(params.id, 10);
+    const { id: idString } = await context.params;
+    const id = parseInt(idString, 10);
     if (isNaN(id)) {
       return NextResponse.json({ message: 'Invalid user ID' }, { status: 400 });
     }
