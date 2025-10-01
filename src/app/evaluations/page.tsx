@@ -94,9 +94,12 @@ export default function EvaluationPage() {
             setComment('');
             setValidated(false);
             // Note: You might want to reset the targetEmployee select as well, which requires more complex state management if it's a controlled component.
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Evaluation submission error:", error);
-            const errorMessage = error.response?.data?.error || '提出に失敗しました。もう一度お試しください。';
+            let errorMessage = '提出に失敗しました。もう一度お試しください。';
+            if (axios.isAxiosError(error) && error.response) {
+                errorMessage = error.response.data.error || errorMessage;
+            }
             setSubmitStatus({ success: false, message: errorMessage });
         } finally {
             setIsSubmitting(false);

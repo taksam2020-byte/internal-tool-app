@@ -140,9 +140,12 @@ export default function ProposalsPage() {
       setProposerName('');
       setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
       localStorage.removeItem(getDraftKey());
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to submit proposal", error);
-      const errorMessage = error.response?.data?.error || '提案の送信に失敗しました。';
+      let errorMessage = '提案の送信に失敗しました。';
+      if (axios.isAxiosError(error) && error.response) {
+          errorMessage = error.response.data.error || errorMessage;
+      }
       setSubmitStatus({ success: false, message: errorMessage });
     } finally {
       setIsSubmitting(false);

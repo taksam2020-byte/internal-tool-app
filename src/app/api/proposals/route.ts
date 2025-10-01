@@ -23,8 +23,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ message: 'Proposals submitted successfully' }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('API Error:', error);
-    return NextResponse.json({ message: 'Error submitting proposals', error: error.message }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ message: 'Error submitting proposals', error: message }, { status: 500 });
   }
 }
