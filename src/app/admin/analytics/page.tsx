@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
                                 <tr key={monthData.month}>
                                     <td>{monthData.month}</td>
                                     <td>{monthData.averageTotal100.toFixed(1)}</td>
-                                    {Object.values(monthData.itemAverages).map((avg, index) => (
+                                    {Object.values(monthData.rawItemAverages).map((avg: any, index: number) => (
                                         <td key={index}>{avg.toFixed(1)}</td>
                                     ))}
                                 </tr>

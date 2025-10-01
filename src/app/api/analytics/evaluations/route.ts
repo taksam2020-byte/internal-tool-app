@@ -51,14 +51,17 @@ export async function GET() {
         const entryCount = monthEvals.scores.length;
         
         const itemTotals = evaluationItemKeys.reduce((acc, key) => ({ ...acc, [key]: 0 }), {} as { [key: string]: number });
+        const rawItemTotals = evaluationItemKeys.reduce((acc, key) => ({ ...acc, [key]: 0 }), {} as { [key: string]: number });
         let totalScoreSum = 0;
 
         monthEvals.scores.forEach(scoreSet => {
             for (const key of evaluationItemKeys) {
+                const rawScore = scoreSet[key] || 0;
+                rawItemTotals[key] += rawScore;
                 if (key === 'potential') {
-                    itemTotals[key] += (scoreSet[key] || 0) / 2;
+                    itemTotals[key] += rawScore / 2;
                 } else {
-                    itemTotals[key] += scoreSet[key] || 0;
+                    itemTotals[key] += rawScore;
                 }
             }
         });
@@ -70,6 +73,10 @@ export async function GET() {
             itemAverages: evaluationItemKeys.reduce((acc, key) => ({
                 ...acc,
                 [key]: (itemTotals[key] / entryCount)
+            }), {}),
+            rawItemAverages: evaluationItemKeys.reduce((acc, key) => ({
+                ...acc,
+                [key]: (rawItemTotals[key] / entryCount)
             }), {})
         };
     }

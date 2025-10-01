@@ -139,7 +139,7 @@ export default function ChangeCustomerPage() {
             <Row className="mb-3">
                 <Form.Group as={Col} md="6">
                     <Form.Label>適用開始日<span className="text-danger">*</span></Form.Label>
-                    <Form.Control required type="date" name="effectiveDate" />
+                    <Form.Control required type="date" name="effectiveDate" min={new Date().toISOString().split('T')[0]} />
                 </Form.Group>
                 <Form.Group as={Col} md="6">
                     <Form.Label>担当者<span className="text-danger">*</span></Form.Label>

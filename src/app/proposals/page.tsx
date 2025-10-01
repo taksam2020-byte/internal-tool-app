@@ -123,18 +123,17 @@ export default function ProposalsPage() {
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-    const body = proposals.map(p => ({ 
-        eventName: p.eventName,
-        timing: p.timing, 
-        type: p.type, 
-        content: p.content 
-    }));
+    const subject = `【社内ツール】${settings.proposalYear}年度 催事提案`;
+    let body = `提案年度: ${settings.proposalYear}\n提案者: ${proposerName}\n\n`;
+    body += proposals.map((p, i) => {
+        return `--- 提案 ${i + 1} ---\n企画(行事)名: ${p.eventName}\n時期: ${p.timing}\n種別: ${p.type}\n内容: ${p.content}`;
+    }).join('\n\n');
 
     try {
-      await axios.post('/api/proposals', {
-        proposerName: proposerName,
-        proposalYear: settings.proposalYear,
-        proposals: body, // Send the array of objects
+      await axios.post('/api/send-email', {
+        to: settings.proposalEmails,
+        subject,
+        body,
       });
       setSubmitStatus({ success: true, message: '提案が正常に送信されました。' });
       setProposerName('');
@@ -204,7 +203,7 @@ export default function ProposalsPage() {
             <Card.Body>
               <Form.Group className="mb-3">
                 <Form.Label>企画(行事)名</Form.Label>
-                <Form.Control required type="text" placeholder="例: 春のトレンドカラーセミナー" value={proposal.eventName} onChange={(e) => handleProposalChange(index, 'eventName', e.target.value)} />
+                <Form.Control required type="text" placeholder="〇〇セミナー" value={proposal.eventName} onChange={(e) => handleProposalChange(index, 'eventName', e.target.value)} />
               </Form.Group>
               <Row>
                 <Form.Group as={Col} md="6" className="mb-3">
