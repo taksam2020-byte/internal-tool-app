@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
 const MAX_TOTAL_SCORE = 50; // 9 items * 5 points + 1 item * 5 points (scaled)
@@ -28,13 +28,9 @@ interface MonthlyAverages {
     rawItemAverages: { [key: string]: number };
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const month = searchParams.get('month'); // e.g., '2023-10'
-    const target = searchParams.get('target');
-
-    const { rows: evaluations } = await sql.query(query, params);
+    const { rows: evaluations } = await sql<EvaluationFromDb>`SELECT id, evaluator_name, target_employee_name, scores_json, total_score, submitted_at FROM evaluations ORDER BY submitted_at;`;
 
     if (evaluations.length === 0) {
         return NextResponse.json({ 
@@ -46,7 +42,6 @@ export async function GET(request: NextRequest) {
         });
     }
 
-    // --- Start of existing aggregation logic ---
     const allDbEvals = await sql<EvaluationFromDb>`SELECT submitted_at, target_employee_name FROM evaluations`;
     const filterOptions = {
         months: [...new Set(allDbEvals.rows.map(e => new Date(e.submitted_at).toISOString().slice(0, 7)))].sort().reverse(),
@@ -112,9 +107,7 @@ export async function GET(request: NextRequest) {
         evaluations.forEach(e => cumulativeTotalScore += e.total_score);
         cumulativeAverage = ((cumulativeTotalScore / evaluations.length) / MAX_TOTAL_SCORE) * 100;
     }
-    // --- End of aggregation logic ---
 
-    // --- Crosstab Logic ---
     const evaluators = [...new Set(evaluations.map(e => e.evaluator_name))].sort();
     const crossTabRows = evaluationItemKeys.map(itemKey => {
         const row: { [key: string]: string | number } = { item: evaluationItemLabels[itemKey] };

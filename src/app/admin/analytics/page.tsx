@@ -98,8 +98,9 @@ export default function AnalyticsPage() {
         },
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const radarChartData = data.latestMonth ? {
-        labels: data.chartJsData.datasets.map((ds: ChartJsDataset) => ds.label),
+        labels: data.chartJsData.datasets.map((ds) => ds.label),
         datasets: [{
             label: `${data.latestMonth.month} 平均点`,
             data: Object.values(data.latestMonth.itemAverages),
@@ -220,4 +221,5 @@ export default function AnalyticsPage() {
             )}
 
         </div>
-    );}
+    );
+}
