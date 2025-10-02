@@ -14,6 +14,7 @@ import {
   Legend,
   RadialLinearScale,
   Filler,
+  ChartDataset,
 } from 'chart.js';
 import { Line, Radar } from 'react-chartjs-2';
 
@@ -100,13 +101,15 @@ export default function AnalyticsPage() {
 
     const radarChartData = data.latestMonth ? {
         labels: data.chartJsData.datasets.map((ds) => ds.label),
-        datasets: [{
-            label: `${data.latestMonth.month} 平均点`,
-            data: Object.values(data.latestMonth.itemAverages),
-            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1,
-        }] as any,
+        datasets: [
+            {
+                label: `${data.latestMonth.month} 平均点`,
+                data: Object.values(data.latestMonth.itemAverages),
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+            },
+        ] as ChartDataset<'radar'>[],
     } : null;
 
     return (
