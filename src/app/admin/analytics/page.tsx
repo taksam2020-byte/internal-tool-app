@@ -98,7 +98,6 @@ export default function AnalyticsPage() {
         },
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const radarChartData = data.latestMonth ? {
         labels: data.chartJsData.datasets.map((ds) => ds.label),
         datasets: [{
@@ -107,7 +106,7 @@ export default function AnalyticsPage() {
             backgroundColor: 'rgba(54, 162, 235, 0.2)',
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1,
-        }],
+        }] as any,
     } : null;
 
     return (
