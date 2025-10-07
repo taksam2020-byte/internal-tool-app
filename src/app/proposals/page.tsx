@@ -16,6 +16,8 @@ interface ProposalItem {
 interface User {
     id: number;
     name: string;
+    role: string;
+    is_active: boolean;
 }
 
 let nextId = 5;
@@ -41,6 +43,8 @@ export default function ProposalsPage() {
     };
     fetchUsers();
   }, []);
+
+  const allowedUsers = users.filter(user => user.is_active && settings.proposalAllowedRoles.includes(user.role));
 
   const getDraftKey = useCallback(() => `proposalDraft-${settings.proposalYear}-${proposerName || 'unknown'}`, [settings.proposalYear, proposerName]);
 
@@ -74,7 +78,7 @@ export default function ProposalsPage() {
         }
         setIsLoaded(true);
     }
-  }, [isSettingsLoaded, getDraftKey, settings.proposalYear]);
+  }, [isSettingsLoaded, getDraftKey, settings.proposalYear, proposerName]);
 
   const handleProposalChange = (index: number, field: keyof Omit<ProposalItem, 'id'>, value: string) => {
     const newProposals = proposals.map((p, i) => {
@@ -168,11 +172,12 @@ export default function ProposalsPage() {
   return (
     <div>
       <h1 className="mb-4">{settings.proposalYear}年度 催事提案</h1>
-      <p>催事のアイデアを5つ以上提案してください。項目は「+」ボタンで追加できます。<br/>
-          {settings.proposalDeadline && 
-            <span className="fw-bold text-danger">締切: {new Date(settings.proposalDeadline).toLocaleDateString('ja-JP')}</span>
-          }
-      </p>
+      {settings.proposalDeadline && 
+        <Alert variant="danger">
+            提出締切: {new Date(settings.proposalDeadline).toLocaleDateString('ja-JP')}
+        </Alert>
+      }
+      <p>催事のアイデアを5つ以上提案してください。項目は「+」ボタンで追加できます。</p>
       <Form onSubmit={handleSubmit}>
         <Card className="mb-3">
             <Card.Body>
@@ -181,7 +186,7 @@ export default function ProposalsPage() {
                     <Col sm={10}>
                         <Form.Select required value={proposerName} onChange={(e) => setProposerName(e.target.value)}>
                             <option value="">選択してください...</option>
-                            {users.map(user => (
+                            {allowedUsers.map(user => (
                                 <option key={user.id} value={user.name}>{user.name}</option>
                             ))}
                         </Form.Select>

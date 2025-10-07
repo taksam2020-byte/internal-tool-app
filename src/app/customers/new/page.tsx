@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Button, Row, Col, Card, Spinner, Alert, Modal } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
+
+interface User { id: number; name: string; role: string; is_active: boolean; }
 
 const fieldLabels: { [key: string]: string } = {
     salonType: 'サロン種別',
@@ -27,6 +29,7 @@ const fieldLabels: { [key: string]: string } = {
 
 export default function NewCustomerPage() {
   const { settings } = useSettings();
+  const [users, setUsers] = useState<User[]>([]);
   const [validated, setValidated] = useState(false);
   const [zipCode, setZipCode] = useState('');
   const [zipCodeError, setZipCodeError] = useState(false);
@@ -36,6 +39,18 @@ export default function NewCustomerPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+        try {
+            const res = await axios.get<User[]>('/api/users');
+            setUsers(res.data);
+        } catch (err) { console.error("Failed to fetch users", err); }
+    };
+    fetchUsers();
+  }, []);
+
+  const allowedUsers = users.filter(user => user.is_active && settings.customerAllowedRoles.includes(user.role));
 
   const handleZipCodeSearch = async () => {
     if (!zipCode || !zipCode.match(/^\d{7}$/)) {
@@ -79,20 +94,14 @@ export default function NewCustomerPage() {
     const data = Object.fromEntries(formData.entries());
 
     const subject = '【社内ツール】得意先新規登録申請';
-    const body = Object.entries(data)
-      .map(([key, value]) => {
+    const body = Object.entries(data).map(([key, value]) => {
         const label = fieldLabels[key] || key;
         return `${label}: ${value}`;
-      })
-      .join('\n');
+      }).join('\n');
 
     try {
-      await axios.post('/api/send-email', {
-        to: settings.customerEmails,
-        subject,
-        body,
-      });
-      setSubmitStatus({ success: true, message: `申請が正常に送信されました。\n送信先: ${settings.customerEmails.join(', ')}` });
+      await axios.post('/api/send-email', { to: settings.customerEmails, subject, body });
+      setSubmitStatus({ success: true, message: `申請が正常に送信されました.\n送信先: ${settings.customerEmails.join(', ')}` });
       form.reset();
       setValidated(false);
       setZipCode('');
@@ -179,7 +188,10 @@ export default function NewCustomerPage() {
                 </Form.Group>
                 <Form.Group as={Col} md="6">
                     <Form.Label>担当者<span className="text-danger">*</span></Form.Label>
-                    <Form.Control required type="text" name="contactPerson" placeholder="鈴木 一郎" />
+                    <Form.Select required name="contactPerson" defaultValue="">
+                        <option value="" disabled>選択してください...</option>
+                        {allowedUsers.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}
+                    </Form.Select>
                 </Form.Group>
             </Row>
 
@@ -200,8 +212,8 @@ export default function NewCustomerPage() {
             <Form.Group className="mb-3">
                 <Form.Label>請求先<span className="text-danger">*</span></Form.Label>
                 <div>
-                    <Form.Check inline label="この得意先へ請求" name="billingTarget" type="radio" value="この得意先へ請求" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} />
-                    <Form.Check inline label="別の得意先へ請求" name="billingTarget" type="radio" value="別の得意先へ請求" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} />
+                    <Form.Check inline label="この得意先へ請求" name="billingTarget" type="radio" value="self" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} />
+                    <Form.Check inline label="別の得意先へ請求" name="billingTarget" type="radio" value="other" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} />
                 </div>
                 {billingTarget === 'other' && (
                     <Row className="mt-2">
@@ -226,21 +238,9 @@ export default function NewCustomerPage() {
       </Card>
 
       <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>{submitStatus?.success ? '送信完了' : '送信エラー'}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-            {submitStatus && (
-                <Alert variant={submitStatus.success ? 'success' : 'danger'} className="mb-0">
-                    {submitStatus.message}
-                </Alert>
-            )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary" onClick={() => setShowStatusModal(false)}>
-            閉じる
-          </Button>
-        </Modal.Footer>
+        <Modal.Header closeButton><Modal.Title>{submitStatus?.success ? '送信完了' : '送信エラー'}</Modal.Title></Modal.Header>
+        <Modal.Body>{submitStatus && (<Alert variant={submitStatus.success ? 'success' : 'danger'} className="mb-0">{submitStatus.message}</Alert>)}</Modal.Body>
+        <Modal.Footer><Button variant="primary" onClick={() => setShowStatusModal(false)}>閉じる</Button></Modal.Footer>
       </Modal>
     </div>
   );

@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Button, Row, Col, Card, Spinner, InputGroup, Alert, Modal } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
+
+interface User { id: number; name: string; role: string; is_active: boolean; }
 
 const changeableFields = {
     customerName: '得意先名',
@@ -15,7 +17,6 @@ const changeableFields = {
     email: 'メールアドレス',
     billing: '請求先',
 };
-
 type FieldKey = keyof typeof changeableFields;
 
 const fieldLabels: { [key: string]: string } = {
@@ -42,6 +43,7 @@ const fieldLabels: { [key: string]: string } = {
 
 export default function ChangeCustomerPage() {
   const { settings } = useSettings();
+  const [users, setUsers] = useState<User[]>([]);
   const [validated, setValidated] = useState(false);
   const [zipCode, setZipCode] = useState('');
   const [zipCodeError, setZipCodeError] = useState(false);
@@ -52,6 +54,18 @@ export default function ChangeCustomerPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+        try {
+            const res = await axios.get<User[]>('/api/users');
+            setUsers(res.data);
+        } catch (err) { console.error("Failed to fetch users", err); }
+    };
+    fetchUsers();
+  }, []);
+
+  const allowedUsers = users.filter(user => user.is_active && settings.customerAllowedRoles.includes(user.role));
 
   const handleFieldSelection = (field: FieldKey) => {
     setSelectedFields(prev => 
@@ -101,20 +115,14 @@ export default function ChangeCustomerPage() {
     const data = Object.fromEntries(formData.entries());
 
     const subject = '【社内ツール】得意先変更申請';
-    const body = Object.entries(data)
-      .map(([key, value]) => {
+    const body = Object.entries(data).map(([key, value]) => {
         const label = fieldLabels[key] || key;
         return `${label}: ${value}`;
-      })
-      .join('\n');
+      }).join('\n');
 
     try {
-      await axios.post('/api/send-email', {
-        to: settings.customerEmails,
-        subject,
-        body,
-      });
-      setSubmitStatus({ success: true, message: `申請が正常に送信されました。\n送信先: ${settings.customerEmails.join(', ')}` });
+      await axios.post('/api/send-email', { to: settings.customerEmails, subject, body });
+      setSubmitStatus({ success: true, message: `申請が正常に送信されました.\n送信先: ${settings.customerEmails.join(', ')}` });
       form.reset();
       setValidated(false);
       setSelectedFields([]);
@@ -143,7 +151,10 @@ export default function ChangeCustomerPage() {
                 </Form.Group>
                 <Form.Group as={Col} md="6">
                     <Form.Label>担当者<span className="text-danger">*</span></Form.Label>
-                    <Form.Control required type="text" name="contactPerson" placeholder="鈴木 一郎" />
+                    <Form.Select required name="contactPerson" defaultValue="">
+                        <option value="" disabled>選択してください...</option>
+                        {allowedUsers.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}
+                    </Form.Select>
                 </Form.Group>
             </Row>
             <Row className="mb-4">
@@ -160,156 +171,34 @@ export default function ChangeCustomerPage() {
 
             <h5 className="mb-3">変更する項目を選択</h5>
             <div className="mb-3 p-3 border rounded">
-                <Row>
-                    {Object.keys(changeableFields).map(key => (
-                        <Col md={4} key={key}>
-                            <Form.Check 
-                                type="checkbox" 
-                                id={`check-${key}`}
-                                label={changeableFields[key as FieldKey]}
-                                checked={selectedFields.includes(key as FieldKey)}
-                                onChange={() => handleFieldSelection(key as FieldKey)}
-                            />
-                        </Col>
-                    ))}
-                </Row>
+                <Row>{Object.keys(changeableFields).map(key => (<Col md={4} key={key}><Form.Check type="checkbox" id={`check-${key}`} label={changeableFields[key as FieldKey]} checked={selectedFields.includes(key as FieldKey)} onChange={() => handleFieldSelection(key as FieldKey)}/></Col>))}</Row>
             </div>
 
             {selectedFields.length > 0 && <h5 className="mt-4 mb-3">変更内容</h5>}
 
-            {selectedFields.includes('customerName') && (
-                <Row className="mb-3">
-                    <Col md={6}> 
-                        <Form.Label>新しい得意先名（正式）</Form.Label>
-                        <Form.Control name="customerNameFull_after" placeholder="例: Hair Salon Taksam" />
-                    </Col>
-                    <Col md={6}> 
-                        <Form.Label>新しい得意先名（略称）</Form.Label>
-                        <Form.Control name="customerNameShort_after" placeholder="例: ヘアーサロンタクサム" />
-                    </Col>
-                </Row>
-            )}
-
-            {selectedFields.includes('salonType') && (
-                <Form.Group className="mb-3">
-                    <Form.Label>{changeableFields.salonType}</Form.Label>
-                    <div>
-                        <Form.Check inline label="一般" name="salonType" type="radio" value="一般" />
-                        <Form.Check inline label="SPC" name="salonType" type="radio" value="SPC" />
-                    </div>
-                </Form.Group>
-            )}
-
-            {selectedFields.includes('address') && (
-                <>
-                    <Row className="mb-3">
-                        <Form.Group as={Col} md={4}>
-                            <Form.Label>郵便番号</Form.Label>
-                            <InputGroup>
-                                <Form.Control type="text" name="zipCode" placeholder="1000001" pattern="^\d{7}$" value={zipCode} onChange={(e) => setZipCode(e.target.value)} isInvalid={zipCodeError} />
-                                <Button variant="secondary" onClick={handleZipCodeSearch}>
-                                    {isFetchingAddress ? <Spinner size="sm" animation="border"/> : '住所取得'}
-                                </Button>
-                                <Form.Control.Feedback type="invalid">郵便番号は7桁の数字で入力してください。</Form.Control.Feedback>
-                            </InputGroup>
-                        </Form.Group>
-                        <Form.Group as={Col} md={8}>
-                            <Form.Label>住所1（都道府県・市区町村）</Form.Label>
-                            <Form.Control type="text" name="address1" readOnly value={address1} />
-                        </Form.Group>
-                    </Row>
-                    <Form.Group className="mb-3">
-                        <Form.Label>住所2（番地・ビル名等）</Form.Label>
-                        <Form.Control type="text" name="address2" placeholder="例: 1-1-1 〇〇ビル1F" />
-                    </Form.Group>
-                </>
-            )}
-
-            {selectedFields.includes('phone') && (
-                 <Row className="mb-3">
-                    <Form.Group as={Col} md={6}>
-                        <Form.Label>電話番号</Form.Label>
-                        <Form.Control type="tel" name="phone" placeholder="03-1234-5678" />
-                    </Form.Group>
-                    <Form.Group as={Col} md={6}>
-                        <Form.Label>FAX番号</Form.Label>
-                        <Form.Control type="tel" name="fax" placeholder="03-1234-5679" />
-                    </Form.Group>
-                </Row>
-            )}
-
-            {selectedFields.includes('representative') && (
-                <Form.Group className="mb-3">
-                    <Form.Label>{changeableFields.representative}</Form.Label>
-                    <Form.Control type="text" name="representativeName" placeholder="山田 太郎" />
-                </Form.Group>
-            )}
-
-            {selectedFields.includes('closingDay') && (
-                <Form.Group className="mb-3">
-                    <Form.Label>{changeableFields.closingDay}</Form.Label>
-                    <div>
-                        <Form.Check inline label="20日" type="radio" name="closingDay" value="20" />
-                        <Form.Check inline label="末日" type="radio" name="closingDay" value="末日" />
-                    </div>
-                </Form.Group>
-            )}
-
-            {selectedFields.includes('email') && (
-                <Form.Group className="mb-3">
-                    <Form.Label>{changeableFields.email}</Form.Label>
-                    <Form.Control type="email" name="email" placeholder="example@example.com" />
-                </Form.Group>
-            )}
-
-            {selectedFields.includes('billing') && (
-                <Form.Group className="mb-3">
-                    <Form.Label>{changeableFields.billing}</Form.Label>
-                    <div>
-                        <Form.Check inline label="この得意先へ請求" name="billingTarget" type="radio" value="この得意先へ請求" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} />
-                        <Form.Check inline label="別の得意先へ請求" name="billingTarget" type="radio" value="別の得意先へ請求" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} />
-                    </div>
-                    {billingTarget === 'other' && (
-                        <Row className="mt-2">
-                            <Col md={6}><Form.Control name="billingCustomerName" placeholder="請求先名称" /></Col>
-                            <Col md={6}><Form.Control name="billingCustomerCode" placeholder="請求先コード" /></Col>
-                        </Row>
-                    )}
-                </Form.Group>
-            )}
+            {selectedFields.includes('customerName') && (<Row className="mb-3"><Col md={6}><Form.Label>新しい得意先名（正式）</Form.Label><Form.Control name="customerNameFull_after" placeholder="例: Hair Salon Taksam" /></Col><Col md={6}><Form.Label>新しい得意先名（略称）</Form.Label><Form.Control name="customerNameShort_after" placeholder="例: ヘアーサロンタクサム" /></Col></Row>)}
+            {selectedFields.includes('salonType') && (<Form.Group className="mb-3"><Form.Label>{changeableFields.salonType}</Form.Label><div><Form.Check inline label="一般" name="salonType" type="radio" value="一般" /><Form.Check inline label="SPC" name="salonType" type="radio" value="SPC" /></div></Form.Group>)}
+            {selectedFields.includes('address') && (<><Row className="mb-3"><Form.Group as={Col} md={4}><Form.Label>郵便番号</Form.Label><InputGroup><Form.Control type="text" name="zipCode" placeholder="1000001" pattern="^\d{7}$" value={zipCode} onChange={(e) => setZipCode(e.target.value)} isInvalid={zipCodeError} /><Button variant="secondary" onClick={handleZipCodeSearch}>{isFetchingAddress ? <Spinner size="sm" animation="border"/> : '住所取得'}</Button><Form.Control.Feedback type="invalid">郵便番号は7桁の数字で入力してください。</Form.Control.Feedback></InputGroup></Form.Group><Form.Group as={Col} md={8}><Form.Label>住所1（都道府県・市区町村）</Form.Label><Form.Control type="text" name="address1" readOnly value={address1} /></Form.Group></Row><Form.Group className="mb-3"><Form.Label>住所2（番地・ビル名等）</Form.Label><Form.Control type="text" name="address2" placeholder="例: 1-1-1 〇〇ビル1F" /></Form.Group></>)}
+            {selectedFields.includes('phone') && (<Row className="mb-3"><Form.Group as={Col} md={6}><Form.Label>電話番号</Form.Label><Form.Control type="tel" name="phone" placeholder="03-1234-5678" /></Form.Group><Form.Group as={Col} md={6}><Form.Label>FAX番号</Form.Label><Form.Control type="tel" name="fax" placeholder="03-1234-5679" /></Form.Group></Row>)}
+            {selectedFields.includes('representative') && (<Form.Group className="mb-3"><Form.Label>{changeableFields.representative}</Form.Label><Form.Control type="text" name="representativeName" placeholder="山田 太郎" /></Form.Group>)}
+            {selectedFields.includes('closingDay') && (<Form.Group className="mb-3"><Form.Label>{changeableFields.closingDay}</Form.Label><div><Form.Check inline label="20日" type="radio" name="closingDay" value="20" /><Form.Check inline label="末日" type="radio" name="closingDay" value="末日" /></div></Form.Group>)}
+            {selectedFields.includes('email') && (<Form.Group className="mb-3"><Form.Label>{changeableFields.email}</Form.Label><Form.Control type="email" name="email" placeholder="example@example.com" /></Form.Group>)}
+            {selectedFields.includes('billing') && (<Form.Group className="mb-3"><Form.Label>{changeableFields.billing}</Form.Label><div>                    <Form.Check inline label="この得意先へ請求" name="billingTarget" type="radio" value="self" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} />
+                    <Form.Check inline label="別の得意先へ請求" name="billingTarget" type="radio" value="other" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} /></div>{billingTarget === 'other' && (<Row className="mt-2"><Col md={6}><Form.Control name="billingCustomerName" placeholder="請求先名称" /></Col><Col md={6}><Form.Control name="billingCustomerCode" placeholder="請求先コード" /></Col></Row>)}</Form.Group>)}
 
             <hr />
 
-            <Form.Group className="mb-3">
-                <Form.Label>備考</Form.Label>
-                <Form.Control as="textarea" name="remarks" rows={3} />
-            </Form.Group>
+            <Form.Group className="mb-3"><Form.Label>備考</Form.Label><Form.Control as="textarea" name="remarks" rows={3} /></Form.Group>
 
-            <div className="d-grid mt-4">
-                <Button variant="primary" type="submit" disabled={isSubmitting} size="lg">
-                    {isSubmitting ? <Spinner as="span" animation="border" size="sm" /> : '申請する'}
-                </Button>
-            </div>
+            <div className="d-grid mt-4"><Button variant="primary" type="submit" disabled={isSubmitting} size="lg">{isSubmitting ? <Spinner as="span" animation="border" size="sm" /> : '申請する'}</Button></div>
           </Form>
         </Card.Body>
       </Card>
 
       <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>{submitStatus?.success ? '送信完了' : '送信エラー'}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-            {submitStatus && (
-                <Alert variant={submitStatus.success ? 'success' : 'danger'} className="mb-0">
-                    {submitStatus.message}
-                </Alert>
-            )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary" onClick={() => setShowStatusModal(false)}>
-            閉じる
-          </Button>
-        </Modal.Footer>
+        <Modal.Header closeButton><Modal.Title>{submitStatus?.success ? '送信完了' : '送信エラー'}</Modal.Title></Modal.Header>
+        <Modal.Body>{submitStatus && (<Alert variant={submitStatus.success ? 'success' : 'danger'} className="mb-0">{submitStatus.message}</Alert>)}</Modal.Body>
+        <Modal.Footer><Button variant="primary" onClick={() => setShowStatusModal(false)}>閉じる</Button></Modal.Footer>
       </Modal>
     </div>
   );

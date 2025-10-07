@@ -11,6 +11,10 @@ export interface AppSettings {
     isProposalOpen: boolean;
     proposalDeadline: string;
     proposalYear: string;
+    customerAllowedRoles: string[];
+    reservationAllowedRoles: string[];
+    evaluationAllowedRoles: string[];
+    proposalAllowedRoles: string[];
     // New settings for evaluations
     evaluationTargets: string[];
     isEvaluationOpen: boolean;
@@ -31,6 +35,10 @@ const defaultSettings: AppSettings = {
     isProposalOpen: true,
     proposalDeadline: '',
     proposalYear: new Date().getFullYear().toString(),
+    customerAllowedRoles: [],
+    reservationAllowedRoles: [],
+    evaluationAllowedRoles: [],
+    proposalAllowedRoles: [],
     // Defaults for new settings
     evaluationTargets: [],
     isEvaluationOpen: true,
@@ -60,6 +68,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
                 parsed.reservationEmails = Array.isArray(parsed.reservationEmails) ? parsed.reservationEmails : [];
                 parsed.proposalEmails = Array.isArray(parsed.proposalEmails) ? parsed.proposalEmails : [];
                 parsed.evaluationTargets = Array.isArray(parsed.evaluationTargets) ? parsed.evaluationTargets : [];
+                parsed.customerAllowedRoles = Array.isArray(parsed.customerAllowedRoles) ? parsed.customerAllowedRoles : [];
+                parsed.reservationAllowedRoles = Array.isArray(parsed.reservationAllowedRoles) ? parsed.reservationAllowedRoles : [];
+                parsed.evaluationAllowedRoles = Array.isArray(parsed.evaluationAllowedRoles) ? parsed.evaluationAllowedRoles : [];
+                parsed.proposalAllowedRoles = Array.isArray(parsed.proposalAllowedRoles) ? parsed.proposalAllowedRoles : [];
+                parsed.evaluationDeadline = parsed.evaluationDeadline || '';
                 setSettings(prev => ({ ...prev, ...parsed }));
             }
         } catch (error) {

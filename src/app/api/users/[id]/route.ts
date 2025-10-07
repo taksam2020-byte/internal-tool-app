@@ -1,25 +1,41 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function PUT(request: NextRequest, { params }: any) {
   try {
-    const { id: idString } = await context.params;
-    const id = parseInt(idString, 10);
-    if (isNaN(id)) {
-      return NextResponse.json({ message: 'Invalid user ID' }, { status: 400 });
+    const id = parseInt(params.id, 10);
+    const body = await request.json();
+
+    // Dynamically build the SET clause
+    const fieldsToUpdate = Object.keys(body);
+    const setClauses = fieldsToUpdate.map((field, i) => `"${field}" = $${i + 2}`).join(', ');
+    const values = fieldsToUpdate.map(field => body[field]);
+
+    if (fieldsToUpdate.length === 0) {
+      return NextResponse.json({ message: 'No fields to update' }, { status: 400 });
     }
 
-    // TODO: Add validation to prevent deletion of users associated with evaluations or proposals
-
-    const result = await sql`DELETE FROM users WHERE id = ${id};`;
-
-    if (result.rowCount === 0) {
-        return NextResponse.json({ message: 'User not found' }, { status: 404 });
-    }
-
-    return new NextResponse(null, { status: 204 }); // No Content
+    await sql.query(
+      `UPDATE users SET ${setClauses} WHERE id = $1`,
+      [id, ...values]
+    );
+    
+    return NextResponse.json({ message: 'User updated successfully' }, { status: 200 });
   } catch (error) {
-    console.error('Failed to delete user:', error);
-    return NextResponse.json({ message: 'Error deleting user' }, { status: 500 });
+    console.error('Failed to update user:', error);
+    return NextResponse.json({ message: 'Error updating user' }, { status: 500 });
   }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export async function DELETE(_request: NextRequest, { params }: any) {
+    try {
+        const id = parseInt(params.id, 10);
+        await sql`DELETE FROM users WHERE id = ${id};`;
+        return NextResponse.json({ message: 'User deleted successfully' }, { status: 200 });
+    } catch (error) {
+        console.error('Failed to delete user:', error);
+        return NextResponse.json({ message: 'Error deleting user' }, { status: 500 });
+    }
 }

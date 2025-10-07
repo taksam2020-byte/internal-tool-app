@@ -7,12 +7,9 @@ import axios from 'axios';
 import Slider from 'rc-slider';
 import 'rc-slider/assets/index.css';
 
-interface User {
-    id: number;
-    name: string;
-}
+interface User { id: number; name: string; role: string; is_trainee: boolean; is_active: boolean; }
 
-const evaluationItems = [
+const evaluationItems: { id: string; label: string; description: string; maxScore: number; }[] = [
     { id: 'accuracy', label: '正確性', description: '仕事は、正確に・迅速に処理する能力を有しているか。同じミスを繰り返していないか。', maxScore: 5 },
     { id: 'discipline', label: '規律性', description: '正当な事由以外の、遅刻・早退・欠勤は無かったか。職場の規律を乱す行為は無かったか。', maxScore: 5 },
     { id: 'cooperation', label: '協調性', description: '協調する気持ちを有しているか。 常識を逸脱した自己主張がないか。', maxScore: 5 },
@@ -26,7 +23,7 @@ const evaluationItems = [
 ];
 
 const initialScores = evaluationItems.reduce((acc, item) => {
-    acc[item.id] = Math.ceil(item.maxScore / 2); // Set default to middle score
+    acc[item.id] = Math.ceil(item.maxScore / 2);
     return acc;
 }, {} as { [key: string]: number });
 
@@ -43,24 +40,21 @@ export default function EvaluationPage() {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const res = await axios.get('/api/users');
+                const res = await axios.get<User[]>('/api/users');
                 setUsers(res.data);
-            } catch (err) {
-                console.error("Failed to fetch users", err);
-                // Optionally, show an error to the user
-            }
+            } catch (err) { console.error("Failed to fetch users", err); }
         };
         fetchUsers();
     }, []);
+
+    const allowedEvaluators = users.filter(user => user.is_active && settings.evaluationAllowedRoles.includes(user.role));
+    const evaluationTargets = users.filter(user => user.is_active && user.is_trainee);
 
     const totalScore = Object.values(scores).reduce((sum, score) => sum + score, 0);
     const maxTotalScore = evaluationItems.reduce((sum, item) => sum + item.maxScore, 0);
 
     const handleScoreChange = (id: string, value: number) => {
-        setScores(prevScores => ({
-            ...prevScores,
-            [id]: value
-        }));
+        setScores(prevScores => ({ ...prevScores, [id]: value }));
     };
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -81,21 +75,15 @@ export default function EvaluationPage() {
 
         try {
             await axios.post('/api/evaluations', {
-                targetEmployee,
-                evaluator,
-                scores,
-                comment,
-                totalScore,
+                targetEmployee, evaluator, scores, comment, totalScore,
                 evaluationMonth: settings.evaluationMonth,
             });
             setSubmitStatus({ success: true, message: '考課を提出しました。' });
-            // Reset form state after successful submission
+            form.reset();
             setScores(initialScores);
             setComment('');
             setValidated(false);
-            // Note: You might want to reset the targetEmployee select as well, which requires more complex state management if it's a controlled component.
         } catch (error: unknown) {
-            console.error("Evaluation submission error:", error);
             let errorMessage = '提出に失敗しました。もう一度お試しください。';
             if (axios.isAxiosError(error) && error.response) {
                 errorMessage = error.response.data.error || errorMessage;
@@ -107,49 +95,33 @@ export default function EvaluationPage() {
         }
     };
 
-    if (!isSettingsLoaded) {
-        return <div className="d-flex justify-content-center align-items-center vh-100"><Spinner animation="border" /><div>読み込み中...</div></div>;
-    }
+    if (!isSettingsLoaded) return <div className="d-flex justify-content-center align-items-center vh-100"><Spinner animation="border" /><div>読み込み中...</div></div>;
 
-    if (!settings.isEvaluationOpen) {
-        return (
-            <div>
-                <h1 className="mb-4">新人考課</h1>
-                <Alert variant="warning">現在、新人考課は受け付けていません。</Alert>
-            </div>
-        );
-    }
+    if (!settings.isEvaluationOpen) return (<div><h1 className="mb-4">新人考課</h1><Alert variant="warning">現在、新人考課は受け付けていません。</Alert></div>);
 
     return (
         <div>
             <h1 className="mb-4">{settings.evaluationMonth}月度 新人考課</h1>
+            {settings.evaluationDeadline && <Alert variant="danger">提出締切: {new Date(settings.evaluationDeadline).toLocaleDateString()}</Alert>}
             <Card>
                 <Card.Body>
                     <Form noValidate validated={validated} onSubmit={handleSubmit}>
                         <Row className="mb-3">
                             <Form.Group as={Col} md={6}>
-                                <Form.Label>考課対象者<span className="text-danger">*</span></Form.Label>
-                                <Form.Select required name="targetEmployee" defaultValue="">
-                                    <option value="" disabled>選択してください...</option>
-                                    {settings.evaluationTargets.map(target => (
-                                        <option key={target} value={target}>{target}</option>
-                                    ))}
-                                </Form.Select>
-                                <Form.Control.Feedback type="invalid">
-                                    考課対象者を選択してください。
-                                </Form.Control.Feedback>
-                            </Form.Group>
-                            <Form.Group as={Col} md={6}>
                                 <Form.Label>回答者<span className="text-danger">*</span></Form.Label>
                                 <Form.Select required name="evaluator" defaultValue="">
                                     <option value="" disabled>選択してください...</option>
-                                    {users.map(user => (
-                                        <option key={user.id} value={user.name}>{user.name}</option>
-                                    ))}
+                                    {allowedEvaluators.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}
                                 </Form.Select>
-                                <Form.Control.Feedback type="invalid">
-                                    回答者を選択してください。
-                                </Form.Control.Feedback>
+                                <Form.Control.Feedback type="invalid">回答者を選択してください。</Form.Control.Feedback>
+                            </Form.Group>
+                            <Form.Group as={Col} md={6}>
+                                <Form.Label>考課対象者<span className="text-danger">*</span></Form.Label>
+                                <Form.Select required name="targetEmployee" defaultValue="">
+                                    <option value="" disabled>選択してください...</option>
+                                    {evaluationTargets.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}
+                                </Form.Select>
+                                <Form.Control.Feedback type="invalid">考課対象者を選択してください。</Form.Control.Feedback>
                             </Form.Group>
                         </Row>
 
@@ -158,38 +130,14 @@ export default function EvaluationPage() {
                         {evaluationItems.map(item => {
                             const isMax10 = item.maxScore === 10;
                             const marks: { [key: number]: React.ReactNode } = {};
-                            for (let i = 1; i <= item.maxScore; i++) {
-                                marks[i] = i.toString();
-                            }
+                            for (let i = 1; i <= item.maxScore; i++) { marks[i] = i.toString(); }
 
                             return (
                                 <Form.Group key={item.id} className="mb-5">
-                                    <div>
-                                        <Form.Label><strong>{item.label}</strong></Form.Label>
-                                        <p className="text-muted small">{item.description}</p>
-                                    </div>
+                                    <div><Form.Label><strong>{item.label}</strong></Form.Label><p className="text-muted small">{item.description}</p></div>
                                     <Row className="align-items-center">
-                                        <Col xs={10}>
-                                            <Slider
-                                                min={1}
-                                                max={item.maxScore}
-                                                marks={marks}
-                                                value={scores[item.id]}
-                                                onChange={(value) => handleScoreChange(item.id, value as number)}
-                                                className="mt-2"
-                                                trackStyle={{ backgroundColor: isMax10 ? '#ff8c00' : '#0d6efd', height: 10 }}
-                                                railStyle={{ height: 10 }}
-                                                handleStyle={{
-                                                    borderColor: isMax10 ? '#ff8c00' : '#0d6efd',
-                                                    height: 20,
-                                                    width: 20,
-                                                    marginTop: -5,
-                                                }}
-                                            />
-                                        </Col>
-                                        <Col xs={2} className="text-center">
-                                            <span className="fw-bold fs-4">{scores[item.id]}</span>
-                                        </Col>
+                                        <Col xs={10}><Slider min={1} max={item.maxScore} marks={marks} value={scores[item.id]} onChange={(value) => handleScoreChange(item.id, value as number)} className="mt-2" trackStyle={{ backgroundColor: isMax10 ? '#ff8c00' : '#0d6efd', height: 10 }} railStyle={{ height: 10 }} handleStyle={{ borderColor: isMax10 ? '#ff8c00' : '#0d6efd', height: 20, width: 20, marginTop: -5, }}/></Col>
+                                        <Col xs={2} className="text-center"><span className="fw-bold fs-4">{scores[item.id]}</span></Col>
                                     </Row>
                                 </Form.Group>
                             );
@@ -197,51 +145,23 @@ export default function EvaluationPage() {
 
                         <hr />
 
-                        <div className="text-center my-4">
-                            <h4>合計点: <span className="fw-bold display-4">{totalScore}</span> / {maxTotalScore}</h4>
-                        </div>
+                        <div className="text-center my-4"><h4>合計点: <span className="fw-bold display-4">{totalScore}</span> / {maxTotalScore}</h4></div>
 
                         <Form.Group className="mb-3">
                             <Form.Label>コメント<span className="text-danger">*</span></Form.Label>
-                            <Form.Control
-                                as="textarea"
-                                rows={5}
-                                placeholder="出来るだけ詳細に記入してください。"
-                                value={comment}
-                                onChange={(e) => setComment(e.target.value)}
-                                required
-                            />
-                            <Form.Control.Feedback type="invalid">
-                                コメントを入力してください。
-                            </Form.Control.Feedback>
+                            <Form.Control required as="textarea" rows={5} placeholder="出来るだけ詳細に記入してください。" value={comment} onChange={(e) => setComment(e.target.value)} />
+                            <Form.Control.Feedback type="invalid">コメントを入力してください。</Form.Control.Feedback>
                         </Form.Group>
 
-
-                        <div className="mt-4 d-grid">
-                            <Button variant="primary" type="submit" disabled={isSubmitting} size="lg">
-                                {isSubmitting ? <><Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" /> 送信中...</> : '提出する'}
-                            </Button>
-                        </div>
+                        <div className="mt-4 d-grid"><Button variant="primary" type="submit" disabled={isSubmitting} size="lg">{isSubmitting ? <><Spinner as="span" animation="border" size="sm" /> 送信中...</> : '提出する'}</Button></div>
                     </Form>
                 </Card.Body>
             </Card>
 
             <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>提出状況</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    {submitStatus && (
-                        <Alert variant={submitStatus.success ? 'success' : 'danger'} className="mb-0">
-                            {submitStatus.message}
-                        </Alert>
-                    )}
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowStatusModal(false)}>
-                        閉じる
-                    </Button>
-                </Modal.Footer>
+                <Modal.Header closeButton><Modal.Title>提出状況</Modal.Title></Modal.Header>
+                <Modal.Body>{submitStatus && (<Alert variant={submitStatus.success ? 'success' : 'danger'} className="mb-0">{submitStatus.message}</Alert>)}</Modal.Body>
+                <Modal.Footer><Button variant="secondary" onClick={() => setShowStatusModal(false)}>閉じる</Button></Modal.Footer>
             </Modal>
         </div>
     );

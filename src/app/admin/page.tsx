@@ -2,138 +2,223 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Form, Button, Card, Row, Col, Alert, InputGroup, ListGroup, Spinner, Modal } from 'react-bootstrap';
+import { Form, Button, Card, Row, Col, Alert, InputGroup, Spinner, Table, Tabs, Tab, Modal, Pagination, Badge } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
+
+// --- Type Definitions ---
+interface User { id: number; name: string; role: '社長' | '営業' | '内勤'; is_trainee: boolean; is_active: boolean; }
+interface EvaluationSubmission { id: number; submitted_at: string; evaluator_name: string; target_employee_name: string; }
+interface ProposalSubmission { id: number; submitted_at: string; proposer_name: string; event_name: string; proposal_year: string; }
 
 // --- User Management Component ---
-interface User {
-  id: number;
-  name: string;
-}
-
 function UserManagement() {
     const [users, setUsers] = useState<User[]>([]);
-    const [newUserName, setNewUserName] = useState('');
+    const [newUser, setNewUser] = useState({ id: '', name: '', role: '内勤' as User['role'], is_trainee: false });
+    const [editingUser, setEditingUser] = useState<User | null>(null);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 20;
 
     const fetchUsers = async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-            const res = await axios.get('/api/users');
+            const res = await axios.get<User[]>('/api/users');
             setUsers(res.data);
-        } catch (err) {
-            setError('ユーザーの読み込みに失敗しました。');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+        } catch { setError('ユーザーの読み込みに失敗しました。'); }
+        finally { setLoading(false); }
     };
 
-    useEffect(() => {
-        fetchUsers();
-    }, []);
+    useEffect(() => { fetchUsers(); }, []);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleInputChange = (e: React.ChangeEvent<any>) => {
+        const { name, value, type } = e.target;
+        const checked = (e.target as HTMLInputElement).checked;
+        if (editingUser) {
+            setEditingUser({ ...editingUser, [name]: type === 'checkbox' ? checked : value });
+        } else {
+            setNewUser(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+        }
+    };
 
     const handleAddUser = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newUserName.trim()) {
-            setError('ユーザー名を入力してください。');
-            return;
-        }
+        if (!newUser.id || !newUser.name.trim()) { setError('IDとユーザー名を入力してください。'); return; }
         try {
             setError('');
-            await axios.post('/api/users', { name: newUserName.trim() });
-            setNewUserName('');
-            await fetchUsers(); // Refresh the list
+            await axios.post('/api/users', { ...newUser, id: parseInt(newUser.id) });
+            setNewUser({ id: '', name: '', role: '内勤', is_trainee: false });
+            await fetchUsers();
         } catch (err) {
-            if (axios.isAxiosError(err) && err.response) {
-                setError(err.response.data.message || 'ユーザーの追加に失敗しました。');
-            } else {
-                setError('予期せぬエラーが発生しました。');
-            }
-            console.error(err);
+            if (axios.isAxiosError(err) && err.response) { setError(err.response.data.message || 'ユーザーの追加に失敗しました。'); } 
+            else { setError('予期せぬエラーが発生しました。'); }
         }
     };
 
-    const handleDeleteUser = async (userId: number, userName: string) => {
-        if (window.confirm(`本当に「${userName}」を削除しますか？`)) {
+    const handleSaveUser = async () => {
+        if (!editingUser) return;
+        try {
+            await axios.put(`/api/users/${editingUser.id}`, { 
+                name: editingUser.name, 
+                role: editingUser.role, 
+                is_trainee: editingUser.is_trainee 
+            });
+            setEditingUser(null);
+            await fetchUsers();
+        } catch { alert('更新に失敗しました。'); }
+    };
+
+    const handleToggleActive = async (user: User) => {
+        try {
+            await axios.put(`/api/users/${user.id}`, { is_active: !user.is_active });
+            await fetchUsers();
+        } catch { alert('状態の更新に失敗しました。'); }
+    };
+
+    const handleDeleteUser = async (userId: number) => {
+        if (window.confirm('本当にこのユーザーを削除しますか？関連する過去のデータも失われる可能性があります。')) {
             try {
-                setError('');
                 await axios.delete(`/api/users/${userId}`);
-                await fetchUsers(); // Refresh the list
-            } catch (err) {
-                setError('ユーザーの削除に失敗しました。');
-                console.error(err);
-            }
+                await fetchUsers();
+            } catch { alert('削除に失敗しました。'); }
         }
     };
+
+    const indexOfLastUser = currentPage * usersPerPage;
+    const indexOfFirstUser = indexOfLastUser - usersPerPage;
+    const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
+    const totalPages = Math.ceil(users.length / usersPerPage);
+
+    const userColumns: [User[], User[]] = [[], []];
+    currentUsers.forEach((user, index) => {
+        userColumns[index % 2].push(user);
+    });
 
     return (
         <Card className="mb-4">
             <Card.Header as="h5">ユーザー管理</Card.Header>
             <Card.Body>
-                <p className="text-muted">各フォームの氏名選択肢に表示されるユーザーを管理します。</p>
                 {error && <Alert variant="danger">{error}</Alert>}
-                {loading ? (
-                    <div className="text-center"><Spinner animation="border" /></div>
-                ) : (
-                    <ListGroup className="mb-3">
-                        {users.map(user => (
-                            <ListGroup.Item key={user.id} className="d-flex justify-content-between align-items-center">
-                                {user.name}
-                                <Button variant="outline-danger" size="sm" onClick={() => handleDeleteUser(user.id, user.name)}>削除</Button>
-                            </ListGroup.Item>
-                        ))}
-                    </ListGroup>
+                {loading ? <div className="text-center"><Spinner /></div> : (
+                    <>
+                        <Row>
+                            {userColumns.map((col, colIndex) => (
+                                <Col md={6} key={colIndex}>
+                                    <Table striped bordered hover size="sm" className="mb-3 align-middle">
+                                        <thead><tr><th>ID</th><th>氏名</th><th>属性</th><th className="text-center">表示</th><th className="text-center">操作</th></tr></thead>
+                                        <tbody>
+                                            {col.map(user => (
+                                                <tr key={user.id}>
+                                                    <td>{user.id}</td>
+                                                    <td>{user.name}</td>
+                                                    <td><Badge bg={user.role === '社長' ? 'danger' : user.role === '営業' ? 'primary' : 'secondary'}>{user.role}</Badge>{user.is_trainee && <Badge bg="info" className="ms-1">研修生</Badge>}</td>
+                                                    <td className="text-center"><Form.Check type="switch" checked={user.is_active} onChange={() => handleToggleActive(user)} /></td>
+                                                    <td className="text-center">
+                                                        <Button variant="outline-primary" size="sm" onClick={() => setEditingUser(user)}>編集</Button>
+                                                        <Button variant="outline-danger" size="sm" className="ms-2" onClick={() => handleDeleteUser(user.id)}>削除</Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                </Col>
+                            ))}
+                        </Row>
+                        {totalPages > 1 && <Pagination>{Array.from({ length: totalPages }, (_, i) => <Pagination.Item key={i + 1} active={i + 1 === currentPage} onClick={() => setCurrentPage(i + 1)}>{i + 1}</Pagination.Item>)}</Pagination>}
+                    </>
                 )}
+                <h6>新規ユーザー追加</h6>
                 <Form onSubmit={handleAddUser}>
-                    <InputGroup>
-                        <Form.Control
-                            type="text"
-                            value={newUserName}
-                            onChange={(e) => setNewUserName(e.target.value)}
-                            placeholder="新しいユーザー名"
-                        />
-                        <Button type="submit" variant="outline-primary">追加</Button>
-                    </InputGroup>
+                    <Row className="g-2">
+                        <Col md={2}><Form.Control type="number" name="id" value={newUser.id} onChange={handleInputChange} placeholder="ID" required /></Col>
+                        <Col md={4}><Form.Control type="text" name="name" value={newUser.name} onChange={handleInputChange} placeholder="氏名" required /></Col>
+                        <Col md={3}><Form.Select name="role" value={newUser.role} onChange={handleInputChange}><option value="社長">社長</option><option value="営業">営業</option><option value="内勤">内勤</option></Form.Select></Col>
+                        <Col md={2} className="d-flex align-items-center"><Form.Check type="checkbox" name="is_trainee" label="研修生" checked={newUser.is_trainee} onChange={handleInputChange} /></Col>
+                        <Col md={1}><Button type="submit" variant="outline-primary" className="w-100">追加</Button></Col>
+                    </Row>
                 </Form>
             </Card.Body>
+
+            <Modal show={!!editingUser} onHide={() => setEditingUser(null)} centered>
+                <Modal.Header closeButton><Modal.Title>ユーザー情報編集</Modal.Title></Modal.Header>
+                <Modal.Body>
+                    {editingUser && <Form>
+                        <Form.Group className="mb-3"><Form.Label>ID</Form.Label><Form.Control type="number" value={editingUser.id} readOnly /></Form.Group>
+                        <Form.Group className="mb-3"><Form.Label>氏名</Form.Label><Form.Control type="text" name="name" value={editingUser.name} onChange={handleInputChange} /></Form.Group>
+                        <Form.Group className="mb-3"><Form.Label>属性</Form.Label><Form.Select name="role" value={editingUser.role} onChange={handleInputChange}><option value="社長">社長</option><option value="営業">営業</option><option value="内勤">内勤</option></Form.Select></Form.Group>
+                        <Form.Group className="mb-3"><Form.Check type="checkbox" name="is_trainee" label="研修生" checked={editingUser.is_trainee} onChange={handleInputChange} /></Form.Group>
+                    </Form>}
+                </Modal.Body>
+                <Modal.Footer><Button variant="secondary" onClick={() => setEditingUser(null)}>キャンセル</Button><Button variant="primary" onClick={handleSaveUser}>保存</Button></Modal.Footer>
+            </Modal>
         </Card>
     );
 }
 
+function MenuManagement() {
+    const { settings, setSettings } = useSettings();
+    const userRoles = ['社長', '営業', '内勤'];
 
-// Generic component for editing a list of strings
-function StringListEditor({ title, list, setList, placeholder }: { title: string, list: string[], setList: (list: string[]) => void, placeholder: string }) {
-    const handleItemChange = (index: number, value: string) => {
-        const newList = [...list];
-        newList[index] = value;
-        setList(newList);
+    const handleAllowedRolesChange = (menu: string, role: string) => {
+        const key = `${menu}AllowedRoles` as keyof typeof settings;
+        const currentRoles = settings[key] as string[] || [];
+        const newRoles = currentRoles.includes(role) ? currentRoles.filter(r => r !== role) : [...currentRoles, role];
+        setSettings(prev => ({ ...prev, [key]: newRoles }));
     };
 
-    const addItemField = () => {
-        setList([...list, '']);
-    };
+    return (
+        <Card className="mb-4">
+            <Card.Header as="h5">メニュー管理</Card.Header>
+            <Tabs id="menu-management-tabs" className="mb-3" variant="pills" justify>
+                <Tab eventKey="customers" title="得意先登録">
+                    <Card.Body>
+                        <StringListEditor title="通知先メールアドレス" list={settings.customerEmails} onUpdate={(list) => setSettings(p => ({...p, customerEmails: list}))} />
+                        <RoleSelector title="申請可能ユーザー" roles={userRoles} selectedRoles={settings.customerAllowedRoles} onChange={(role) => handleAllowedRolesChange('customer', role)} />
+                    </Card.Body>
+                </Tab>
+                <Tab eventKey="reservations" title="施設予約">
+                    <Card.Body>
+                        <StringListEditor title="通知先メールアドレス" list={settings.reservationEmails} onUpdate={(list) => setSettings(p => ({...p, reservationEmails: list}))} />
+                        <RoleSelector title="申請可能ユーザー" roles={userRoles} selectedRoles={settings.reservationAllowedRoles} onChange={(role) => handleAllowedRolesChange('reservation', role)} />
+                    </Card.Body>
+                </Tab>
+                <Tab eventKey="evaluations" title="新人考課">
+                    <Card.Body>
+                        <RoleSelector title="提出可能ユーザー" roles={userRoles} selectedRoles={settings.evaluationAllowedRoles} onChange={(role) => handleAllowedRolesChange('evaluation', role)} />
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>受付状況</Form.Label><Col sm={9}><Form.Check type="switch" name="isEvaluationOpen" label={settings.isEvaluationOpen ? "受付中" : "停止中"} checked={settings.isEvaluationOpen} onChange={(e) => setSettings(p=>({...p, isEvaluationOpen: e.target.checked}))}/></Col></Form.Group>
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>対象月度</Form.Label><Col sm={9}><Form.Select name="evaluationMonth" value={settings.evaluationMonth} onChange={(e) => setSettings(p=>({...p, evaluationMonth: e.target.value}))}>{Array.from({ length: 12 }, (_, i) => <option key={i+1} value={i+1}>{i+1}月</option>)}</Form.Select></Col></Form.Group>
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>締切日</Form.Label><Col sm={9}><Form.Control type="date" name="evaluationDeadline" value={settings.evaluationDeadline || ''} onChange={(e) => setSettings(p=>({...p, evaluationDeadline: e.target.value}))}/></Col></Form.Group>
+                    </Card.Body>
+                </Tab>
+                <Tab eventKey="proposals" title="催事提案">
+                    <Card.Body>
+                        <StringListEditor title="通知先メールアドレス" list={settings.proposalEmails} onUpdate={(list) => setSettings(p => ({...p, proposalEmails: list}))} />
+                        <RoleSelector title="提出可能ユーザー" roles={userRoles} selectedRoles={settings.proposalAllowedRoles} onChange={(role) => handleAllowedRolesChange('proposal', role)} />
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>受付状況</Form.Label><Col sm={9}><Form.Check type="switch" name="isProposalOpen" label={settings.isProposalOpen ? "受付中" : "停止中"} checked={settings.isProposalOpen} onChange={(e) => setSettings(p=>({...p, isProposalOpen: e.target.checked}))}/></Col></Form.Group>
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>提案年度</Form.Label><Col sm={9}><Form.Control type="number" name="proposalYear" value={settings.proposalYear} onChange={(e) => setSettings(p=>({...p, proposalYear: e.target.value}))}/></Col></Form.Group>
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>締切日</Form.Label><Col sm={9}><Form.Control type="date" name="proposalDeadline" value={settings.proposalDeadline || ''} onChange={(e) => setSettings(p=>({...p, proposalDeadline: e.target.value}))}/></Col></Form.Group>
+                    </Card.Body>
+                </Tab>
+            </Tabs>
+        </Card>
+    );
+}
 
-    const removeItemField = (index: number) => {
-        setList(list.filter((_, i) => i !== index));
-    };
-
+function StringListEditor({ title, list, onUpdate, placeholder }: { title: string, list: string[], onUpdate: (list: string[]) => void, placeholder?: string }) {
+    const handleItemChange = (index: number, value: string) => onUpdate(list.map((item, i) => i === index ? value : item));
+    const addItemField = () => onUpdate([...list, '']);
+    const removeItemField = (index: number) => onUpdate(list.filter((_, i) => i !== index));
     return (
         <Form.Group as={Row} className="mb-3">
             <Form.Label column sm={3}>{title}</Form.Label>
             <Col sm={9}>
                 {list.map((item, index) => (
                     <InputGroup key={index} className="mb-2">
-                        <Form.Control
-                            type="text"
-                            value={item}
-                            onChange={(e) => handleItemChange(index, e.target.value)}
-                            placeholder={placeholder}
-                        />
+                        <Form.Control type="text" value={item} onChange={(e) => handleItemChange(index, e.target.value)} placeholder={placeholder || "name@example.com"}/>
                         <Button variant="outline-danger" onClick={() => removeItemField(index)}>削除</Button>
                     </InputGroup>
                 ))}
@@ -143,151 +228,139 @@ function StringListEditor({ title, list, setList, placeholder }: { title: string
     );
 }
 
+function RoleSelector({ title, roles, selectedRoles, onChange }: { title: string, roles: string[], selectedRoles: string[], onChange: (role: string) => void }) {
+    return (
+        <Form.Group as={Row} className="mb-3">
+            <Form.Label column sm={3}>{title}</Form.Label>
+            <Col sm={9}>
+                {roles.map(role => (
+                    <Form.Check inline key={role} type="checkbox" label={role} checked={selectedRoles.includes(role)} onChange={() => onChange(role)} />
+                ))}
+            </Col>
+        </Form.Group>
+    );
+}
+
+function DataManagement() {
+    const [key, setKey] = useState('evaluations');
+    const [submissions, setSubmissions] = useState<{ evaluations: EvaluationSubmission[], proposals: ProposalSubmission[] }>({ evaluations: [], proposals: [] });
+    const [loading, setLoading] = useState(true);
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [evals, props] = await Promise.all([
+                axios.get('/api/submissions?type=evaluations'),
+                axios.get('/api/submissions?type=proposals')
+            ]);
+            setSubmissions({ evaluations: evals.data, proposals: props.data });
+        } catch { /* Failed to fetch submissions */ }
+        setLoading(false);
+    };
+
+    useEffect(() => { fetchData(); }, []);
+
+    const handleDelete = async (type: string, id: number) => {
+        if (window.confirm('本当にこのデータを削除しますか？')) {
+            try {
+                await axios.delete(`/api/submissions?type=${type}&id=${id}`);
+                await fetchData();
+            } catch { alert('削除に失敗しました。'); }
+        }
+    };
+
+    const handleExcelExport = async () => {
+        try {
+            const res = await axios.get(`/api/submissions?type=proposals&year=${selectedYear}`);
+            const dataToExport = res.data.map((p: ProposalSubmission) => ({
+                '提出日': new Date(p.submitted_at).toLocaleString(),
+                '提案者': p.proposer_name,
+                '件名': p.event_name,
+            }));
+
+            if (dataToExport.length === 0) {
+                alert('エクスポートするデータがありません。');
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Proposals");
+            XLSX.writeFile(workbook, `${selectedYear}年度_催事提案一覧.xlsx`);
+        } catch { alert('Excelファイルの出力に失敗しました。'); }
+    };
+
+    const proposalYears = Array.from(new Set(submissions.proposals.map(p => p.proposal_year))).sort((a, b) => b.localeCompare(a));
+
+    return (
+        <Card className="mb-4">
+            <Card.Header as="h5">データ管理</Card.Header>
+            <Card.Body>
+                {loading ? <div className="text-center"><Spinner/></div> : (
+                    <Tabs id="data-management-tabs" activeKey={key} onSelect={(k) => setKey(k as string)} className="mb-3" variant="pills" justify>
+                        <Tab eventKey="evaluations" title={`新人考課 (${submissions.evaluations.length})`}>
+                            <Table striped bordered hover size="sm">
+                                <thead><tr><th>提出日</th><th>回答者</th><th>対象者</th><th>操作</th></tr></thead>
+                                <tbody>
+                                    {submissions.evaluations.map((s) => (
+                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{s.evaluator_name}</td><td>{s.target_employee_name}</td><td><Button variant="outline-danger" size="sm" onClick={() => handleDelete('evaluations', s.id)}>削除</Button></td></tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </Tab>
+                        <Tab eventKey="proposals" title={`催事提案 (${submissions.proposals.length})`}>
+                            <Row className="my-3 align-items-center">
+                                <Col md={3}><Form.Select value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>{proposalYears.map(y => <option key={y} value={y}>{y}年度</option>)}</Form.Select></Col>
+                                <Col><Button onClick={handleExcelExport}>Excel出力</Button></Col>
+                            </Row>
+                             <Table striped bordered hover size="sm">
+                                <thead><tr><th>提出日</th><th>提案者</th><th>件名</th><th>操作</th></tr></thead>
+                                <tbody>
+                                    {submissions.proposals.map((s) => (
+                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{s.proposer_name}</td><td>{s.event_name}</td><td><Button variant="outline-danger" size="sm" onClick={() => handleDelete('proposals', s.id)}>削除</Button></td></tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </Tab>
+                    </Tabs>
+                )}
+            </Card.Body>
+        </Card>
+    );
+}
+
 export default function AdminPage() {
-    const { settings, setSettings, isSettingsLoaded } = useSettings();
     const { isAuthenticated } = useAuth();
     const router = useRouter();
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-    useEffect(() => {
-        if (isSettingsLoaded && !isAuthenticated) {
-            router.push('/login');
-        }
-    }, [isAuthenticated, isSettingsLoaded, router]);
-
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        const target = e.target as HTMLInputElement;
-        if (target.type === 'checkbox') {
-            setSettings(prev => ({ ...prev, [name]: target.checked }));
-        } else {
-            setSettings(prev => ({ ...prev, [name]: value }));
-        }
-    };
-
     const handleSave = () => {
-        // The useSettings context automatically saves on change.
-        // This button just provides user feedback.
         setShowSuccessModal(true);
     };
 
+    useEffect(() => {
+        if (!isAuthenticated) router.push('/login');
+    }, [isAuthenticated, router]);
 
-    if (!isSettingsLoaded || !isAuthenticated) {
-        return <div>読み込み中...</div>;
-    }
+    if (!isAuthenticated) return <div>読み込み中...</div>;
 
     return (
         <div>
             <h1 className="mb-4">管理画面</h1>
-            
             <UserManagement />
-
-            <Card className="mb-4">
-                <Card.Header as="h5">通知先メールアドレス設定</Card.Header>
-                <Card.Body>
-                    <StringListEditor title="得意先登録" list={settings.customerEmails} setList={(emails) => setSettings(s => ({...s, customerEmails: emails}))} placeholder="name@example.com" />
-                    <StringListEditor title="施設予約" list={settings.reservationEmails} setList={(emails) => setSettings(s => ({...s, reservationEmails: emails}))} placeholder="name@example.com" />
-                    <StringListEditor title="催事提案" list={settings.proposalEmails} setList={(emails) => setSettings(s => ({...s, proposalEmails: emails}))} placeholder="name@example.com" />
-                </Card.Body>
-            </Card>
-
-            <Card className="mb-4">
-                <Card.Header as="h5">催事提案フォーム設定</Card.Header>
-                <Card.Body>
-                    <Form.Group as={Row} className="mb-3">
-                        <Form.Label column sm={3}>受付状況</Form.Label>
-                        <Col sm={9}>
-                            <Form.Check
-                                type="switch"
-                                name="isProposalOpen"
-                                label={settings.isProposalOpen ? "受付中" : "停止中"}
-                                checked={settings.isProposalOpen}
-                                onChange={handleInputChange}
-                            />
-                        </Col>
-                    </Form.Group>
-                    <Form.Group as={Row} className="mb-3">
-                        <Form.Label column sm={3}>提案年度</Form.Label>
-                        <Col sm={9}>
-                            <Form.Control
-                                type="number"
-                                name="proposalYear"
-                                value={settings.proposalYear}
-                                onChange={handleInputChange}
-                            />
-                        </Col>
-                    </Form.Group>
-                    <Form.Group as={Row} className="mb-3">
-                        <Form.Label column sm={3}>締切日</Form.Label>
-                        <Col sm={9}>
-                            <Form.Control
-                                type="date"
-                                name="proposalDeadline"
-                                value={settings.proposalDeadline || ''}
-                                onChange={handleInputChange}
-                            />
-                        </Col>
-                    </Form.Group>
-                </Card.Body>
-            </Card>
-
-            <Card className="mb-4">
-                <Card.Header as="h5">新人考課設定</Card.Header>
-                <Card.Body>
-                    <StringListEditor title="考課対象者" list={settings.evaluationTargets} setList={(targets) => setSettings(s => ({...s, evaluationTargets: targets}))} placeholder="対象者名" />
-                    <Form.Group as={Row} className="mb-3">
-                        <Form.Label column sm={3}>受付状況</Form.Label>
-                        <Col sm={9}>
-                            <Form.Check type="switch" name="isEvaluationOpen" label={settings.isEvaluationOpen ? "受付中" : "停止中"} checked={settings.isEvaluationOpen} onChange={handleInputChange} />
-                        </Col>
-                    </Form.Group>
-                    <Form.Group as={Row} className="mb-3">
-                        <Form.Label column sm={3}>対象月度</Form.Label>
-                        <Col sm={9}>
-                            <Form.Select name="evaluationMonth" value={settings.evaluationMonth} onChange={handleInputChange}>
-                                {Array.from({ length: 12 }, (_, i) => <option key={i+1} value={i+1}>{i+1}月</option>)}
-                            </Form.Select>
-                        </Col>
-                    </Form.Group>
-                    <Form.Group as={Row} className="mb-3">
-                        <Form.Label column sm={3}>締切日</Form.Label>
-                        <Col sm={9}>
-                            <Form.Control type="date" name="evaluationDeadline" value={settings.evaluationDeadline || ''} onChange={handleInputChange} />
-                        </Col>
-                    </Form.Group>
-                     <hr />
-                    <Form.Group as={Row} className="mb-3">
-                        <Form.Label column sm={3}>集計・分析</Form.Label>
-                        <Col sm={9}>
-                            <Link href="/admin/analytics" passHref legacyBehavior>
-                                <Button as="a" variant="info">集計データを表示</Button>
-                            </Link>
-                        </Col>
-                    </Form.Group>
-                </Card.Body>
-            </Card>
+            <MenuManagement />
+            <DataManagement />
 
             <div className="mt-4 d-grid">
                 <Button variant="primary" size="lg" onClick={handleSave}>すべての設定を保存</Button>
             </div>
 
             <Modal show={showSuccessModal} onHide={() => setShowSuccessModal(false)} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>保存完了</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Alert variant="success" className="mb-0">
-                        設定は自動的に保存されました。
-                    </Alert>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowSuccessModal(false)}>
-                        閉じる
-                    </Button>
-                </Modal.Footer>
+                <Modal.Header closeButton><Modal.Title>保存完了</Modal.Title></Modal.Header>
+                <Modal.Body><Alert variant="success" className="mb-0">設定は自動的に保存されました。</Alert></Modal.Body>
+                <Modal.Footer><Button variant="secondary" onClick={() => setShowSuccessModal(false)}>閉じる</Button></Modal.Footer>
             </Modal>
         </div>
     );
-
-
 }

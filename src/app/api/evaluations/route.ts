@@ -6,6 +6,18 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { targetEmployee, evaluator, scores, evaluationMonth, comment, totalScore } = body;
 
+    // Check for duplicate submission
+    const { rows: existing } = await sql`
+      SELECT id FROM evaluations 
+      WHERE evaluator_name = ${evaluator} 
+      AND target_employee_name = ${targetEmployee} 
+      AND evaluation_month = ${evaluationMonth};
+    `;
+
+    if (existing.length > 0) {
+        return NextResponse.json({ error: 'この対象者に対する今月の考課は既に提出済みです。' }, { status: 409 });
+    }
+
     await sql`
       INSERT INTO evaluations 
         (evaluator_name, target_employee_name, evaluation_month, total_score, comment, scores_json)

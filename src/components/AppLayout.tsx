@@ -4,11 +4,11 @@ import { useState } from 'react';
 import { Container, Row, Col, Nav, Navbar, Offcanvas, Accordion, useAccordionButton, Card } from 'react-bootstrap';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSettings } from '@/context/SettingsContext';
 
-function CustomAccordionToggle({ children, eventKey }: { children: React.ReactNode, eventKey: string }) {
-  const decoratedOnClick = useAccordionButton(eventKey);
+function CustomAccordionToggle({ children, eventKey, callback }: { children: React.ReactNode, eventKey: string, callback?: () => void }) {
+  const decoratedOnClick = useAccordionButton(eventKey, callback);
   return (
     <div onClick={decoratedOnClick} style={{ cursor: 'pointer' }}>
       {children}
@@ -18,9 +18,15 @@ function CustomAccordionToggle({ children, eventKey }: { children: React.ReactNo
 
 function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { settings, isSettingsLoaded } = useSettings();
 
   const isCustomerRoute = pathname.startsWith('/customers');
+
+  const handleCustomerClick = () => {
+    router.push('/customers');
+    if (onLinkClick) onLinkClick();
+  }
 
   if (!isSettingsLoaded) {
     return <div>読み込み中...</div>;
@@ -34,9 +40,9 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
 
       <Card className="bg-dark text-white border-0">
         <Card.Header className="p-0 border-0">
-          <CustomAccordionToggle eventKey="0">
-            <div className={`nav-link text-white ${isCustomerRoute ? 'active' : ''}`}>得意先登録</div>
-          </CustomAccordionToggle>
+            <CustomAccordionToggle eventKey="0" callback={handleCustomerClick}>
+                <div className={`nav-link text-white ${isCustomerRoute ? 'active' : ''}`}>得意先登録</div>
+            </CustomAccordionToggle>
         </Card.Header>
         <Accordion.Collapse eventKey="0">
           <Card.Body className="py-1 ps-4">
@@ -57,9 +63,14 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
       </Nav.Item>
 
       {settings.isEvaluationOpen && (
-        <Nav.Item className="mb-2">
-          <Link href="/evaluations" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>新人考課</Nav.Link></Link>
-        </Nav.Item>
+        <>
+          <Nav.Item className="mb-2">
+            <Link href="/evaluations" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>新人考課</Nav.Link></Link>
+          </Nav.Item>
+          <Nav.Item className="mb-2">
+            <Link href="/evaluations/analytics" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>考課結果閲覧</Nav.Link></Link>
+          </Nav.Item>
+        </>
       )}
 
       {settings.isProposalOpen && (
@@ -118,7 +129,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           {/* Main Content */}
           <Col md={{ span: 10, offset: 2 }}>
             <main className="p-4">
-                <Container style={{ maxWidth: '960px' }}>
+                <Container style={{ maxWidth: '1200px' }}>
                     {children}
                 </Container>
             </main>

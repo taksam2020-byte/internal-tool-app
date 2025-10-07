@@ -3,7 +3,7 @@
 import { Card, Col, Row } from 'react-bootstrap';
 import Link from 'next/link';
 import { useSettings } from '@/context/SettingsContext';
-import { PersonPlus, Building, Lightbulb, GearFill, PencilSquare } from 'react-bootstrap-icons';
+import { PersonPlus, Building, Lightbulb, GearFill, PencilSquare, BarChart } from 'react-bootstrap-icons';
 
 import Image from 'next/image';
 
@@ -41,6 +41,14 @@ export default function HomePage() {
         description: '新入社員の評価を入力します。',
         icon: <PencilSquare size={40} />,
         bg: 'info',
+        show: settings.isEvaluationOpen
+    },
+    {
+        href: '/evaluations/analytics',
+        title: '考課結果閲覧',
+        description: '新人考課の集計結果を閲覧します。',
+        icon: <BarChart size={40} />,
+        style: { backgroundColor: '#6f42c1', color: '#ffffff' },
         show: settings.isEvaluationOpen
     },
     {

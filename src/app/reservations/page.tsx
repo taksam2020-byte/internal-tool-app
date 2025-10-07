@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Form, Button, Row, Col, Card, Modal, Alert, Spinner } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
+import { Form, Button, Row, Col, Card, Modal, Alert, Spinner, InputGroup } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+
+interface User { id: number; name: string; role: string; is_active: boolean; }
 
 const fieldLabels: { [key: string]: string } = {
     applicant: '申請者',
@@ -19,25 +21,46 @@ const fieldLabels: { [key: string]: string } = {
 
 export default function ReservationsPage() {
   const { settings } = useSettings();
+  const [users, setUsers] = useState<User[]>([]);
   const [validated, setValidated] = useState(false);
   const [showWifiModal, setShowWifiModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [dates, setDates] = useState<(Date | null)[]>([null]);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [endTime, setEndTime] = useState<Date | null>(null);
 
+  useEffect(() => {
+    const fetchUsers = async () => {
+        try {
+            const res = await axios.get<User[]>('/api/users');
+            setUsers(res.data);
+        } catch (err) { console.error("Failed to fetch users", err); }
+    };
+    fetchUsers();
+  }, []);
+
+  const allowedUsers = users.filter(user => user.is_active && settings.reservationAllowedRoles.includes(user.role));
+
+  const handleDateChange = (date: Date | null, index: number) => {
+    const newDates = [...dates];
+    newDates[index] = date;
+    setDates(newDates);
+  };
+
+  const addDateField = () => setDates([...dates, null]);
+  const removeDateField = (index: number) => setDates(dates.filter((_, i) => i !== index));
+
   const handleWifiCheck = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setShowWifiModal(true);
-    }
+    if (e.target.checked) setShowWifiModal(true);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
 
-    if (form.checkValidity() === false || !startTime || !endTime) {
+    if (form.checkValidity() === false || !startTime || !endTime || dates.some(d => d === null)) {
       event.stopPropagation();
       setValidated(true);
       return;
@@ -50,29 +73,23 @@ export default function ReservationsPage() {
     const equipmentValues = formData.getAll('equipment');
     const data = Object.fromEntries(formData.entries());
     data.equipment = equipmentValues.join(', ');
-
+    data.usageDate = dates.map(d => d?.toLocaleDateString('ja-JP')).join(', ');
     data.startTime = startTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', hour12: false });
     data.endTime = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', hour12: false });
 
     const subject = '【社内ツール】施設予約申請';
-    const body = Object.entries(data)
-      .map(([key, value]) => {
+    const body = Object.entries(data).map(([key, value]) => {
         const label = fieldLabels[key] || key;
         if (key === 'equipment' && !value) return null;
         return `${label}: ${value}`;
-      })
-      .filter(Boolean)
-      .join('\n');
+      }).filter(Boolean).join('\n');
 
     try {
-      await axios.post('/api/send-email', {
-        to: settings.reservationEmails,
-        subject,
-        body,
-      });
+      await axios.post('/api/send-email', { to: settings.reservationEmails, subject, body });
       setSubmitStatus({ success: true, message: `申請が正常に送信されました。\n送信先: ${settings.reservationEmails.join(', ')}` });
       form.reset();
       setValidated(false);
+      setDates([null]);
       setStartTime(null);
       setEndTime(null);
     } catch (error) {
@@ -93,11 +110,20 @@ export default function ReservationsPage() {
             <Row className="mb-3">
               <Form.Group as={Col} md="6">
                 <Form.Label>申請者</Form.Label>
-                <Form.Control required type="text" name="applicant" placeholder="山田 太郎" />
+                <Form.Select required name="applicant" defaultValue="">
+                    <option value="" disabled>選択してください...</option>
+                    {allowedUsers.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}
+                </Form.Select>
               </Form.Group>
               <Form.Group as={Col} md="6">
                 <Form.Label>利用日</Form.Label>
-                <Form.Control required type="date" name="usageDate" min={new Date().toISOString().split("T")[0]} />
+                {dates.map((date, index) => (
+                    <InputGroup className="mb-2" key={index}>
+                        <DatePicker selected={date} onChange={(d) => handleDateChange(d, index)} className="form-control" required dateFormat="yyyy/MM/dd" />
+                        {dates.length > 1 && <Button variant="outline-danger" onClick={() => removeDateField(index)}>削除</Button>}
+                    </InputGroup>
+                ))}
+                <Button variant="outline-secondary" size="sm" onClick={addDateField}>+ 日付を追加</Button>
               </Form.Group>
             </Row>
 
@@ -127,33 +153,11 @@ export default function ReservationsPage() {
             <Row className="mb-3">
                 <Form.Group as={Col} md="6">
                     <Form.Label>開始時間 (準備含む)</Form.Label>
-                    <DatePicker
-                        selected={startTime}
-                        onChange={(date: Date | null) => setStartTime(date)}
-                        showTimeSelect
-                        showTimeSelectOnly
-                        timeIntervals={30}
-                        timeCaption="Time"
-                        dateFormat="HH:mm"
-                        timeFormat="HH:mm"
-                        className="form-control"
-                        required
-                    />
+                    <DatePicker selected={startTime} onChange={(date: Date | null) => setStartTime(date)} showTimeSelect showTimeSelectOnly timeIntervals={30} timeCaption="Time" dateFormat="HH:mm" timeFormat="HH:mm" className="form-control" required />
                 </Form.Group>
                 <Form.Group as={Col} md="6">
                     <Form.Label>終了時間 (片付け含む)</Form.Label>
-                    <DatePicker
-                        selected={endTime}
-                        onChange={(date: Date | null) => setEndTime(date)}
-                        showTimeSelect
-                        showTimeSelectOnly
-                        timeIntervals={30}
-                        timeCaption="Time"
-                        dateFormat="HH:mm"
-                        timeFormat="HH:mm"
-                        className="form-control"
-                        required
-                    />
+                    <DatePicker selected={endTime} onChange={(date: Date | null) => setEndTime(date)} showTimeSelect showTimeSelectOnly timeIntervals={30} timeCaption="Time" dateFormat="HH:mm" timeFormat="HH:mm" className="form-control" required />
                 </Form.Group>
             </Row>
 
@@ -181,35 +185,15 @@ export default function ReservationsPage() {
       </div>
 
       <Modal show={showWifiModal} onHide={() => setShowWifiModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>Wi-Fi利用について</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <p>Wi-Fi利用については、本社IT業務部へ別途ご連絡ください。</p>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary" onClick={() => setShowWifiModal(false)}>
-            分かりました。
-          </Button>
-        </Modal.Footer>
+        <Modal.Header closeButton><Modal.Title>Wi-Fi利用について</Modal.Title></Modal.Header>
+        <Modal.Body><p>Wi-Fi利用については、本社IT業務部へ別途ご連絡ください。</p></Modal.Body>
+        <Modal.Footer><Button variant="primary" onClick={() => setShowWifiModal(false)}>分かりました。</Button></Modal.Footer>
       </Modal>
 
       <Modal show={showStatusModal} onHide={() => setShowStatusModal(false)} centered>
-        <Modal.Header closeButton>
-          <Modal.Title>{submitStatus?.success ? '送信完了' : '送信エラー'}</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-            {submitStatus && (
-                <Alert variant={submitStatus.success ? 'success' : 'danger'} className="mb-0">
-                    {submitStatus.message}
-                </Alert>
-            )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="primary" onClick={() => setShowStatusModal(false)}>
-            閉じる
-          </Button>
-        </Modal.Footer>
+        <Modal.Header closeButton><Modal.Title>{submitStatus?.success ? '送信完了' : '送信エラー'}</Modal.Title></Modal.Header>
+        <Modal.Body>{submitStatus && (<Alert variant={submitStatus.success ? 'success' : 'danger'} className="mb-0">{submitStatus.message}</Alert>)}</Modal.Body>
+        <Modal.Footer><Button variant="primary" onClick={() => setShowStatusModal(false)}>閉じる</Button></Modal.Footer>
       </Modal>
     </div>
   );

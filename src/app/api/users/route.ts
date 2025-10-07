@@ -3,7 +3,7 @@ import { sql } from '@vercel/postgres';
 
 export async function GET() {
   try {
-    const { rows: users } = await sql`SELECT * FROM users ORDER BY name;`;
+    const { rows: users } = await sql`SELECT id, name, role, is_trainee, is_active FROM users ORDER BY id;`;
     return NextResponse.json(users);
   } catch (error) {
     console.error('Failed to get users:', error);
@@ -13,16 +13,22 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { name } = await request.json();
-    if (!name) {
-      return NextResponse.json({ message: 'Name is required' }, { status: 400 });
+    const { id, name, role, is_trainee } = await request.json();
+    if (!id || !name) {
+      return NextResponse.json({ message: 'ID and Name are required' }, { status: 400 });
     }
-    await sql`INSERT INTO users (name) VALUES (${name});`;
-    const { rows: users } = await sql`SELECT * FROM users WHERE name = ${name};`;
+    
+    const { rows: existing } = await sql`SELECT id FROM users WHERE id = ${id}`;
+    if (existing.length > 0) {
+        return NextResponse.json({ message: 'このIDは既に使用されています。' }, { status: 409 });
+    }
+
+    await sql`INSERT INTO users (id, name, role, is_trainee) VALUES (${id}, ${name}, ${role}, ${is_trainee});`;
+    const { rows: users } = await sql`SELECT * FROM users WHERE id = ${id};`;
     return NextResponse.json(users[0], { status: 201 });
   } catch (error: unknown) {
-    if (error && typeof error === 'object' && 'code' in error && error.code === '23505') { // 23505 is the code for unique_violation in Postgres
-      return NextResponse.json({ message: 'User with this name already exists' }, { status: 409 });
+     if (error && typeof error === 'object' && 'code' in error && error.code === '23505') { // unique_violation
+      return NextResponse.json({ message: 'このIDは既に使用されています。' }, { status: 409 });
     }
     console.error('Failed to create user:', error);
     return NextResponse.json({ message: 'Error creating user' }, { status: 500 });
