@@ -44,7 +44,7 @@ interface AnalyticsData {
     cumulativeAverage: string;
     crossTabData: {
         headers: string[];
-        rows: { [key: string]: any }[];
+        rows: { [key: string]: string | number }[];
     };
     filterOptions: {
         months: string[];
