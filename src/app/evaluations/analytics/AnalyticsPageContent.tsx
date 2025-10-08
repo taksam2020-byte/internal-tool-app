@@ -10,44 +10,36 @@ import { Line } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-// Type Definitions
+// Type Definitions (matching the new simplified API response)
 interface EChartsRadarData { indicator: { name: string; max: number }[]; current: { value: number[]; name: string }[]; cumulative: { value: number[]; name: string }[]; }
-interface MonthlySummary { labels: string[]; datasets: { label: string; data: number[]; borderColor: string; backgroundColor: string; }[]; rawData: { [key: string]: string | number }[] }
+interface MonthlySummary { labels: string[]; datasets: any[]; rawData: any[] }
 interface AnalyticsData {
-    crossTabData: { headers: string[]; rows: { [key: string]: string | number }[]; averages: { [key: string]: string | number } };
-    comments: { evaluator: string; comment: string }[];
-    eChartsRadarData: EChartsRadarData;
-    monthlySummary: MonthlySummary;
-    currentMonthAverage: string;
-    cumulativeAverage: string;
+    crossTabData?: { headers: string[]; rows: { [key: string]: string | number }[]; averages: { [key: string]: string | number } };
+    comments?: { evaluator: string; comment: string }[];
+    eChartsRadarData?: EChartsRadarData;
+    monthlySummary?: MonthlySummary;
+    currentMonthAverage?: string;
+    cumulativeAverage?: string;
     filterOptions: { months: string[]; targets: string[] };
-    selectedMonth: string;
-    selectedMonthLong: string;
+    selectedMonth?: string;
+    selectedMonthLong?: string;
 }
 
 const initialData: AnalyticsData = {
-    crossTabData: { headers: [], rows: [], averages: {} },
-    comments: [],
-    eChartsRadarData: { indicator: [], current: [], cumulative: [] },
-    monthlySummary: { labels: [], datasets: [], rawData: [] },
-    currentMonthAverage: '0.0',
-    cumulativeAverage: '0.0',
     filterOptions: { months: [], targets: [] },
-    selectedMonth: '',
-    selectedMonthLong: '',
 };
 
 export default function AnalyticsPageContent() {
     const [data, setData] = useState<AnalyticsData>(initialData);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [selectedTarget, setSelectedTarget] = useState('');
+    const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
     const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
     const [commentPage, setCommentPage] = useState(0);
 
+    // 1. Fetch filter options on initial load
     useEffect(() => {
-        // Fetch initial data and filter options on component mount
-        const fetchInitialData = async () => {
+        const fetchOptions = async () => {
             setLoading(true);
             try {
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations`);
@@ -62,23 +54,23 @@ export default function AnalyticsPageContent() {
                 setLoading(false);
             }
         };
-        fetchInitialData();
+        fetchOptions();
     }, []);
 
+    // 2. Fetch analytics data when filters change
     useEffect(() => {
-        // Re-fetch data only when filters change, skip initial run
-        if (!selectedTarget || data.filterOptions.months.length === 0) return;
+        if (!selectedTarget || !data.filterOptions.months.length) return;
 
         const fetchData = async () => {
             setLoading(true);
+            setError('');
             try {
                 const params = new URLSearchParams({
                     target: selectedTarget,
                     month: data.filterOptions.months[currentMonthIndex],
                 });
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations?${params.toString()}`);
-                // Only update the data part, keep existing filter options
-                setData(prevData => ({ ...prevData, ...res.data }));
+                setData(prevData => ({ ...prevData, ...res.data })); // Merge new data with existing filterOptions
             } catch (err) {
                 setError('分析データの読み込みに失敗しました。');
                 console.error(err);
@@ -87,44 +79,23 @@ export default function AnalyticsPageContent() {
             }
         };
 
-        // Do not run on initial mount, only on updates
-        const isInitialMount = data.filterOptions.months.length === 0;
-        if (!isInitialMount) {
-            fetchData();
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedTarget, currentMonthIndex]);
+        fetchData();
+    }, [selectedTarget, currentMonthIndex, data.filterOptions.months]);
 
     const handleTargetClick = (target: string) => { setSelectedTarget(target); setCurrentMonthIndex(0); setCommentPage(0); };
-    const handlePrevMonth = () => { if (data && currentMonthIndex < data.filterOptions.months.length - 1) { setCurrentMonthIndex(p => p + 1); setCommentPage(0); } };
+    const handlePrevMonth = () => { if (currentMonthIndex < data.filterOptions.months.length - 1) { setCurrentMonthIndex(p => p + 1); setCommentPage(0); } };
     const handleNextMonth = () => { if (currentMonthIndex > 0) { setCurrentMonthIndex(p => p - 1); setCommentPage(0); } };
     const handleCommentPagination = (evaluatorName: string) => {
-        const pageIndex = data?.comments.findIndex(c => c.evaluator === evaluatorName);
+        const pageIndex = data.comments?.findIndex(c => c.evaluator === evaluatorName);
         if (pageIndex !== undefined && pageIndex > -1) setCommentPage(pageIndex);
     };
 
-    const getRadarOption = (chartData: { value: number[], name: string }[], indicator: { name: string, max: number }[]) => ({
-        tooltip: { trigger: 'item' },
-        radar: {
-            indicator: indicator,
-            shape: 'circle',
-            center: ['50%', '55%'],
-            radius: '65%',
-            axisName: {
-                color: '#333'
-            }
-        },
-        series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }]
-    });
-
+    const getRadarOption = (chartData: any, indicator: any) => ({ radar: { indicator, shape: 'circle', center: ['50%', '55%'], radius: '65%', axisName: { color: '#333' } }, series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }] });
     const lineChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top' as const, onClick: () => {} } } };
-
-    if (loading && !data.filterOptions.targets.length) return <div className="text-center vh-100 d-flex flex-column align-items-center justify-content-center"><Spinner animation="border" /> <p className="mt-3">分析データを読み込み中...</p></div>;
-    if (error) return <Alert variant="danger">{error}</Alert>;
 
     const { crossTabData, comments, eChartsRadarData, monthlySummary, currentMonthAverage, cumulativeAverage, filterOptions, selectedMonthLong } = data;
     const paginatedComments = comments?.slice(commentPage, commentPage + 1);
-    const totalCommentPages = comments ? comments.length : 0;
+    const totalCommentPages = comments?.length || 0;
 
     return (
         <div style={{ display: 'flex' }}>
@@ -133,7 +104,7 @@ export default function AnalyticsPageContent() {
                     <Card.Header>月度</Card.Header>
                     <Card.Body>
                         <Button variant="link" onClick={handleNextMonth} disabled={loading || currentMonthIndex <= 0} className="p-0 text-decoration-none"><CaretUpFill size={24} /></Button>
-                        <h5 className="my-2">{selectedMonthLong}</h5>
+                        <h5 className="my-2">{selectedMonthLong || (filterOptions.months.length > 0 ? formatMonth(filterOptions.months[currentMonthIndex], 'long') : 'N/A')}</h5>
                         <Button variant="link" onClick={handlePrevMonth} disabled={loading || !filterOptions.months || currentMonthIndex >= filterOptions.months.length - 1} className="p-0 text-decoration-none"><CaretDownFill size={24} /></Button>
                     </Card.Body>
                 </Card>
@@ -148,7 +119,8 @@ export default function AnalyticsPageContent() {
             <main style={{ marginLeft: '240px', width: '100%' }}>
                 <h1 className="mb-4">集計・分析</h1>
                 {loading && <div className="text-center my-4"><Spinner animation="border" /></div>}
-                {!loading && selectedTarget && (
+                {error && <Alert variant="danger">{error}</Alert>}
+                {!loading && !error && selectedTarget && (
                     <>
                         <Card className="mb-4">
                             <Card.Header as="h5">採点結果</Card.Header>
@@ -162,7 +134,7 @@ export default function AnalyticsPageContent() {
                                                     {crossTabData.headers.map((h: string) => <td key={h}>{row[h]}</td>)}
                                                 </tr>
                                             ))}
-                                            <tr className="table-group-divider fw-bold"><th className="text-nowrap">平均点</th>{crossTabData.headers.slice(1).map((h: string) => <th key={h}>{crossTabData.averages[h]}</th>)}</tr>
+                                            <tr className="table-group-divider fw-bold"><th className="text-nowrap">平均点</th>{crossTabData.headers.slice(1).map((h: string) => <th key={h}>{crossTabAverages?.[h]}</th>)}</tr>
                                         </tbody>
                                     </Table>
                                 ) : <Alert variant="light" className="mb-0">この月の評価データはありません。</Alert>}
@@ -186,7 +158,7 @@ export default function AnalyticsPageContent() {
                         <Card className="mb-4">
                             <Card.Header as="h5">項目別平均点の月次推移</Card.Header>
                             <Card.Body>
-                                {monthlySummary.rawData && monthlySummary.rawData.length > 0 ? (
+                                {monthlySummary?.rawData && monthlySummary.rawData.length > 0 ? (
                                     <>
                                         <Table striped bordered hover responsive size="sm" className="text-center align-middle">
                                             <thead>
@@ -198,14 +170,12 @@ export default function AnalyticsPageContent() {
                                             <tbody>
                                                 {monthlySummary.rawData.map((row, rIndex) => (
                                                     <tr key={rIndex}>
-                                                        {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
+                                                        {Object.values(row).map((val: any, cIndex) => <td key={cIndex}>{val as string | number}</td>)}
                                                     </tr>
                                                 ))}
                                             </tbody>
                                         </Table>
-                                        <div style={{ position: 'relative', height: '300px' }} className="mt-4">
-                                            <Line options={lineChartOptions} data={monthlySummary} />
-                                        </div>
+                                        {/* Line chart might be added back later if needed */}
                                     </>
                                 ) : <Alert variant="light" className="mb-0">月次データがありません。</Alert>}
                             </Card.Body>
@@ -217,7 +187,7 @@ export default function AnalyticsPageContent() {
                                     <Card.Header as="h5">当月平均点 (100点換算)</Card.Header>
                                     <Card.Body>
                                         <h2 className="display-4 fw-bold">{currentMonthAverage}</h2>
-                                        <ReactECharts option={getRadarOption(eChartsRadarData.current, eChartsRadarData.indicator)} style={{ height: '300px' }} />
+                                        {eChartsRadarData?.current && <ReactECharts option={getRadarOption(eChartsRadarData.current, eChartsRadarData.indicator)} style={{ height: '300px' }} />}
                                     </Card.Body>
                                 </Card>
                             </Col>
@@ -226,7 +196,7 @@ export default function AnalyticsPageContent() {
                                     <Card.Header as="h5">累計平均点 (100点換算)</Card.Header>
                                     <Card.Body>
                                         <h2 className="display-4 fw-bold">{cumulativeAverage}</h2>
-                                        <ReactECharts option={getRadarOption(eChartsRadarData.cumulative, eChartsRadarData.indicator)} style={{ height: '300px' }} />
+                                        {eChartsRadarData?.cumulative && <ReactECharts option={getRadarOption(eChartsRadarData.cumulative, eChartsRadarData.indicator)} style={{ height: '300px' }} />}
                                     </Card.Body>
                                 </Card>
                             </Col>
@@ -240,4 +210,10 @@ export default function AnalyticsPageContent() {
             </main>
         </div>
     );
+}
+
+function formatMonth(ym: string, format: 'long' | 'short') {
+    if (!ym) return '';
+    const [year, month] = ym.split('-');
+    return format === 'long' ? `${year}年${parseInt(month, 10)}月度` : `${parseInt(month, 10)}月`;
 }
