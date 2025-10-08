@@ -20,6 +20,8 @@ export async function GET(request: Request) {
         let selectedMonth = searchParams.get('month');
         let selectedTarget = searchParams.get('target');
 
+        console.log(`Initial params: month=${searchParams.get('month')}, target=${searchParams.get('target')}`);
+
         const allEvalsResult = await sql<{ submitted_at: string; target_employee_name: string; }>`SELECT DISTINCT to_char(submitted_at, 'YYYY-MM') as submitted_at, target_employee_name FROM evaluations;`;
         const sortedMonths = [...new Set(allEvalsResult.rows.map(e => e.submitted_at))].sort((a, b) => b.localeCompare(a));
         const sortedTargets = [...new Set(allEvalsResult.rows.map(e => e.target_employee_name))].sort();
@@ -32,14 +34,19 @@ export async function GET(request: Request) {
             selectedMonth = sortedMonths[0] || null;
         }
 
+        console.log(`Resolved params: month=${selectedMonth}, target=${selectedTarget}`);
+
         const eChartsIndicator = evaluationItemKeys.map(key => ({ name: evaluationItemLabels[key], max: key === 'potential' ? 10 : 5 }));
 
         if (!selectedMonth || !selectedTarget) {
+            console.log('Exiting early: month or target is null');
             return NextResponse.json({ filterOptions, crossTabData: { headers: [], rows: [], averages: {} }, comments: [], monthlySummary: { labels: [], datasets: [], rawData: [] }, eChartsRadarData: { indicator: eChartsIndicator, current: [], cumulative: [] }, currentMonthAverage: "0.0", cumulativeAverage: "0.0", selectedMonth, selectedMonthLong: selectedMonth ? formatMonth(selectedMonth, 'long') : '' });
         }
 
         const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT name FROM users WHERE is_active = TRUE AND role IN ('admin', 'manager', 'staff');`;
         const { rows: evaluationsForMonth } = await sql<EvaluationFromDb>`SELECT * FROM evaluations WHERE target_employee_name = ${selectedTarget} AND to_char(submitted_at, 'YYYY-MM') = ${selectedMonth};`;
+
+        console.log(`DB query results: potentialEvaluators=${potentialEvaluators.length}, evaluationsForMonth=${evaluationsForMonth.length}`);
 
         const crossTabHeaders = ['採点者', ...evaluationItemKeys.map(k => evaluationItemLabels[k]), '合計点'];
         const crossTabRows = potentialEvaluators.map(user => {
@@ -97,13 +104,19 @@ export async function GET(request: Request) {
             labels: lastSixMonths.map(m => formatMonth(m, 'short')),
             datasets: evaluationItemKeys.map((key, index) => ({
                 label: evaluationItemLabels[key],
-                data: lastSixMonths.map(month => (monthlyAggregates[month]?.itemTotals[key] / monthlyAggregates[month]?.count) || 0),
+                data: lastSixMonths.map(month => {
+                    const avg = (monthlyAggregates[month]?.itemTotals[key] / monthlyAggregates[month]?.count) || 0;
+                    return key === 'potential' ? avg / 2 : avg;
+                }),
                 borderColor: colors[index % colors.length],
                 backgroundColor: colors[index % colors.length] + '80',
             }))
         };
         
-        const currentMonthValues = evaluationItemKeys.map(key => crossTabAverages[evaluationItemLabels[key]] as number || 0);
+        const currentMonthValues = evaluationItemKeys.map(key => {
+            const avg = crossTabAverages[evaluationItemLabels[key]] as number || 0;
+            return key === 'potential' ? avg / 2 : avg;
+        });
         const eChartsDataCurrent = numEvaluators > 0 ? [{ value: currentMonthValues, name: '当月平均点' }] : [];
 
         const cumulativeItemTotals = evaluationItemKeys.reduce((acc, key) => ({ ...acc, [evaluationItemLabels[key]]: 0 }), {} as { [key: string]: number });
@@ -113,8 +126,9 @@ export async function GET(request: Request) {
             cumulativeTotalScore += e.total_score;
         });
         const cumulativeValues = evaluationItemKeys.map(key => {
-            const avg = targetEvalsAllMonths.length > 0 ? cumulativeItemTotals[evaluationItemLabels[key]] / targetEvalsAllMonths.length : 0;
-            return parseFloat(avg.toFixed(1)) || 0;
+            let avg = targetEvalsAllMonths.length > 0 ? cumulativeItemTotals[evaluationItemLabels[key]] / targetEvalsAllMonths.length : 0;
+            avg = parseFloat(avg.toFixed(1));
+            return key === 'potential' ? avg / 2 : avg;
         });
         const eChartsDataCumulative = targetEvalsAllMonths.length > 0 ? [{ value: cumulativeValues, name: '累計平均点' }] : [];
 

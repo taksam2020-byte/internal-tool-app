@@ -101,7 +101,7 @@ export default function AnalyticsPageContent() {
         series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }]
     });
 
-    const lineChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' as const } } };
+    const lineChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top' as const, onClick: () => {} } } };
 
     if (loading && !data.filterOptions.targets.length) return <div className="text-center vh-100 d-flex flex-column align-items-center justify-content-center"><Spinner animation="border" /> <p className="mt-3">分析データを読み込み中...</p></div>;
     if (error) return <Alert variant="danger">{error}</Alert>;
@@ -197,17 +197,19 @@ export default function AnalyticsPageContent() {
 
                         <Row>
                             <Col md={6} className="mb-4">
-                                <Card className="h-100">
-                                    <Card.Header as="h5" className="text-center">当月平均点 ({currentMonthAverage})</Card.Header>
+                                <Card className="h-100 text-center">
+                                    <Card.Header as="h5">当月平均点 (100点換算)</Card.Header>
                                     <Card.Body>
+                                        <h2 className="display-4 fw-bold">{currentMonthAverage}</h2>
                                         <ReactECharts option={getRadarOption(eChartsRadarData.current, eChartsRadarData.indicator)} style={{ height: '300px' }} />
                                     </Card.Body>
                                 </Card>
                             </Col>
                             <Col md={6} className="mb-4">
-                                <Card className="h-100">
-                                    <Card.Header as="h5" className="text-center">累計平均点 ({cumulativeAverage})</Card.Header>
+                                <Card className="h-100 text-center">
+                                    <Card.Header as="h5">累計平均点 (100点換算)</Card.Header>
                                     <Card.Body>
+                                        <h2 className="display-4 fw-bold">{cumulativeAverage}</h2>
                                         <ReactECharts option={getRadarOption(eChartsRadarData.cumulative, eChartsRadarData.indicator)} style={{ height: '300px' }} />
                                     </Card.Body>
                                 </Card>
