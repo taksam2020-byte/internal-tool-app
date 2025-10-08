@@ -64,15 +64,19 @@ export default function AnalyticsPageContent() {
     }, []);
 
     useEffect(() => {
-        if (!selectedTarget || !data.filterOptions.months.length) return;
+        if (!selectedTarget) return;
 
         const fetchData = async () => {
             setLoading(true);
             try {
                 const params = new URLSearchParams({
                     target: selectedTarget,
-                    month: data.filterOptions.months[currentMonthIndex]
                 });
+                // Get the month from the main data state, which is more reliable
+                if (data.filterOptions.months && data.filterOptions.months[currentMonthIndex]) {
+                    params.append('month', data.filterOptions.months[currentMonthIndex]);
+                }
+
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations?${params.toString()}`);
                 console.log('--- FETCH_API_RESPONSE ---', res.data);
                 setData(currentData => ({ ...currentData, ...res.data }));
