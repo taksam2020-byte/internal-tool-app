@@ -126,8 +126,7 @@ export async function GET(request: Request) {
             return key === 'potential' ? avg / 2 : avg;
         });
 
-        // 9. Final JSON Response
-        return NextResponse.json({
+        const finalResponse = {
             crossTabData: { headers: crossTabHeaders, rows: crossTabRows, averages: crossTabAverages },
             comments,
             monthlySummary: { labels: monthlySummaryChart.labels, datasets: monthlySummaryChart.datasets, rawData: monthlySummaryRaw },
@@ -141,7 +140,12 @@ export async function GET(request: Request) {
             filterOptions,
             selectedMonth: monthForData,
             selectedMonthLong: formatMonth(monthForData, 'long')
-        });
+        };
+
+        console.log('--- FINAL API RESPONSE ---', JSON.stringify(finalResponse, null, 2));
+
+        // 9. Final JSON Response
+        return NextResponse.json(finalResponse);
 
     } catch (error) {
         console.error('Analytics API Error:', error);

@@ -71,6 +71,7 @@ export default function AnalyticsPageContent() {
                     params.append('month', data.filterOptions.months[currentMonthIndex]);
                 }
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations?${params.toString()}`);
+                console.log('--- FETCH_API_RESPONSE ---', res.data);
                 setData(prevData => ({ ...res.data, filterOptions: prevData.filterOptions }));
             } catch (err) { setError('分析データの読み込みに失敗しました。'); console.error(err); } 
             finally { setLoading(false); }
