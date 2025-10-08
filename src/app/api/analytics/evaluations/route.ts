@@ -28,9 +28,9 @@ export async function GET(request: Request) {
         const targetMonth = selectedMonth || (filterOptions.months.length > 0 ? filterOptions.months[0] : null);
         const targetEmployee = selectedTarget || (filterOptions.targets.length > 0 ? filterOptions.targets[0] : null);
 
-        const eChartsIndicator = Object.entries(evaluationItemLabels).map(([key, name]) => ({ name, max: key === 'potential' ? 10 : 5 }));
+        const eChartsIndicator = evaluationItemKeys.map(key => ({ name: evaluationItemLabels[key], max: key === 'potential' ? 10 : 5 }));
 
-        if (!targetMonth || !targetEmployee) {
+        if (!targetMonth || !targetEmployee) { // This check might now be redundant for targetEmployee, but kept for safety
             return NextResponse.json({ 
                 crossTabData: { headers: [], rows: [], averages: {} }, comments: [],
                 monthlySummary: { labels: [], datasets: [], rawData: [] },
