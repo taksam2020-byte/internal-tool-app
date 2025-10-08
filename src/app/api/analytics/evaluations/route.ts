@@ -10,7 +10,7 @@ const evaluationItemLabels: { [key: string]: string } = {
 const MAX_TOTAL_SCORE = 55;
 
 // --- Type Definitions ---
-interface UserFromDb { name: string; }
+interface UserFromDb { id: number; name: string; }
 interface EvaluationFromDb { evaluator_name: string; target_employee_name: string; scores_json: { [key: string]: number }; total_score: number; comment: string | null; submitted_at: string; }
 interface MonthlyAggregate { itemTotals: { [key: string]: number }; count: number; totalScoreSum: number; }
 
@@ -48,7 +48,7 @@ export async function GET(request: Request) {
         }
 
         // 4. Fetch all necessary data from DB based on the determined target
-        const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT name FROM users WHERE is_active = TRUE AND role IN ('内勤', '営業', '社長');`;
+        const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT id, name FROM users WHERE is_active = TRUE AND role IN ('内勤', '営業', '社長') ORDER BY id ASC;`;
         const { rows: evaluationsForMonth } = await sql<EvaluationFromDb>`SELECT * FROM evaluations WHERE target_employee_name = ${targetForData} AND to_char(submitted_at, 'YYYY-MM') = ${monthForData};`;
 
         console.log(`[DEBUG] potentialEvaluators: ${JSON.stringify(potentialEvaluators)}`);

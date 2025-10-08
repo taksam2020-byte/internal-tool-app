@@ -79,7 +79,7 @@ export default function AnalyticsPageContent() {
 
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations?${params.toString()}`);
                 console.log('--- FETCH_API_RESPONSE ---', res.data);
-                setData(currentData => ({ ...currentData, ...res.data }));
+                setData(res.data);
             } catch (err) { 
                 setError('分析データの読み込みに失敗しました。'); 
                 console.error(err); 
