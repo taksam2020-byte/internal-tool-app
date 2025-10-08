@@ -12,7 +12,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 // Type Definitions
 interface EChartsRadarData { indicator: { name: string; max: number }[]; current: { value: number[]; name: string }[]; cumulative: { value: number[]; name: string }[]; }
-interface MonthlySummary { labels: string[]; datasets: any[]; rawData: any[] }
+interface MonthlySummary { labels: string[]; datasets: { label: string; data: number[]; borderColor: string; backgroundColor: string; }[]; rawData: { [key: string]: string | number }[] }
 interface AnalyticsData {
     crossTabData: { headers: string[]; rows: { [key: string]: string | number }[]; averages: { [key: string]: string | number } };
     comments: { evaluator: string; comment: string }[];
@@ -124,7 +124,9 @@ export default function AnalyticsPageContent() {
                 <h1 className="mb-4">集計・分析</h1>
                 {loading && <div className="text-center my-4"><Spinner animation="border" /></div>}
                 {!loading && (
-                    !selectedTarget ? <Alert variant="info">対象者を選択してください。</Alert> : (
+                    !selectedTarget ? (
+                        <Alert variant="info">対象者を選択してください。</Alert>
+                    ) : (
                         <>
                             {/* 1. 採点結果 */}
                             <Card className="mb-4">
@@ -175,7 +177,7 @@ export default function AnalyticsPageContent() {
                                         <tbody>
                                             {monthlySummary.rawData.map((row, rIndex) => (
                                                 <tr key={rIndex}>
-                                                    {Object.values(row).map((val: any, cIndex) => <td key={cIndex}>{val}</td>)}
+                                                    {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -212,6 +214,7 @@ export default function AnalyticsPageContent() {
                             </Row>
                         </>
                     )
+                )}
             </main>
         </div>
     );
