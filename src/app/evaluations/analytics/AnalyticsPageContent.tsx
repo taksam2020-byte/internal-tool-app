@@ -12,7 +12,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 // Type Definitions (matching the new simplified API response)
 interface EChartsRadarData { indicator: { name: string; max: number }[]; current: { value: number[]; name: string }[]; cumulative: { value: number[]; name: string }[]; }
-interface MonthlySummary { labels: string[]; datasets: any[]; rawData: any[] }
+interface MonthlySummary { labels: string[]; datasets: { label: string; data: number[]; borderColor: string; backgroundColor: string; }[]; rawData: { [key: string]: string | number }[] }
 interface AnalyticsData {
     crossTabData?: { headers: string[]; rows: { [key: string]: string | number }[]; averages: { [key: string]: string | number } };
     comments?: { evaluator: string; comment: string }[];
@@ -90,7 +90,7 @@ export default function AnalyticsPageContent() {
         if (pageIndex !== undefined && pageIndex > -1) setCommentPage(pageIndex);
     };
 
-    const getRadarOption = (chartData: any, indicator: any) => ({ radar: { indicator, shape: 'circle', center: ['50%', '55%'], radius: '65%', axisName: { color: '#333' } }, series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }] });
+    const getRadarOption = (chartData: { value: number[], name: string }[], indicator: { name: string, max: number }[]) => ({ radar: { indicator, shape: 'circle', center: ['50%', '55%'], radius: '65%', axisName: { color: '#333' } }, series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }] });
     const lineChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top' as const, onClick: () => {} } } };
 
     const { crossTabData, comments, eChartsRadarData, monthlySummary, currentMonthAverage, cumulativeAverage, filterOptions, selectedMonthLong } = data;
@@ -170,12 +170,14 @@ export default function AnalyticsPageContent() {
                                             <tbody>
                                                 {monthlySummary.rawData.map((row, rIndex) => (
                                                     <tr key={rIndex}>
-                                                        {Object.values(row).map((val: any, cIndex) => <td key={cIndex}>{val as string | number}</td>)}
+                                                        {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
                                                     </tr>
                                                 ))}
                                             </tbody>
                                         </Table>
-                                        {/* Line chart might be added back later if needed */}
+                                        {/* <div style={{ position: 'relative', height: '300px' }} className="mt-4">
+                                            <Line options={lineChartOptions} data={monthlySummary} />
+                                        </div> */}
                                     </>
                                 ) : <Alert variant="light" className="mb-0">月次データがありません。</Alert>}
                             </Card.Body>
