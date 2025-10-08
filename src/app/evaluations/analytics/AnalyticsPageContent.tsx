@@ -46,18 +46,19 @@ export default function AnalyticsPageContent() {
     const [commentPage, setCommentPage] = useState(0);
 
     useEffect(() => {
-        const fetchOptions = async () => {
+        const fetchData = async () => {
             setLoading(true);
             try {
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations`);
                 setData(res.data);
-                if (res.data.filterOptions?.targets?.length > 0) {
+                if (res.data.filterOptions?.targets?.length > 0 && !selectedTarget) {
                     setSelectedTarget(res.data.filterOptions.targets[0]);
                 }
             } catch (err) { setError('データの読み込みに失敗しました。'); console.error(err); } 
             finally { setLoading(false); }
         };
-        fetchOptions();
+        fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -66,16 +67,16 @@ export default function AnalyticsPageContent() {
             setLoading(true);
             try {
                 const params = new URLSearchParams({ target: selectedTarget });
-                if (data && data.filterOptions.months.length > currentMonthIndex) {
+                if (data.filterOptions.months.length > currentMonthIndex) {
                     params.append('month', data.filterOptions.months[currentMonthIndex]);
                 }
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations?${params.toString()}`);
-                setData(prevData => ({ ...res.data, filterOptions: prevData?.filterOptions || res.data.filterOptions }));
+                setData(prevData => ({ ...res.data, filterOptions: prevData.filterOptions }));
             } catch (err) { setError('分析データの読み込みに失敗しました。'); console.error(err); } 
             finally { setLoading(false); }
         };
         fetchData();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTarget, currentMonthIndex]);
 
     const handleTargetClick = (target: string) => { setSelectedTarget(target); setCurrentMonthIndex(0); setCommentPage(0); };
@@ -94,13 +95,13 @@ export default function AnalyticsPageContent() {
             center: ['50%', '55%'],
             radius: '65%',
             axisName: {
-                color: '#333' // Darken indicator text color
+                color: '#333'
             }
         },
         series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }]
     });
 
-    const lineChartOptions = { responsive: true, plugins: { legend: { display: true, position: 'top' as const } } };
+    const lineChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom' as const } } };
 
     if (loading && !data.filterOptions.targets.length) return <div className="text-center vh-100 d-flex flex-column align-items-center justify-content-center"><Spinner animation="border" /> <p className="mt-3">分析データを読み込み中...</p></div>;
     if (error) return <Alert variant="danger">{error}</Alert>;
@@ -131,97 +132,92 @@ export default function AnalyticsPageContent() {
             <main style={{ marginLeft: '240px', width: '100%' }}>
                 <h1 className="mb-4">集計・分析</h1>
                 {loading && <div className="text-center my-4"><Spinner animation="border" /></div>}
-                {!loading && (
-                    !selectedTarget ? (
-                        <Alert variant="info">対象者を選択してください。</Alert>
-                    ) : (
-                        <>
-                            {/* 1. 採点結果 */}
-                            <Card className="mb-4">
-                                <Card.Header as="h5">1. 採点結果</Card.Header>
+                {!loading && selectedTarget && (
+                    <>
+                        <Card className="mb-4">
+                            <Card.Header as="h5">採点結果</Card.Header>
+                            <Card.Body>
                                 {crossTabData && crossTabData.rows.length > 0 ? (
-                                    <Card.Body>
-                                        <Table striped bordered hover responsive size="sm" className="text-center align-middle">
-                                            <thead><tr>{crossTabData.headers.map((h: string) => <th key={h} className="text-nowrap">{h}</th>)}</tr></thead>
-                                            <tbody>
-                                                {crossTabData.rows.map((row, rIndex) => (
-                                                    <tr key={rIndex} onClick={() => handleCommentPagination(row['採点者'] as string)} className={paginatedComments?.[0]?.evaluator === row['採点者'] ? 'table-primary' : ''} style={{cursor: 'pointer'}}>
-                                                        {crossTabData.headers.map((h: string) => <td key={h}>{row[h]}</td>)}
-                                                    </tr>
-                                                ))}
-                                                <tr className="table-group-divider fw-bold">{crossTabData.headers.map((h: string) => <th key={h}>{crossTabData.averages[h]}</th>)}</tr>
-                                            </tbody>
-                                        </Table>
-                                    </Card.Body>
-                                ) : <Card.Body><Alert variant="light" className="mb-0">この月の評価データはありません。</Alert></Card.Body>}
-                            </Card>
-
-                            {/* 2. 採点者コメント */}
-                            <Card className="mb-4">
-                                <Card.Header as="h5">2. 採点者コメント</Card.Header>
-                                {paginatedComments && paginatedComments.length > 0 ? (
-                                    <>
-                                        <Card.Body>
-                                            {paginatedComments.map((c, i) => (
-                                                <div key={i}><strong>{c.evaluator}:</strong><p className="mt-2 p-3 bg-light rounded" style={{whiteSpace: 'pre-wrap'}}>{c.comment}</p></div>
-                                            ))}
-                                        </Card.Body>
-                                        {totalCommentPages > 1 && <Card.Footer><Pagination className="mb-0 justify-content-center"><Pagination.Prev onClick={() => setCommentPage(p => Math.max(p - 1, 0))} disabled={commentPage === 0} /><Pagination.Item>{commentPage + 1} / {totalCommentPages}</Pagination.Item><Pagination.Next onClick={() => setCommentPage(p => Math.min(p + 1, totalCommentPages - 1))} disabled={commentPage >= totalCommentPages - 1} /></Pagination></Card.Footer>}
-                                    </>
-                                ) : <Card.Body className="text-center text-muted">この月のコメントはありません。</Card.Body>}
-                            </Card>
-
-                            {/* 3. 項目別平均点の月次推移 */}
-                            <Card className="mb-4">
-                                <Card.Header as="h5">3. 項目別平均点の月次推移</Card.Header>
-                                <Card.Body>
                                     <Table striped bordered hover responsive size="sm" className="text-center align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>月</th>
-                                                {monthlySummary.rawData[0] && Object.keys(monthlySummary.rawData[0]).filter(k => k !== 'month').sort((a, b) => a === '合計' ? 1 : b === '合計' ? -1 : 0).map(key => <th key={key}>{key}</th>)}
-                                            </tr>
-                                        </thead>
+                                        <thead><tr>{crossTabData.headers.map((h: string) => <th key={h} className="text-nowrap">{h}</th>)}</tr></thead>
                                         <tbody>
-                                            {monthlySummary.rawData.map((row, rIndex) => (
-                                                <tr key={rIndex}>
-                                                    {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
+                                            {crossTabData.rows.map((row, rIndex) => (
+                                                <tr key={rIndex} onClick={() => handleCommentPagination(row['採点者'] as string)} className={paginatedComments?.[0]?.evaluator === row['採点者'] ? 'table-primary' : ''} style={{cursor: 'pointer'}}>
+                                                    {crossTabData.headers.map((h: string) => <td key={h}>{row[h]}</td>)}
                                                 </tr>
                                             ))}
+                                            <tr className="table-group-divider fw-bold"><th className="text-nowrap">平均点</th>{crossTabData.headers.slice(1).map((h: string) => <th key={h}>{crossTabData.averages[h]}</th>)}</tr>
                                         </tbody>
                                     </Table>
-                                    <div style={{ height: '300px' }} className="mt-4">
-                                        {monthlySummary.datasets.length > 0 && <Line options={lineChartOptions} data={monthlySummary} />}
-                                    </div>
-                                </Card.Body>
-                            </Card>
+                                ) : <Alert variant="light" className="mb-0">この月の評価データはありません。</Alert>}
+                            </Card.Body>
+                        </Card>
 
-                            {/* 4. 注意文 */}
-                            <Alert variant="light" className="text-center small mb-4">
-                                ※グラフおよびレーダーチャート内の「将来性」項目は、他の項目との比較のため5点満点に換算して表示しています。
-                            </Alert>
+                        <Card className="mb-4">
+                            <Card.Header as="h5">採点者コメント</Card.Header>
+                            <Card.Body>
+                                {paginatedComments && paginatedComments.length > 0 ? (
+                                    <>
+                                        {paginatedComments.map((c, i) => (
+                                            <div key={i}><strong>{c.evaluator}:</strong><div className="mt-2 p-3 bg-light rounded" style={{whiteSpace: 'pre-wrap'}}>{c.comment}</div></div>
+                                        ))}
+                                    </>
+                                ) : <div className="text-center text-muted">この月のコメントはありません。</div>}
+                            </Card.Body>
+                            {totalCommentPages > 1 && <Card.Footer><Pagination className="mb-0 justify-content-center"><Pagination.Prev onClick={() => setCommentPage(p => Math.max(p - 1, 0))} disabled={commentPage === 0} /><Pagination.Item>{commentPage + 1} / {totalCommentPages}</Pagination.Item><Pagination.Next onClick={() => setCommentPage(p => Math.min(p + 1, totalCommentPages - 1))} disabled={commentPage >= totalCommentPages - 1} /></Pagination></Card.Footer>}
+                        </Card>
 
-                            {/* 5. レーダーチャート */}
-                            <Row>
-                                <Col md={6} className="mb-4">
-                                    <Card className="h-100">
-                                        <Card.Body className="text-center">
-                                            <h4 className="mb-3">当月平均点 ({currentMonthAverage})</h4>
-                                            <ReactECharts option={getRadarOption(eChartsRadarData.current, eChartsRadarData.indicator)} style={{ height: '300px' }} />
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                                <Col md={6} className="mb-4">
-                                    <Card className="h-100">
-                                        <Card.Body className="text-center">
-                                            <h4 className="mb-3">累計平均点 ({cumulativeAverage})</h4>
-                                            <ReactECharts option={getRadarOption(eChartsRadarData.cumulative, eChartsRadarData.indicator)} style={{ height: '300px' }} />
-                                        </Card.Body>
-                                    </Card>
-                                </Col>
-                            </Row>
-                        </>
-                    )
+                        <Card className="mb-4">
+                            <Card.Header as="h5">項目別平均点の月次推移</Card.Header>
+                            <Card.Body>
+                                {monthlySummary.rawData && monthlySummary.rawData.length > 0 ? (
+                                    <>
+                                        <Table striped bordered hover responsive size="sm" className="text-center align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>月</th>
+                                                    {Object.keys(monthlySummary.rawData[0]).filter(k => k !== 'month').map(key => <th key={key}>{key}</th>)}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {monthlySummary.rawData.map((row, rIndex) => (
+                                                    <tr key={rIndex}>
+                                                        {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </Table>
+                                        <div style={{ position: 'relative', height: '300px' }} className="mt-4">
+                                            <Line options={lineChartOptions} data={monthlySummary} />
+                                        </div>
+                                    </>
+                                ) : <Alert variant="light" className="mb-0">月次データがありません。</Alert>}
+                            </Card.Body>
+                        </Card>
+
+                        <Row>
+                            <Col md={6} className="mb-4">
+                                <Card className="h-100">
+                                    <Card.Header as="h5" className="text-center">当月平均点 ({currentMonthAverage})</Card.Header>
+                                    <Card.Body>
+                                        <ReactECharts option={getRadarOption(eChartsRadarData.current, eChartsRadarData.indicator)} style={{ height: '300px' }} />
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                            <Col md={6} className="mb-4">
+                                <Card className="h-100">
+                                    <Card.Header as="h5" className="text-center">累計平均点 ({cumulativeAverage})</Card.Header>
+                                    <Card.Body>
+                                        <ReactECharts option={getRadarOption(eChartsRadarData.cumulative, eChartsRadarData.indicator)} style={{ height: '300px' }} />
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        </Row>
+                        
+                        <Alert variant="light" className="text-center small">
+                            ※グラフおよびレーダーチャート内の「将来性」項目は、他の項目との比較のため5点満点に換算して表示しています。
+                        </Alert>
+                    </>
                 )}
             </main>
         </div>

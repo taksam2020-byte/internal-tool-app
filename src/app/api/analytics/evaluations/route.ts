@@ -25,8 +25,12 @@ export async function GET(request: Request) {
         const sortedTargets = [...new Set(allEvalsResult.rows.map(e => e.target_employee_name))].sort();
         const filterOptions = { months: sortedMonths, targets: sortedTargets };
 
-        if (!selectedTarget) selectedTarget = sortedTargets[0] || null;
-        if (!selectedMonth) selectedMonth = sortedMonths[0] || null;
+        if (!selectedTarget) {
+            selectedTarget = sortedTargets[0] || null;
+        }
+        if (!selectedMonth) {
+            selectedMonth = sortedMonths[0] || null;
+        }
 
         const eChartsIndicator = evaluationItemKeys.map(key => ({ name: evaluationItemLabels[key], max: key === 'potential' ? 10 : 5 }));
 
