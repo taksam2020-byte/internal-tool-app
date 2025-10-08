@@ -212,7 +212,6 @@ export default function AnalyticsPageContent() {
                             </Row>
                         </>
                     )
-                }
             </main>
         </div>
     );
