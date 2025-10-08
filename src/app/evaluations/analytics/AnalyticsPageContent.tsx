@@ -46,49 +46,52 @@ export default function AnalyticsPageContent() {
     const [commentPage, setCommentPage] = useState(0);
 
     useEffect(() => {
-        const fetchOptions = async () => {
+        // Fetch initial data and filter options on component mount
+        const fetchInitialData = async () => {
+            setLoading(true);
             try {
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations`);
                 setData(res.data);
                 if (res.data.filterOptions?.targets?.length > 0) {
                     setSelectedTarget(res.data.filterOptions.targets[0]);
                 }
-            } catch (err) { 
-                setError('フィルターオプションの読み込みに失敗しました。'); 
-                console.error(err); 
+            } catch (err) {
+                setError('初期データの読み込みに失敗しました。');
+                console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchOptions();
+        fetchInitialData();
     }, []);
 
     useEffect(() => {
-        if (!selectedTarget) return;
+        // Re-fetch data only when filters change, skip initial run
+        if (!selectedTarget || data.filterOptions.months.length === 0) return;
 
         const fetchData = async () => {
             setLoading(true);
             try {
                 const params = new URLSearchParams({
                     target: selectedTarget,
+                    month: data.filterOptions.months[currentMonthIndex],
                 });
-                // Get the month from the main data state, which is more reliable
-                if (data.filterOptions.months && data.filterOptions.months[currentMonthIndex]) {
-                    params.append('month', data.filterOptions.months[currentMonthIndex]);
-                }
-
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations?${params.toString()}`);
-                console.log('--- FETCH_API_RESPONSE ---', res.data);
-                setData(res.data);
-            } catch (err) { 
-                setError('分析データの読み込みに失敗しました。'); 
-                console.error(err); 
+                // Only update the data part, keep existing filter options
+                setData(prevData => ({ ...prevData, ...res.data }));
+            } catch (err) {
+                setError('分析データの読み込みに失敗しました。');
+                console.error(err);
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchData();
+        // Do not run on initial mount, only on updates
+        const isInitialMount = data.filterOptions.months.length === 0;
+        if (!isInitialMount) {
+            fetchData();
+        }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTarget, currentMonthIndex]);
 
