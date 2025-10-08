@@ -100,7 +100,7 @@ export default function AnalyticsPageContent() {
         series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }]
     });
 
-    const lineChartOptions = { responsive: true, plugins: { legend: { display: false } } };
+    const lineChartOptions = { responsive: true, plugins: { legend: { display: true, position: 'top' as const } } };
 
     if (loading && !data.filterOptions.targets.length) return <div className="text-center vh-100 d-flex flex-column align-items-center justify-content-center"><Spinner animation="border" /> <p className="mt-3">分析データを読み込み中...</p></div>;
     if (error) return <Alert variant="danger">{error}</Alert>;

@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-const MAX_TOTAL_SCORE = 55;
 const evaluationItemKeys = ['accuracy', 'discipline', 'cooperation', 'proactiveness', 'agility', 'judgment', 'expression', 'comprehension', 'interpersonal', 'potential'];
 const evaluationItemLabels: { [key: string]: string } = { accuracy: '正確性', discipline: '規律性', cooperation: '協調性', proactiveness: '積極性', agility: '俊敏性', judgment: '判断力', expression: '表現力', comprehension: '理解力', interpersonal: '対人性', potential: '将来性' };
 
-interface UserFromDb { id: number; name: string; role: string; }
-interface EvaluationFromDb { id: number; evaluator_name: string; target_employee_name: string; scores_json: { [key: string]: number }; total_score: number; comment: string | null; submitted_at: string; }
+interface UserFromDb { name: string; }
+interface EvaluationFromDb { evaluator_name: string; target_employee_name: string; scores_json: { [key: string]: number }; total_score: number; comment: string | null; submitted_at: string; }
 
 const formatMonth = (ym: string, format: 'long' | 'short') => {
     if (!ym) return '';
@@ -16,73 +15,67 @@ const formatMonth = (ym: string, format: 'long' | 'short') => {
 };
 
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const selectedMonth = searchParams.get('month');
-    const selectedTarget = searchParams.get('target');
-
     try {
+        const { searchParams } = new URL(request.url);
+        let selectedMonth = searchParams.get('month');
+        let selectedTarget = searchParams.get('target');
+
         const allEvalsResult = await sql<{ submitted_at: string; target_employee_name: string; }>`SELECT DISTINCT to_char(submitted_at, 'YYYY-MM') as submitted_at, target_employee_name FROM evaluations;`;
         const sortedMonths = [...new Set(allEvalsResult.rows.map(e => e.submitted_at))].sort((a, b) => b.localeCompare(a));
-        const filterOptions = { months: sortedMonths, targets: [...new Set(allEvalsResult.rows.map(e => e.target_employee_name))].sort() };
+        const sortedTargets = [...new Set(allEvalsResult.rows.map(e => e.target_employee_name))].sort();
+        const filterOptions = { months: sortedMonths, targets: sortedTargets };
 
-        const targetMonth = selectedMonth || (filterOptions.months.length > 0 ? filterOptions.months[0] : null);
-        const targetEmployee = selectedTarget || (filterOptions.targets.length > 0 ? filterOptions.targets[0] : null);
+        if (!selectedTarget) selectedTarget = sortedTargets[0] || null;
+        if (!selectedMonth) selectedMonth = sortedMonths[0] || null;
 
         const eChartsIndicator = evaluationItemKeys.map(key => ({ name: evaluationItemLabels[key], max: key === 'potential' ? 10 : 5 }));
 
-        if (!targetMonth || !targetEmployee) { // This check might now be redundant for targetEmployee, but kept for safety
-            return NextResponse.json({ 
-                crossTabData: { headers: [], rows: [], averages: {} }, comments: [],
-                monthlySummary: { labels: [], datasets: [], rawData: [] },
-                eChartsRadarData: { indicator: eChartsIndicator, current: [], cumulative: [] },
-                currentMonthAverage: "0.0", cumulativeAverage: "0.0", 
-                filterOptions, selectedMonth: targetMonth, selectedMonthLong: targetMonth ? formatMonth(targetMonth, 'long') : ''
-            });
+        if (!selectedMonth || !selectedTarget) {
+            return NextResponse.json({ filterOptions, crossTabData: { headers: [], rows: [], averages: {} }, comments: [], monthlySummary: { labels: [], datasets: [], rawData: [] }, eChartsRadarData: { indicator: eChartsIndicator, current: [], cumulative: [] }, currentMonthAverage: "0.0", cumulativeAverage: "0.0", selectedMonth, selectedMonthLong: selectedMonth ? formatMonth(selectedMonth, 'long') : '' });
         }
 
-        const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT id, name, role FROM users WHERE is_active = TRUE AND role IN ('admin', 'manager', 'staff');`;
-        const { rows: evaluations } = await sql<EvaluationFromDb>`SELECT *, to_char(submitted_at, 'YYYY-MM') as month FROM evaluations WHERE target_employee_name = ${targetEmployee} AND to_char(submitted_at, 'YYYY-MM') = ${targetMonth};`;
+        const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT name FROM users WHERE is_active = TRUE AND role IN ('admin', 'manager', 'staff');`;
+        const { rows: evaluationsForMonth } = await sql<EvaluationFromDb>`SELECT * FROM evaluations WHERE target_employee_name = ${selectedTarget} AND to_char(submitted_at, 'YYYY-MM') = ${selectedMonth};`;
 
-        const crossTabHeaders = ['採点者', ...Object.values(evaluationItemLabels), '合計点'];
+        const crossTabHeaders = ['採点者', ...evaluationItemKeys.map(k => evaluationItemLabels[k]), '合計点'];
         const crossTabRows = potentialEvaluators.map(user => {
-            const evaluation = evaluations.find(e => e.evaluator_name === user.name);
+            const evaluation = evaluationsForMonth.find(e => e.evaluator_name === user.name);
             const row: { [key: string]: string | number } = { '採点者': user.name };
             if (evaluation) {
-                for (const key of evaluationItemKeys) { row[evaluationItemLabels[key]] = evaluation.scores_json[key] || 0; }
+                evaluationItemKeys.forEach(key => { row[evaluationItemLabels[key]] = evaluation.scores_json[key] || 0; });
                 row['合計点'] = evaluation.total_score;
             } else {
-                for (const key of evaluationItemKeys) { row[evaluationItemLabels[key]] = '-'; }
+                evaluationItemKeys.forEach(key => { row[evaluationItemLabels[key]] = '-'; });
                 row['合計点'] = '-';
             }
             return row;
         });
 
         const submittedRows = crossTabRows.filter(r => r['合計点'] !== '-');
-        const itemTotals: { [key: string]: number } = {};
-        Object.values(evaluationItemLabels).forEach(label => itemTotals[label] = 0);
+        const itemTotals = evaluationItemKeys.reduce((acc, key) => ({ ...acc, [evaluationItemLabels[key]]: 0 }), {} as { [key: string]: number });
         let grandTotal = 0;
 
         submittedRows.forEach(row => {
-            Object.values(evaluationItemLabels).forEach(label => { itemTotals[label] += Number(row[label]); });
+            evaluationItemKeys.forEach(key => { itemTotals[evaluationItemLabels[key]] += Number(row[evaluationItemLabels[key]]); });
             grandTotal += Number(row['合計点']);
         });
 
         const numEvaluators = submittedRows.length;
-        const crossTabAverages: { [key: string]: number | string } = { '採点者': '平均点' };
+        const crossTabAverages = { '採点者': '平均点' } as { [key: string]: string | number };
         if (numEvaluators > 0) {
-            Object.values(evaluationItemLabels).forEach(label => { crossTabAverages[label] = parseFloat((itemTotals[label] / numEvaluators).toFixed(1)); });
+            evaluationItemKeys.forEach(key => { crossTabAverages[evaluationItemLabels[key]] = parseFloat((itemTotals[evaluationItemLabels[key]] / numEvaluators).toFixed(1)); });
             crossTabAverages['合計点'] = parseFloat((grandTotal / numEvaluators).toFixed(1));
         }
         
         const crossTabData = { headers: crossTabHeaders, rows: crossTabRows, averages: crossTabAverages };
-        const comments = evaluations.map(e => ({ evaluator: e.evaluator_name, comment: e.comment || 'コメントはありません。' })).sort((a, b) => a.evaluator.localeCompare(b.evaluator));
+        const comments = evaluationsForMonth.map(e => ({ evaluator: e.evaluator_name, comment: e.comment || 'コメントはありません。' })).sort((a, b) => a.evaluator.localeCompare(b.evaluator));
 
-        const targetEvalsAllMonths = (await sql<EvaluationFromDb & { month: string }>`SELECT *, to_char(submitted_at, 'YYYY-MM') as month FROM evaluations WHERE target_employee_name = ${targetEmployee};`).rows;
+        const { rows: targetEvalsAllMonths } = await sql<EvaluationFromDb & { month: string }>`SELECT *, to_char(submitted_at, 'YYYY-MM') as month FROM evaluations WHERE target_employee_name = ${selectedTarget};`;
 
         const monthlyAggregates: { [month: string]: { itemTotals: {[key:string]: number}, count: number, totalScoreSum: number } } = {};
         targetEvalsAllMonths.forEach(e => {
             if (!monthlyAggregates[e.month]) { monthlyAggregates[e.month] = { itemTotals: evaluationItemKeys.reduce((acc, key) => ({...acc, [key]: 0}), {}), count: 0, totalScoreSum: 0 }; }
-            for(const key of evaluationItemKeys) { monthlyAggregates[e.month].itemTotals[key] += e.scores_json[key] || 0; }
+            evaluationItemKeys.forEach(key => { monthlyAggregates[e.month].itemTotals[key] += e.scores_json[key] || 0; });
             monthlyAggregates[e.month].count++;
             monthlyAggregates[e.month].totalScoreSum += e.total_score;
         });
@@ -90,10 +83,7 @@ export async function GET(request: Request) {
         const lastSixMonths = Object.keys(monthlyAggregates).sort().slice(-6);
         const monthlySummaryRaw = lastSixMonths.map(month => {
             const monthData = monthlyAggregates[month];
-            const itemAvgs = evaluationItemKeys.reduce((acc, key) => {
-                acc[evaluationItemLabels[key]] = parseFloat((monthData.itemTotals[key] / monthData.count).toFixed(1));
-                return acc;
-            }, {} as {[key: string]: number});
+            const itemAvgs = evaluationItemKeys.reduce((acc, key) => ({ ...acc, [evaluationItemLabels[key]]: parseFloat((monthData.itemTotals[key] / monthData.count).toFixed(1)) }), {} as {[key: string]: number});
             const total = parseFloat((monthData.totalScoreSum / monthData.count).toFixed(1));
             return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': total };
         });
@@ -103,23 +93,23 @@ export async function GET(request: Request) {
             labels: lastSixMonths.map(m => formatMonth(m, 'short')),
             datasets: evaluationItemKeys.map((key, index) => ({
                 label: evaluationItemLabels[key],
-                data: lastSixMonths.map(month => (monthlyAggregates[month].itemTotals[key] / monthlyAggregates[month].count) || 0),
+                data: lastSixMonths.map(month => (monthlyAggregates[month]?.itemTotals[key] / monthlyAggregates[month]?.count) || 0),
                 borderColor: colors[index % colors.length],
                 backgroundColor: colors[index % colors.length] + '80',
             }))
         };
         
-        const currentMonthValues = Object.values(evaluationItemLabels).map(label => crossTabAverages[label] as number || 0);
+        const currentMonthValues = evaluationItemKeys.map(key => crossTabAverages[evaluationItemLabels[key]] as number || 0);
         const eChartsDataCurrent = numEvaluators > 0 ? [{ value: currentMonthValues, name: '当月平均点' }] : [];
 
-        const cumulativeItemTotals: {[key: string]: number} = evaluationItemKeys.reduce((acc, key) => ({...acc, [evaluationItemLabels[key]]: 0}), {});
+        const cumulativeItemTotals = evaluationItemKeys.reduce((acc, key) => ({ ...acc, [evaluationItemLabels[key]]: 0 }), {} as { [key: string]: number });
         let cumulativeTotalScore = 0;
         targetEvalsAllMonths.forEach(e => {
-            for(const key of evaluationItemKeys) { cumulativeItemTotals[evaluationItemLabels[key]] += e.scores_json[key] || 0; }
+            evaluationItemKeys.forEach(key => { cumulativeItemTotals[evaluationItemLabels[key]] += e.scores_json[key] || 0; });
             cumulativeTotalScore += e.total_score;
         });
-        const cumulativeValues = Object.values(evaluationItemLabels).map(label => {
-            const avg = targetEvalsAllMonths.length > 0 ? cumulativeItemTotals[label] / targetEvalsAllMonths.length : 0;
+        const cumulativeValues = evaluationItemKeys.map(key => {
+            const avg = targetEvalsAllMonths.length > 0 ? cumulativeItemTotals[evaluationItemLabels[key]] / targetEvalsAllMonths.length : 0;
             return parseFloat(avg.toFixed(1)) || 0;
         });
         const eChartsDataCumulative = targetEvalsAllMonths.length > 0 ? [{ value: cumulativeValues, name: '累計平均点' }] : [];
@@ -133,7 +123,7 @@ export async function GET(request: Request) {
             eChartsRadarData: { indicator: eChartsIndicator, current: eChartsDataCurrent, cumulative: eChartsDataCumulative },
             currentMonthAverage: currentMonthAverage.toFixed(1),
             cumulativeAverage: cumulativeAverage.toFixed(1),
-            filterOptions, selectedMonth: targetMonth, selectedMonthLong: targetMonth ? formatMonth(targetMonth, 'long') : ''
+            filterOptions, selectedMonth, selectedMonthLong: selectedMonth ? formatMonth(selectedMonth, 'long') : ''
         });
 
     } catch (error) {
