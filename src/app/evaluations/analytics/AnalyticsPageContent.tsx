@@ -88,7 +88,15 @@ export default function AnalyticsPageContent() {
 
     const getRadarOption = (chartData: { value: number[], name: string }[], indicator: { name: string, max: number }[]) => ({
         tooltip: { trigger: 'item' },
-        radar: { indicator: indicator, shape: 'circle', center: ['50%', '55%'], radius: '65%' },
+        radar: {
+            indicator: indicator,
+            shape: 'circle',
+            center: ['50%', '55%'],
+            radius: '65%',
+            axisName: {
+                color: '#333' // Darken indicator text color
+            }
+        },
         series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }]
     });
 
@@ -171,7 +179,7 @@ export default function AnalyticsPageContent() {
                                         <thead>
                                             <tr>
                                                 <th>月</th>
-                                                {monthlySummary.rawData[0] && Object.keys(monthlySummary.rawData[0]).filter(k => k !== 'month').map(key => <th key={key}>{key}</th>)}
+                                                {monthlySummary.rawData[0] && Object.keys(monthlySummary.rawData[0]).filter(k => k !== 'month').sort((a, b) => a === '合計' ? 1 : b === '合計' ? -1 : 0).map(key => <th key={key}>{key}</th>)}
                                             </tr>
                                         </thead>
                                         <tbody>

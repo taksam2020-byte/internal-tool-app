@@ -94,7 +94,8 @@ export async function GET(request: Request) {
                 acc[evaluationItemLabels[key]] = parseFloat((monthData.itemTotals[key] / monthData.count).toFixed(1));
                 return acc;
             }, {} as {[key: string]: number});
-            return { month: formatMonth(month, 'short'), totalScore: parseFloat((monthData.totalScoreSum / monthData.count).toFixed(1)), ...itemAvgs };
+            const total = parseFloat((monthData.totalScoreSum / monthData.count).toFixed(1));
+            return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': total };
         });
 
         const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#8A2BE2', '#D2691E', '#7FFF00'];
