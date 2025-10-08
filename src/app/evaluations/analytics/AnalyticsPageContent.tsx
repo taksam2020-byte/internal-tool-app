@@ -46,36 +46,44 @@ export default function AnalyticsPageContent() {
     const [commentPage, setCommentPage] = useState(0);
 
     useEffect(() => {
-        const fetchData = async () => {
-            setLoading(true);
+        const fetchOptions = async () => {
             try {
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations`);
                 setData(res.data);
-                if (res.data.filterOptions?.targets?.length > 0 && !selectedTarget) {
+                if (res.data.filterOptions?.targets?.length > 0) {
                     setSelectedTarget(res.data.filterOptions.targets[0]);
                 }
-            } catch (err) { setError('データの読み込みに失敗しました。'); console.error(err); } 
-            finally { setLoading(false); }
+            } catch (err) { 
+                setError('フィルターオプションの読み込みに失敗しました。'); 
+                console.error(err); 
+            } finally {
+                setLoading(false);
+            }
         };
-        fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        fetchOptions();
     }, []);
 
     useEffect(() => {
-        if (!selectedTarget) return;
+        if (!selectedTarget || !data.filterOptions.months.length) return;
+
         const fetchData = async () => {
             setLoading(true);
             try {
-                const params = new URLSearchParams({ target: selectedTarget });
-                if (data.filterOptions.months.length > currentMonthIndex) {
-                    params.append('month', data.filterOptions.months[currentMonthIndex]);
-                }
+                const params = new URLSearchParams({
+                    target: selectedTarget,
+                    month: data.filterOptions.months[currentMonthIndex]
+                });
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations?${params.toString()}`);
                 console.log('--- FETCH_API_RESPONSE ---', res.data);
-                setData(prevData => ({ ...res.data, filterOptions: prevData.filterOptions }));
-            } catch (err) { setError('分析データの読み込みに失敗しました。'); console.error(err); } 
-            finally { setLoading(false); }
+                setData(currentData => ({ ...currentData, ...res.data }));
+            } catch (err) { 
+                setError('分析データの読み込みに失敗しました。'); 
+                console.error(err); 
+            } finally {
+                setLoading(false);
+            }
         };
+
         fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTarget, currentMonthIndex]);

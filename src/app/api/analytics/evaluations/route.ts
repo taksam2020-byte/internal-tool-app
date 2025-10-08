@@ -50,6 +50,12 @@ export async function GET(request: Request) {
         // 4. Fetch all necessary data from DB based on the determined target
         const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT name FROM users WHERE is_active = TRUE AND role IN ('admin', 'manager', 'staff');`;
         const { rows: evaluationsForMonth } = await sql<EvaluationFromDb>`SELECT * FROM evaluations WHERE target_employee_name = ${targetForData} AND to_char(submitted_at, 'YYYY-MM') = ${monthForData};`;
+
+        console.log(`[DEBUG] potentialEvaluators count: ${potentialEvaluators.length}`);
+        console.log(`[DEBUG] evaluationsForMonth count: ${evaluationsForMonth.length}`);
+        // console.log(`[DEBUG] potentialEvaluators data:`, JSON.stringify(potentialEvaluators, null, 2));
+        // console.log(`[DEBUG] evaluationsForMonth data:`, JSON.stringify(evaluationsForMonth, null, 2));
+
         const { rows: targetEvalsAllMonths } = await sql<EvaluationFromDb & { month: string }>`SELECT *, to_char(submitted_at, 'YYYY-MM') as month FROM evaluations WHERE target_employee_name = ${targetForData};`;
 
         // 5. Process data for "Cross Tab"
