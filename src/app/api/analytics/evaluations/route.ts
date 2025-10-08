@@ -48,7 +48,7 @@ export async function GET(request: Request) {
         }
 
         // 4. Fetch all necessary data from DB based on the determined target
-        const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT name FROM users WHERE is_active = TRUE AND role IN ('admin', 'manager', 'staff');`;
+        const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT name FROM users WHERE is_active = TRUE AND role IN ('内勤', '営業', '社長');`;
         const { rows: evaluationsForMonth } = await sql<EvaluationFromDb>`SELECT * FROM evaluations WHERE target_employee_name = ${targetForData} AND to_char(submitted_at, 'YYYY-MM') = ${monthForData};`;
 
         console.log(`[DEBUG] potentialEvaluators: ${JSON.stringify(potentialEvaluators)}`);
