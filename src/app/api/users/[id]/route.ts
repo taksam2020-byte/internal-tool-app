@@ -32,10 +32,21 @@ export async function PUT(request: NextRequest, { params }: any) {
 export async function DELETE(_request: NextRequest, { params }: any) {
     try {
         const id = parseInt(params.id, 10);
+        const { rows: users } = await sql`SELECT name FROM users WHERE id = ${id}`;
+        if (users.length === 0) {
+            return NextResponse.json({ message: 'User not found' }, { status: 404 });
+        }
+        const userName = users[0].name;
+
+        // Delete related evaluations first
+        await sql`DELETE FROM evaluations WHERE evaluator_name = ${userName} OR target_employee_name = ${userName};`;
+
+        // Then delete the user
         await sql`DELETE FROM users WHERE id = ${id};`;
-        return NextResponse.json({ message: 'User deleted successfully' }, { status: 200 });
+
+        return NextResponse.json({ message: 'User and related evaluations deleted successfully' }, { status: 200 });
     } catch (error) {
-        console.error('Failed to delete user:', error);
+        console.error('Failed to delete user and evaluations:', error);
         return NextResponse.json({ message: 'Error deleting user' }, { status: 500 });
     }
 }
