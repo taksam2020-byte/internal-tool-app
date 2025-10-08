@@ -25,8 +25,8 @@ const formatMonth = (ym: string | null, format: 'long' | 'short') => {
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
-        let selectedMonth = searchParams.get('month');
-        let selectedTarget = searchParams.get('target');
+        const initialMonth = searchParams.get('month');
+        const initialTarget = searchParams.get('target');
 
         // 1. Get all available filter options from the DB
         const allEvalsResult = await sql<{ submitted_at: string; target_employee_name: string; }>`
@@ -36,25 +36,21 @@ export async function GET(request: Request) {
         const filterOptions = { months: sortedMonths, targets: sortedTargets };
 
         // 2. Determine the target for fetching data (use defaults if not provided)
-        if (!selectedTarget) {
-            selectedTarget = sortedTargets[0] || null;
-        }
-        if (!selectedMonth) {
-            selectedMonth = sortedMonths[0] || null;
-        }
+        const targetForData = initialTarget || sortedTargets[0] || null;
+        const monthForData = initialMonth || sortedMonths[0] || null;
 
         // 3. Prepare base data structures
         const eChartsIndicator = evaluationItemKeys.map(key => ({ name: evaluationItemLabels[key], max: key === 'potential' ? 10 : 5 }));
 
         // If no data is available at all, return empty structure
-        if (!selectedMonth || !selectedTarget) {
-            return NextResponse.json({ filterOptions, crossTabData: { headers: [], rows: [], averages: {} }, comments: [], monthlySummary: { labels: [], datasets: [], rawData: [] }, eChartsRadarData: { indicator: eChartsIndicator, current: [], cumulative: [] }, currentMonthAverage: "0.0", cumulativeAverage: "0.0", selectedMonth, selectedMonthLong: formatMonth(selectedMonth, 'long') });
+        if (!monthForData || !targetForData) {
+            return NextResponse.json({ filterOptions, crossTabData: { headers: [], rows: [], averages: {} }, comments: [], monthlySummary: { labels: [], datasets: [], rawData: [] }, eChartsRadarData: { indicator: eChartsIndicator, current: [], cumulative: [] }, currentMonthAverage: "0.0", cumulativeAverage: "0.0", selectedMonth: monthForData, selectedMonthLong: formatMonth(monthForData, 'long') });
         }
 
         // 4. Fetch all necessary data from DB based on the determined target
         const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT name FROM users WHERE is_active = TRUE AND role IN ('admin', 'manager', 'staff');`;
-        const { rows: evaluationsForMonth } = await sql<EvaluationFromDb>`SELECT * FROM evaluations WHERE target_employee_name = ${selectedTarget} AND to_char(submitted_at, 'YYYY-MM') = ${selectedMonth};`;
-        const { rows: targetEvalsAllMonths } = await sql<EvaluationFromDb & { month: string }>`SELECT *, to_char(submitted_at, 'YYYY-MM') as month FROM evaluations WHERE target_employee_name = ${selectedTarget};`;
+        const { rows: evaluationsForMonth } = await sql<EvaluationFromDb>`SELECT * FROM evaluations WHERE target_employee_name = ${targetForData} AND to_char(submitted_at, 'YYYY-MM') = ${monthForData};`;
+        const { rows: targetEvalsAllMonths } = await sql<EvaluationFromDb & { month: string }>`SELECT *, to_char(submitted_at, 'YYYY-MM') as month FROM evaluations WHERE target_employee_name = ${targetForData};`;
 
         // 5. Process data for "Cross Tab"
         const crossTabHeaders = ['採点者', ...evaluationItemKeys.map(k => evaluationItemLabels[k]), '合計点'];
