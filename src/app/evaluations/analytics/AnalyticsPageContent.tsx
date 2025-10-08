@@ -5,10 +5,6 @@ import { Card, Row, Col, Spinner, Alert, Table, Nav, Button, Pagination } from '
 import { CaretUpFill, CaretDownFill } from 'react-bootstrap-icons';
 import axios from 'axios';
 import ReactECharts from 'echarts-for-react';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { Line } from 'react-chartjs-2';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 // Type Definitions (matching the new simplified API response)
 interface EChartsRadarData { indicator: { name: string; max: number }[]; current: { value: number[]; name: string }[]; cumulative: { value: number[]; name: string }[]; }
@@ -94,6 +90,7 @@ export default function AnalyticsPageContent() {
     const lineChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top' as const, onClick: () => {} } } };
 
     const { crossTabData, comments, eChartsRadarData, monthlySummary, currentMonthAverage, cumulativeAverage, filterOptions, selectedMonthLong } = data;
+    const crossTabAverages = crossTabData?.averages; // Extract averages
     const paginatedComments = comments?.slice(commentPage, commentPage + 1);
     const totalCommentPages = comments?.length || 0;
 
