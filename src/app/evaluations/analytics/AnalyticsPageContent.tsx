@@ -77,7 +77,7 @@ export default function AnalyticsPageContent() {
         };
 
         fetchData();
-    }, [selectedTarget, currentMonthIndex]);
+    }, [selectedTarget, currentMonthIndex, data.filterOptions.months]);
 
     const handleTargetClick = (target: string) => { setSelectedTarget(target); setCurrentMonthIndex(0); setCommentPage(0); };
     const handlePrevMonth = () => { if (currentMonthIndex < data.filterOptions.months.length - 1) { setCurrentMonthIndex(p => p + 1); setCommentPage(0); } };

@@ -4,11 +4,16 @@ import { useState } from 'react';
 import { Button, Container, Form, Spinner, Alert, Card } from 'react-bootstrap';
 import axios from 'axios';
 
+interface TestResult {
+    selectedMonth: string;
+    count: number;
+}
+
 export default function TestApiPage() {
     const [selectedMonth, setSelectedMonth] = useState('2025-10');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<TestResult | null>(null);
 
     const months = ['2025-10', '2025-09', '2025-08'];
 
@@ -18,10 +23,14 @@ export default function TestApiPage() {
         setResult(null);
         try {
             const params = new URLSearchParams({ month: selectedMonth });
-            const res = await axios.get(`/api/test?${params.toString()}`);
+            const res = await axios.get<TestResult>(`/api/test?${params.toString()}`);
             setResult(res.data);
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'An error occurred');
+        } catch (err) {
+            if (axios.isAxiosError(err) && err.response) {
+                setError(err.response.data?.message || 'An error occurred');
+            } else {
+                setError('An unknown error occurred');
+            }
             console.error(err);
         } finally {
             setLoading(false);
