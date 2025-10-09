@@ -32,15 +32,14 @@ export async function GET(request: Request) {
         }
 
         // --- 2. Fetch Data for the specific Month & Target
-        const firstDay = new Date(selectedMonth + '-01');
-        const lastDay = new Date(firstDay.getFullYear(), firstDay.getMonth() + 1, 0);
-        
         const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT id, name FROM users WHERE is_active = TRUE AND role IN ('内勤', '営業', '社長') ORDER BY id ASC;`;
-        const searchPattern = monthForData + '%';
+
+        const searchPattern = selectedMonth + '%';
         const { rows: evaluationsForMonth } = await sql<EvaluationFromDb>`
             SELECT * FROM evaluations 
-            WHERE target_employee_name = ${targetForData} 
+            WHERE target_employee_name = ${selectedTarget} 
             AND CAST(submitted_at AS TEXT) LIKE ${searchPattern}`;
+        
 
         // --- 3. Process CrossTab Data
         const crossTabHeaders = ['採点者', ...evaluationItemKeys.map(k => evaluationItemLabels[k]), '合計点'];
