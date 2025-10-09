@@ -124,9 +124,24 @@ export default function AnalyticsPageContent() {
             return key === 'potential' ? avg / 2 : avg;
         });
 
+        // ... (other calculations inside useMemo)
+
+        // Monthly Summary for table
+        const monthlySummaryRaw = Object.keys(allEvaluations.reduce((acc, e) => ({...acc, [e.month]: true}), {})).sort((a,b) => b.localeCompare(a)).slice(0,6).map(month => {
+            const monthEvals = allEvaluations.filter(e => e.month === month);
+            const monthNumEvals = monthEvals.length;
+            const itemAvgs = evaluationItemKeys.reduce((acc, key) => {
+                const total = monthEvals.reduce((sum, e) => sum + (e.scores_json[key] || 0), 0);
+                return {...acc, [evaluationItemLabels[key]]: parseFloat((total/monthNumEvals).toFixed(1))};
+            }, {} as {[key: string]: number});
+            const totalAvg = parseFloat((monthEvals.reduce((sum, e) => sum + e.total_score, 0) / monthNumEvals).toFixed(1));
+            return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': totalAvg };
+        });
+
         return {
             crossTabData: { headers: crossTabHeaders, rows: crossTabRows, averages: crossTabAverages },
             comments,
+            monthlySummary: { rawData: monthlySummaryRaw }, // Simplified for now
             eChartsRadarData: {
                 indicator: eChartsIndicator,
                 current: numEvaluators > 0 ? [{ value: currentMonthValues, name: '当月平均点' }] : [],
@@ -152,7 +167,7 @@ export default function AnalyticsPageContent() {
     if (error) return <Alert variant="danger">{error}</Alert>;
 
     const { filterOptions } = apiResponse;
-    const { crossTabData, comments, eChartsRadarData, currentMonthAverage, cumulativeAverage, selectedMonthLong } = processedData || {};
+    const { crossTabData, comments, eChartsRadarData, monthlySummary, currentMonthAverage, cumulativeAverage, selectedMonthLong } = processedData || {};
     const paginatedComments = comments?.slice(commentPage, commentPage + 1);
     const totalCommentPages = comments?.length || 0;
 
@@ -198,7 +213,68 @@ export default function AnalyticsPageContent() {
                                 ) : <Alert variant="light" className="mb-0">この月の評価データはありません。</Alert>}
                             </Card.Body>
                         </Card>
-                        {/* Other components will be added back here */}
+
+                        <Card className="mb-4">
+                            <Card.Header as="h5">採点者コメント</Card.Header>
+                            <Card.Body>
+                                {paginatedComments && paginatedComments.length > 0 ? (
+                                    <>
+                                        {paginatedComments.map((c, i) => (
+                                            <div key={i}><strong>{c.evaluator}:</strong><div className="mt-2 p-3 bg-light rounded" style={{whiteSpace: 'pre-wrap'}}>{c.comment}</div></div>
+                                        ))}
+                                    </>
+                                ) : <div className="text-center text-muted">この月のコメントはありません。</div>}
+                            </Card.Body>
+                            {totalCommentPages > 1 && <Card.Footer><Pagination className="mb-0 justify-content-center"><Pagination.Prev onClick={() => setCommentPage(p => Math.max(p - 1, 0))} disabled={commentPage === 0} /><Pagination.Item>{commentPage + 1} / {totalCommentPages}</Pagination.Item><Pagination.Next onClick={() => setCommentPage(p => Math.min(p + 1, totalCommentPages - 1))} disabled={commentPage >= totalCommentPages - 1} /></Pagination></Card.Footer>}
+                        </Card>
+
+                        <Card className="mb-4">
+                            <Card.Header as="h5">項目別平均点の月次推移</Card.Header>
+                            <Card.Body>
+                                {monthlySummary?.rawData && monthlySummary.rawData.length > 0 ? (
+                                    <Table striped bordered hover responsive size="sm" className="text-center align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>月</th>
+                                                {Object.keys(monthlySummary.rawData[0]).filter(k => k !== 'month').map(key => <th key={key}>{key}</th>)}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {monthlySummary.rawData.map((row, rIndex) => (
+                                                <tr key={rIndex}>
+                                                    {Object.values(row).map((val: any, cIndex) => <td key={cIndex}>{val as string | number}</td>)}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                ) : <Alert variant="light" className="mb-0">月次データがありません。</Alert>}
+                            </Card.Body>
+                        </Card>
+
+                        <Row>
+                            <Col md={6} className="mb-4">
+                                <Card className="h-100 text-center">
+                                    <Card.Header as="h5">当月平均点 (100点換算)</Card.Header>
+                                    <Card.Body>
+                                        <h2 className="display-4 fw-bold">{currentMonthAverage}</h2>
+                                        {eChartsRadarData?.current && <ReactECharts option={getRadarOption(eChartsRadarData.current, eChartsRadarData.indicator)} style={{ height: '300px' }} />}
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                            <Col md={6} className="mb-4">
+                                <Card className="h-100 text-center">
+                                    <Card.Header as="h5">累計平均点 (100点換算)</Card.Header>
+                                    <Card.Body>
+                                        <h2 className="display-4 fw-bold">{cumulativeAverage}</h2>
+                                        {eChartsRadarData?.cumulative && <ReactECharts option={getRadarOption(eChartsRadarData.cumulative, eChartsRadarData.indicator)} style={{ height: '300px' }} />}
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        </Row>
+                        
+                        <Alert variant="light" className="text-center small">
+                            ※グラフおよびレーダーチャート内の「将来性」項目は、他の項目との比較のため5点満点に換算して表示しています。
+                        </Alert>
                     </>
                 )}
             </main>
