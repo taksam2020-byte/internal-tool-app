@@ -1,21 +1,19 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
     try {
-        const { searchParams } = new URL(request.url);
-        const selectedMonth = searchParams.get('month');
+        const body = await request.json();
+        const selectedMonth = body.month;
 
         if (!selectedMonth) {
             return NextResponse.json({ error: 'Month parameter is required' }, { status: 400 });
         }
 
-        const firstDay = new Date(selectedMonth + '-01');
-        const lastDay = new Date(firstDay.getFullYear(), firstDay.getMonth() + 1, 0);
-
+        const searchPattern = selectedMonth + '%';
         const { rows } = await sql`
             SELECT COUNT(*) FROM evaluations 
-            WHERE submitted_at >= ${firstDay.toISOString()} AND submitted_at < ${new Date(lastDay.getTime() + 86400000).toISOString()}`;
+            WHERE CAST(submitted_at AS TEXT) LIKE ${searchPattern}`;
 
         const count = rows[0].count;
 

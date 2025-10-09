@@ -36,10 +36,11 @@ export async function GET(request: Request) {
         const lastDay = new Date(firstDay.getFullYear(), firstDay.getMonth() + 1, 0);
         
         const { rows: potentialEvaluators } = await sql<UserFromDb>`SELECT id, name FROM users WHERE is_active = TRUE AND role IN ('内勤', '営業', '社長') ORDER BY id ASC;`;
+        const searchPattern = monthForData + '%';
         const { rows: evaluationsForMonth } = await sql<EvaluationFromDb>`
             SELECT * FROM evaluations 
-            WHERE target_employee_name = ${selectedTarget} 
-            AND submitted_at >= ${firstDay.toISOString()} AND submitted_at < ${new Date(lastDay.getTime() + 86400000).toISOString()}`;
+            WHERE target_employee_name = ${targetForData} 
+            AND CAST(submitted_at AS TEXT) LIKE ${searchPattern}`;
 
         // --- 3. Process CrossTab Data
         const crossTabHeaders = ['採点者', ...evaluationItemKeys.map(k => evaluationItemLabels[k]), '合計点'];
