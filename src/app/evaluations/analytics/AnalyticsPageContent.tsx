@@ -242,7 +242,7 @@ export default function AnalyticsPageContent() {
                                         <tbody>
                                             {monthlySummary.rawData.map((row, rIndex) => (
                                                 <tr key={rIndex}>
-                                                    {Object.values(row).map((val, cIndex) => <td key={cIndex}>{val as string | number}</td>)}
+                                                    {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
                                                 </tr>
                                             ))}
                                         </tbody>
