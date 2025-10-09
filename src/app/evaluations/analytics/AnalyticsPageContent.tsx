@@ -5,6 +5,10 @@ import { Card, Row, Col, Spinner, Alert, Table, Nav, Button, Pagination } from '
 import { CaretUpFill, CaretDownFill } from 'react-bootstrap-icons';
 import axios from 'axios';
 import ReactECharts from 'echarts-for-react';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 // --- Type Definitions ---
 interface Evaluation {
