@@ -32,6 +32,17 @@ const formatMonth = (ym: string | null, format: 'long' | 'short') => {
     return format === 'long' ? `${year}年${parseInt(month, 10)}月度` : `${parseInt(month, 10)}月`;
 };
 
+const getRadarOption = (chartData: { value: number[], name: string }[], indicator: { name: string, max: number }[]) => ({
+    radar: {
+        indicator: indicator,
+        shape: 'circle',
+        center: ['50%', '55%'],
+        radius: '65%',
+        axisName: { color: '#333' }
+    },
+    series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }]
+});
+
 export default function AnalyticsPageContent() {
     // --- State Management ---
     const [apiResponse, setApiResponse] = useState<ApiResponse | null>(null);
