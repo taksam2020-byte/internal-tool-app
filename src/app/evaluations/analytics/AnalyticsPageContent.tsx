@@ -5,10 +5,6 @@ import { Card, Row, Col, Spinner, Alert, Table, Nav, Button, Pagination } from '
 import { CaretUpFill, CaretDownFill } from 'react-bootstrap-icons';
 import axios from 'axios';
 import ReactECharts from 'echarts-for-react';
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { Line } from 'react-chartjs-2';
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 // --- Type Definitions ---
 interface Evaluation { evaluator_name: string; scores_json: { [key: string]: number }; total_score: number; comment: string | null; month: string; }
@@ -19,10 +15,10 @@ interface ApiResponse {
     potentialEvaluators?: Evaluator[];
 }
 interface ProcessedData {
-    crossTabData: { headers: string[]; rows: any[]; averages: any };
+    crossTabData: { headers: string[]; rows: { [key: string]: string | number }[]; averages: { [key: string]: string | number } };
     comments: { evaluator: string; comment: string | null }[];
-    monthlySummary: { rawData: any[]; chartData: any };
-    eChartsRadarData: { indicator: any[]; current: any[]; cumulative: any[] };
+    monthlySummary: { rawData: { month: string; [key: string]: string | number }[]; chartData: { labels: string[]; datasets: { label: string; data: number[]; borderColor: string; backgroundColor: string; }[] } };
+    eChartsRadarData: { indicator: { name: string; max: number }[]; current: { value: number[]; name: string }[]; cumulative: { value: number[]; name: string }[] };
     currentMonthAverage: string;
     cumulativeAverage: string;
     selectedMonthLong: string;
@@ -38,7 +34,7 @@ const formatMonth = (ym: string | null, format: 'long' | 'short') => {
     return format === 'long' ? `${year}年${parseInt(month, 10)}月度` : `${parseInt(month, 10)}月`;
 };
 
-const getRadarOption = (chartData: any, indicator: any) => ({ radar: { indicator, shape: 'circle', center: ['50%', '55%'], radius: '65%', axisName: { color: '#333' } }, series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }] });
+const getRadarOption = (chartData: { value: number[], name: string }[], indicator: { name: string, max: number }[]) => ({ radar: { indicator, shape: 'circle', center: ['50%', '55%'], radius: '65%', axisName: { color: '#333' } }, series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }] });
 
 export default function AnalyticsPageContent() {
     // --- State Management ---
@@ -59,7 +55,7 @@ export default function AnalyticsPageContent() {
                 if (res.data.filterOptions?.targets?.length > 0) {
                     setSelectedTarget(res.data.filterOptions.targets[0]);
                 }
-            } catch (err) { setError('初期データの読み込みに失敗しました。'); }
+            } catch (err) { setError(`初期データの読み込みに失敗しました: ${(err as Error).message}`); console.error(err); }
         };
         fetchInitialOptions();
     }, []);
@@ -72,7 +68,7 @@ export default function AnalyticsPageContent() {
                 const params = new URLSearchParams({ target: selectedTarget });
                 const res = await axios.get<ApiResponse>(`/api/analytics/evaluations?${params.toString()}`);
                 setApiResponse(prev => ({ ...prev, ...res.data }));
-            } catch (err) { setError('対象者データの読み込みに失敗しました。'); }
+            } catch (err) { setError(`対象者データの読み込みに失敗しました: ${(err as Error).message}`); console.error(err); }
             finally { setLoading(false); }
         };
         fetchDataForTarget();
@@ -128,7 +124,7 @@ export default function AnalyticsPageContent() {
             }, {} as {[key: string]: number});
             const totalAvg = parseFloat((monthEvals.reduce((sum, e) => sum + e.total_score, 0) / monthNumEvals).toFixed(1));
             return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': totalAvg };
-        }).filter(Boolean);
+        }).filter((row): row is { month: string; '合計': number; [key: string]: string | number } => row !== null);
 
         // Radar Chart
         const eChartsIndicator = evaluationItemKeys.map(key => ({ name: evaluationItemLabels[key], max: key === 'potential' ? 10 : 5 }));
@@ -145,7 +141,7 @@ export default function AnalyticsPageContent() {
         setProcessedData({
             crossTabData: { headers: crossTabHeaders, rows: crossTabRows, averages: crossTabAverages },
             comments,
-            monthlySummary: { rawData: monthlySummaryRaw as any[], chartData: {} }, // chartData to be implemented
+            monthlySummary: { rawData: monthlySummaryRaw, chartData: { labels: [], datasets: [] } }, // chartData to be implemented
             eChartsRadarData: {
                 indicator: eChartsIndicator,
                 current: numEvaluators > 0 ? [{ value: currentMonthValues, name: '当月平均点' }] : [],
@@ -172,7 +168,7 @@ export default function AnalyticsPageContent() {
     if (error) return <Alert variant="danger">{error}</Alert>;
 
     const { filterOptions } = apiResponse;
-    const { crossTabData, comments, eChartsRadarData, monthlySummary, currentMonthAverage, cumulativeAverage, selectedMonthLong } = processedData;
+    const { crossTabData, comments, monthlySummary, eChartsRadarData, currentMonthAverage, cumulativeAverage, selectedMonthLong } = processedData;
     const paginatedComments = comments?.slice(commentPage, commentPage + 1);
     const totalCommentPages = comments?.length || 0;
 
@@ -217,7 +213,67 @@ export default function AnalyticsPageContent() {
                                 ) : <Alert variant="light" className="mb-0">この月の評価データはありません。</Alert>}
                             </Card.Body>
                         </Card>
-                        {/* Other components will be rendered here */}
+                        <Card className="mb-4">
+                            <Card.Header as="h5">採点者コメント</Card.Header>
+                            <Card.Body>
+                                {comments && comments.length > 0 ? (
+                                    <>
+                                        {comments.slice(commentPage, commentPage + 1).map((c, i) => (
+                                            <div key={i}><strong>{c.evaluator}:</strong><div className="mt-2 p-3 bg-light rounded" style={{whiteSpace: 'pre-wrap'}}>{c.comment}</div></div>
+                                        ))}
+                                    </>
+                                ) : <div className="text-center text-muted">この月のコメントはありません。</div>}
+                            </Card.Body>
+                            {comments && comments.length > 1 && <Card.Footer><Pagination className="mb-0 justify-content-center"><Pagination.Prev onClick={() => setCommentPage(p => Math.max(p - 1, 0))} disabled={commentPage === 0} /><Pagination.Item>{commentPage + 1} / {comments.length}</Pagination.Item><Pagination.Next onClick={() => setCommentPage(p => Math.min(p + 1, comments.length - 1))} disabled={commentPage >= comments.length - 1} /></Pagination></Card.Footer>}
+                        </Card>
+
+                        <Card className="mb-4">
+                            <Card.Header as="h5">項目別平均点の月次推移</Card.Header>
+                            <Card.Body>
+                                {monthlySummary?.rawData && monthlySummary.rawData.length > 0 ? (
+                                    <Table striped bordered hover responsive size="sm" className="text-center align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>月</th>
+                                                {Object.keys(monthlySummary.rawData[0]).filter(k => k !== 'month').map(key => <th key={key}>{key}</th>)}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {monthlySummary.rawData.map((row, rIndex) => (
+                                                <tr key={rIndex}>
+                                                    {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                ) : <Alert variant="light" className="mb-0">月次データがありません。</Alert>}
+                            </Card.Body>
+                        </Card>
+
+                        <Row>
+                            <Col md={6} className="mb-4">
+                                <Card className="h-100 text-center">
+                                    <Card.Header as="h5">当月平均点 (100点換算)</Card.Header>
+                                    <Card.Body>
+                                        <h2 className="display-4 fw-bold">{currentMonthAverage}</h2>
+                                        {eChartsRadarData?.current && <ReactECharts option={getRadarOption(eChartsRadarData.current, eChartsRadarData.indicator)} style={{ height: '300px' }} />}
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                            <Col md={6} className="mb-4">
+                                <Card className="h-100 text-center">
+                                    <Card.Header as="h5">累計平均点 (100点換算)</Card.Header>
+                                    <Card.Body>
+                                        <h2 className="display-4 fw-bold">{cumulativeAverage}</h2>
+                                        {eChartsRadarData?.cumulative && <ReactECharts option={getRadarOption(eChartsRadarData.cumulative, eChartsRadarData.indicator)} style={{ height: '300px' }} />}
+                                    </Card.Body>
+                                </Card>
+                            </Col>
+                        </Row>
+                        
+                        <Alert variant="light" className="text-center small">
+                            ※グラフおよびレーダーチャート内の「将来性」項目は、他の項目との比較のため5点満点に換算して表示しています。
+                        </Alert>
                     </>
                 )}
             </main>
