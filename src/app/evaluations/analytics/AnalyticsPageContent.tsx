@@ -149,10 +149,24 @@ export default function AnalyticsPageContent() {
             return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': totalAvg };
         });
 
+        const monthlySummaryChart = {
+            labels: lastSixMonths.map(m => formatMonth(m, 'short')),
+            datasets: evaluationItemKeys.map((key, index) => ({
+                label: evaluationItemLabels[key],
+                data: lastSixMonths.map(month => {
+                    const monthEvals = allEvaluations.filter(e => e.month === month);
+                    const avg = monthEvals.length > 0 ? monthEvals.reduce((sum, e) => sum + (e.scores_json[key] || 0), 0) / monthEvals.length : 0;
+                    return key === 'potential' ? avg / 2 : avg;
+                }),
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length] + '80',
+            }))
+        };
+
         return {
             crossTabData: { headers: crossTabHeaders, rows: crossTabRows, averages: crossTabAverages },
             comments,
-            monthlySummary: { rawData: monthlySummaryRaw }, // Simplified for now
+            monthlySummary: { rawData: monthlySummaryRaw, chartData: monthlySummaryChart },
             eChartsRadarData: {
                 indicator: eChartsIndicator,
                 current: numEvaluators > 0 ? [{ value: currentMonthValues, name: '当月平均点' }] : [],
@@ -176,6 +190,8 @@ export default function AnalyticsPageContent() {
     // --- Render Logic ---
     if (!apiResponse || !selectedTarget) return <div className="text-center vh-100 d-flex flex-column align-items-center justify-content-center"><Spinner animation="border" /> <p className="mt-3">分析データを読み込み中...</p></div>;
     if (error) return <Alert variant="danger">{error}</Alert>;
+
+    const lineChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top' as const, onClick: () => {} } } };
 
     const { filterOptions } = apiResponse;
     const { crossTabData, comments, eChartsRadarData, monthlySummary, currentMonthAverage, cumulativeAverage, selectedMonthLong } = processedData || {};
@@ -243,21 +259,26 @@ export default function AnalyticsPageContent() {
                             <Card.Header as="h5">項目別平均点の月次推移</Card.Header>
                             <Card.Body>
                                 {monthlySummary?.rawData && monthlySummary.rawData.length > 0 ? (
-                                    <Table striped bordered hover responsive size="sm" className="text-center align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>月</th>
-                                                {Object.keys(monthlySummary.rawData[0]).filter(k => k !== 'month').map(key => <th key={key}>{key}</th>)}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {monthlySummary.rawData.map((row, rIndex) => (
-                                                <tr key={rIndex}>
-                                                    {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
+                                    <>
+                                        <Table striped bordered hover responsive size="sm" className="text-center align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>月</th>
+                                                    {Object.keys(monthlySummary.rawData[0]).filter(k => k !== 'month').map(key => <th key={key}>{key}</th>)}
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </Table>
+                                            </thead>
+                                            <tbody>
+                                                {monthlySummary.rawData.map((row, rIndex) => (
+                                                    <tr key={rIndex}>
+                                                        {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </Table>
+                                        <div style={{ position: 'relative', height: '300px' }} className="mt-4">
+                                            {monthlySummary.chartData && <Line options={lineChartOptions} data={monthlySummary.chartData} />}
+                                        </div>
+                                    </>
                                 ) : <Alert variant="light" className="mb-0">月次データがありません。</Alert>}
                             </Card.Body>
                         </Card>
