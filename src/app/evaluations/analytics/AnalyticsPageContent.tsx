@@ -153,6 +153,9 @@ export default function AnalyticsPageContent() {
             return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': totalAvg };
         });
 
+        const lastSixMonths = monthlySummaryRaw.map(d => d.month).reverse(); // Re-create lastSixMonths
+        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#8A2BE2', '#D2691E', '#7FFF00'];
+
         const monthlySummaryChart = {
             labels: lastSixMonths.map(m => formatMonth(m, 'short')),
             datasets: evaluationItemKeys.map((key, index) => ({
