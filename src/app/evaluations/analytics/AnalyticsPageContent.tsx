@@ -64,6 +64,7 @@ export default function AnalyticsPageContent() {
                 const params = new URLSearchParams({
                     target: selectedTarget,
                     month: data.filterOptions.months[currentMonthIndex],
+                    _t: new Date().getTime().toString() // Cache-busting parameter
                 });
                 const res = await axios.get<AnalyticsData>(`/api/analytics/evaluations?${params.toString()}`);
                 setData(prevData => ({ ...prevData, ...res.data })); // Merge new data with existing filterOptions
