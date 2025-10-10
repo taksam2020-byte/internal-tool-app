@@ -28,9 +28,10 @@ const evaluationItemKeys = ['accuracy', 'discipline', 'cooperation', 'proactiven
 const evaluationItemLabels: { [key: string]: string } = { accuracy: '正確性', discipline: '規律性', cooperation: '協調性', proactiveness: '積極性', agility: '俊敏性', judgment: '判断力', expression: '表現力', comprehension: '理解力', interpersonal: '対人性', potential: '将来性' };
 const MAX_TOTAL_SCORE = 55;
 
-const formatMonth = (month: string | null, year: number) => {
-    if (!month) return '';
-    return `${year}年${month}月度`;
+const formatMonth = (ym: string | null, format: 'long' | 'short') => {
+    if (!ym) return '';
+    const [year, month] = ym.split('-');
+    return format === 'long' ? `${year}年${parseInt(month, 10)}月度` : `${parseInt(month, 10)}月`;
 };
 
 const getRadarOption = (chartData: { value: number[], name: string }[], indicator: { name: string, max: number }[]) => ({ radar: { indicator, shape: 'circle', center: ['50%', '55%'], radius: '65%', axisName: { color: '#333' } }, series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }] });
@@ -122,7 +123,7 @@ export default function AnalyticsPageContent() {
                 return {...acc, [evaluationItemLabels[key]]: parseFloat((total/monthNumEvals).toFixed(1))};
             }, {} as {[key: string]: number});
             const totalAvg = parseFloat((monthEvals.reduce((sum, e) => sum + e.total_score, 0) / monthNumEvals).toFixed(1));
-            return { month: formatMonth(month, 2025), ...itemAvgs, '合計': totalAvg };
+            return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': totalAvg };
         }).filter((row): row is { month: string; '合計': number; [key: string]: string | number } => row !== null);
 
         // Radar Chart
