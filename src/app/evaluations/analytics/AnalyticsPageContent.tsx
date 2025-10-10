@@ -125,7 +125,7 @@ export default function AnalyticsPageContent() {
         const comments = evaluationsForMonth.map(e => ({ evaluator: e.evaluator_name, comment: e.comment || 'コメントはありません。' })).sort((a, b) => a.evaluator.localeCompare(b.evaluator));
 
         // Monthly Summary
-        const monthlySummaryRaw = filterOptions.months.slice(0, 6).map(month => {
+        const monthlySummaryRaw = filterOptions.months.slice(0, 6).sort((a, b) => a.localeCompare(b)).map(month => {
             const monthEvals = allEvaluations.filter(e => e.month === month);
             const monthNumEvals = monthEvals.length;
             if (monthNumEvals === 0) return null;
@@ -213,7 +213,7 @@ export default function AnalyticsPageContent() {
                 </Nav>
             </div>
 
-            <main style={{ marginLeft: '230px', width: '100%' }}>
+            <main style={{ marginLeft: '20px', width: '100%' }}>
                 <div style={{ maxWidth: '960px' }}>
                     <h1 className="mb-4">集計・分析</h1>
                     {loading ? <div className="text-center my-4"><Spinner animation="border" /></div> : (
