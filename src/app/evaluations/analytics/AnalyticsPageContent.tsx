@@ -137,18 +137,23 @@ export default function AnalyticsPageContent() {
             return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': totalAvg };
         }).filter((row): row is { month: string; '合計': number; [key: string]: string | number } => row !== null);
 
-        // Chart data (ascending order)
-        const lastSixMonthsForChart = filterOptions.months.slice(0, 6).reverse(); // Ascending
+        // Chart data (last 6 months, ascending)
+        const lastSixMonths = [...Array(6)].map((_, i) => {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            return d.toISOString().slice(0, 7); // YYYY-MM
+        }).reverse(); // ascending
+
         const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#8A2BE2', '#D2691E', '#7FFF00'];
         const monthlySummaryChart = {
-            labels: lastSixMonthsForChart.map(m => formatMonth(m, 'short')),
+            labels: lastSixMonths.map(m => formatMonth(m, 'short')),
             datasets: evaluationItemKeys.map((key, index) => ({
                 label: evaluationItemLabels[key],
-                data: lastSixMonthsForChart.map(month => {
-                    const monthData = monthlySummaryRaw.find(d => d.month === formatMonth(month, 'short'));
-                    if (!monthData) return null;
-                    const avg = monthData[evaluationItemLabels[key]] as number;
-                    return key === 'potential' ? avg / 2 : avg;
+                data: lastSixMonths.map(month => {
+                    const monthEvals = allEvaluations.filter(e => e.month === month);
+                    if (monthEvals.length === 0) return null;
+                    const avg = monthEvals.reduce((sum, e) => sum + (e.scores_json[key] || 0), 0) / monthEvals.length;
+                    return key === 'potential' ? parseFloat((avg / 2).toFixed(1)) : parseFloat(avg.toFixed(1));
                 }),
                 borderColor: colors[index % colors.length],
                 backgroundColor: colors[index % colors.length] + '80',
@@ -220,7 +225,8 @@ export default function AnalyticsPageContent() {
                 </Nav>
             </div>
 
-            <main style={{ marginLeft: 'calc(16.666667% + 240px)', padding: '0 20px' }}>
+            <main style={{ paddingLeft: '240px', width: '100%' }}>
+                <div style={{ maxWidth: '960px', padding: '0 20px' }}>
                     <h1 className="mb-4">集計・分析</h1>
                     {loading ? <div className="text-center my-4"><Spinner animation="border" /></div> : (
                         <>
@@ -309,6 +315,7 @@ export default function AnalyticsPageContent() {
                         </Alert>
                     </>
                 )}
+                </div>
             </main>
         </div>
     );
