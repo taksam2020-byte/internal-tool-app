@@ -34,6 +34,7 @@ export async function GET(request: Request) {
         `;
 
         // 4. Return the raw data
+        console.log('--- RAW DB DATA ---', JSON.stringify(allEvaluations, null, 2));
         return NextResponse.json({ 
             filterOptions,
             allEvaluations,
