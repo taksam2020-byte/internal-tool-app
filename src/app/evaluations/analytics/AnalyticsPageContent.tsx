@@ -122,7 +122,7 @@ export default function AnalyticsPageContent() {
                 return {...acc, [evaluationItemLabels[key]]: parseFloat((total/monthNumEvals).toFixed(1))};
             }, {} as {[key: string]: number});
             const totalAvg = parseFloat((monthEvals.reduce((sum, e) => sum + e.total_score, 0) / monthNumEvals).toFixed(1));
-            return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': totalAvg };
+            return { month: formatMonth(month, 2025), ...itemAvgs, '合計': totalAvg };
         }).filter((row): row is { month: string; '合計': number; [key: string]: string | number } => row !== null);
 
         // Radar Chart
