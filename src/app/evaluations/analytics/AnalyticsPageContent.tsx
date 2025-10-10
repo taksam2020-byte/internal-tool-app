@@ -5,6 +5,10 @@ import { Card, Row, Col, Spinner, Alert, Table, Nav, Button, Pagination } from '
 import { CaretUpFill, CaretDownFill } from 'react-bootstrap-icons';
 import axios from 'axios';
 import ReactECharts from 'echarts-for-react';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 // --- Type Definitions ---
 interface Evaluation { evaluator_name: string; scores_json: { [key: string]: number }; total_score: number; comment: string | null; month: string; }
@@ -41,6 +45,7 @@ const formatMonth = (monthStr: string | null, format: 'long' | 'short') => {
 };
 
 const getRadarOption = (chartData: { value: number[], name: string }[], indicator: { name: string, max: number }[]) => ({ radar: { indicator, shape: 'circle', center: ['50%', '55%'], radius: '65%', axisName: { color: '#333' } }, series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }] });
+const lineChartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'top' as const, onClick: () => {} } } };
 
 export default function AnalyticsPageContent() {
     // --- State Management ---
@@ -132,6 +137,17 @@ export default function AnalyticsPageContent() {
             return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': totalAvg };
         }).filter((row): row is { month: string; '合計': number; [key: string]: string | number } => row !== null);
 
+        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#8A2BE2', '#D2691E', '#7FFF00'];
+        const monthlySummaryChart = {
+            labels: monthlySummaryRaw.map(d => d.month).reverse(),
+            datasets: evaluationItemKeys.map((key, index) => ({
+                label: evaluationItemLabels[key],
+                data: monthlySummaryRaw.map(d => d[evaluationItemLabels[key]] as number).reverse(),
+                borderColor: colors[index % colors.length],
+                backgroundColor: colors[index % colors.length] + '80',
+            }))
+        };
+
         // Radar Chart
         const eChartsIndicator = evaluationItemKeys.map(key => ({ name: evaluationItemLabels[key], max: key === 'potential' ? 10 : 5 }));
         const currentMonthValues = evaluationItemKeys.map(key => {
@@ -147,7 +163,7 @@ export default function AnalyticsPageContent() {
         setProcessedData({
             crossTabData: { headers: crossTabHeaders, rows: crossTabRows, averages: crossTabAverages },
             comments,
-            monthlySummary: { rawData: monthlySummaryRaw, chartData: { labels: [], datasets: [] } }, // chartData to be implemented
+            monthlySummary: { rawData: monthlySummaryRaw, chartData: monthlySummaryChart },
             eChartsRadarData: {
                 indicator: eChartsIndicator,
                 current: numEvaluators > 0 ? [{ value: currentMonthValues, name: '当月平均点' }] : [],
@@ -197,12 +213,13 @@ export default function AnalyticsPageContent() {
                 </Nav>
             </div>
 
-            <main style={{ marginLeft: '240px', width: '100%' }}>
-                <h1 className="mb-4">集計・分析</h1>
-                {loading ? <div className="text-center my-4"><Spinner animation="border" /></div> : (
-                    <>
-                        <Card className="mb-4">
-                            <Card.Header as="h5">採点結果</Card.Header>
+            <main style={{ marginLeft: '230px', width: '100%' }}>
+                <div style={{ maxWidth: '960px' }}>
+                    <h1 className="mb-4">集計・分析</h1>
+                    {loading ? <div className="text-center my-4"><Spinner animation="border" /></div> : (
+                        <>
+                            <Card className="mb-4">
+                                <Card.Header as="h5">採点結果</Card.Header>
                             <Card.Body>
                                 {crossTabData && crossTabData.rows.length > 0 ? (
                                     <Table striped bordered hover responsive size="sm" className="text-center align-middle">
@@ -235,24 +252,28 @@ export default function AnalyticsPageContent() {
 
                         <Card className="mb-4">
                             <Card.Header as="h5">項目別平均点の月次推移</Card.Header>
-                            <Card.Body>
-                                {monthlySummary?.rawData && monthlySummary.rawData.length > 0 ? (
-                                    <Table striped bordered hover responsive size="sm" className="text-center align-middle">
-                                        <thead>
-                                            <tr>
-                                                <th>月</th>
-                                                {Object.keys(monthlySummary.rawData[0]).filter(k => k !== 'month').map(key => <th key={key}>{key}</th>)}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {monthlySummary.rawData.map((row, rIndex) => (
-                                                <tr key={rIndex}>
-                                                    {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </Table>
-                                ) : <Alert variant="light" className="mb-0">月次データがありません。</Alert>}
+                                                        <Card.Body>
+                                                            {monthlySummary?.rawData && monthlySummary.rawData.length > 0 ? (
+                                                                <>
+                                                                    <Table striped bordered hover responsive size="sm" className="text-center align-middle">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>月</th>
+                                                                                {Object.keys(monthlySummary.rawData[0]).filter(k => k !== 'month').map(key => <th key={key}>{key}</th>)}
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {monthlySummary.rawData.map((row, rIndex) => (
+                                                                                <tr key={rIndex}>
+                                                                                    {Object.values(row).map((val: string | number, cIndex) => <td key={cIndex}>{val}</td>)}
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </Table>
+                                                                    <div style={{ position: 'relative', height: '300px' }} className="mt-4">
+                                                                        {monthlySummary.chartData && <Line options={lineChartOptions} data={monthlySummary.chartData} />}
+                                                                    </div>
+                                                                </>                                ) : <Alert variant="light" className="mb-0">月次データがありません。</Alert>}
                             </Card.Body>
                         </Card>
 
@@ -282,6 +303,7 @@ export default function AnalyticsPageContent() {
                         </Alert>
                     </>
                 )}
+                </div>
             </main>
         </div>
     );
