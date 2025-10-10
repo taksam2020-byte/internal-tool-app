@@ -1,31 +1,43 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-// Minimal API to fetch all data for a given target.
-// All filtering and processing will be done on the client-side.
+// --- Constants ---
+const evaluationItemKeys = ['accuracy', 'discipline', 'cooperation', 'proactiveness', 'agility', 'judgment', 'expression', 'comprehension', 'interpersonal', 'potential'];
+const evaluationItemLabels: { [key: string]: string } = { accuracy: '正確性', discipline: '規律性', cooperation: '協調性', proactiveness: '積極性', agility: '俊敏性', judgment: '判断力', expression: '表現力', comprehension: '理解力', interpersonal: '対人性', potential: '将来性' };
+const MAX_TOTAL_SCORE = 55;
 
+// --- Type Definitions ---
 interface UserFromDb { id: number; name: string; }
+interface EvaluationFromDb { evaluator_name: string; scores_json: { [key: string]: number }; total_score: number; comment: string | null; evaluation_month: string; }
 
+// --- Helper Functions ---
+const formatMonth = (month: string | null) => {
+    if (!month) return '';
+    // Assuming month is 'YYYY-MM' format from the database
+    const [year, monthNum] = month.split('-');
+    return `${year}年${parseInt(monthNum, 10)}月度`;
+};
+
+// --- Main API Route Handler ---
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const selectedTarget = searchParams.get('target');
 
-        // 1. Get all available filter options from the DB
-        const allEvalsResult = await sql<{ submitted_at: string; target_employee_name: string; }>`
-            SELECT DISTINCT to_char(submitted_at, 'YYYY-MM') as submitted_at, target_employee_name FROM evaluations;`;
-        const sortedMonths = [...new Set(allEvalsResult.rows.map(e => e.submitted_at))].sort((a, b) => b.localeCompare(a));
+        // 1. Get Filter Options from evaluation_month
+        const allEvalsResult = await sql<{ evaluation_month: string; target_employee_name: string; }>`
+            SELECT DISTINCT evaluation_month, target_employee_name FROM evaluations;`;
+        const sortedMonths = [...new Set(allEvalsResult.rows.map(e => e.evaluation_month))].sort((a, b) => b.localeCompare(a));
         const sortedTargets = [...new Set(allEvalsResult.rows.map(e => e.target_employee_name))].sort();
         const filterOptions = { months: sortedMonths, targets: sortedTargets };
 
-        // If no target is specified, return only the filter options.
         if (!selectedTarget) {
             return NextResponse.json({ filterOptions, allEvaluations: [], potentialEvaluators: [] });
         }
 
         // 2. Fetch all evaluations for the selected target
-        const { rows: allEvaluations } = await sql`
-            SELECT *, to_char(submitted_at, 'YYYY-MM') as month FROM evaluations WHERE target_employee_name = ${selectedTarget};
+        const { rows: allEvaluations } = await sql<EvaluationFromDb>`
+            SELECT * FROM evaluations WHERE target_employee_name = ${selectedTarget};
         `;
 
         // 3. Fetch all potential evaluators
@@ -34,10 +46,9 @@ export async function GET(request: Request) {
         `;
 
         // 4. Return the raw data
-        console.log('--- RAW DB DATA ---', JSON.stringify(allEvaluations, null, 2));
         return NextResponse.json({ 
             filterOptions,
-            allEvaluations,
+            allEvaluations: allEvaluations.map(e => ({...e, month: e.evaluation_month})), // Add month property for frontend
             potentialEvaluators
         });
 

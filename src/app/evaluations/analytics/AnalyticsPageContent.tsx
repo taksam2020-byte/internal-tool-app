@@ -28,10 +28,9 @@ const evaluationItemKeys = ['accuracy', 'discipline', 'cooperation', 'proactiven
 const evaluationItemLabels: { [key: string]: string } = { accuracy: '正確性', discipline: '規律性', cooperation: '協調性', proactiveness: '積極性', agility: '俊敏性', judgment: '判断力', expression: '表現力', comprehension: '理解力', interpersonal: '対人性', potential: '将来性' };
 const MAX_TOTAL_SCORE = 55;
 
-const formatMonth = (ym: string | null, format: 'long' | 'short') => {
-    if (!ym) return '';
-    const [year, month] = ym.split('-');
-    return format === 'long' ? `${year}年${parseInt(month, 10)}月度` : `${parseInt(month, 10)}月`;
+const formatMonth = (month: string | null, year: number) => {
+    if (!month) return '';
+    return `${year}年${month}月度`;
 };
 
 const getRadarOption = (chartData: { value: number[], name: string }[], indicator: { name: string, max: number }[]) => ({ radar: { indicator, shape: 'circle', center: ['50%', '55%'], radius: '65%', axisName: { color: '#333' } }, series: [{ type: 'radar', data: chartData, areaStyle: { opacity: 0.2 } }] });
