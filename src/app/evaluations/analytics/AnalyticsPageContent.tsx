@@ -21,7 +21,7 @@ interface ApiResponse {
 interface ProcessedData {
     crossTabData: { headers: string[]; rows: { [key: string]: string | number }[]; averages: { [key: string]: string | number } };
     comments: { evaluator: string; comment: string | null }[];
-    monthlySummary: { rawData: { month: string; [key: string]: string | number }[]; chartData: { labels: string[]; datasets: { label: string; data: number[]; borderColor: string; backgroundColor: string; }[] } };
+    monthlySummary: { rawData: { month: string; [key: string]: string | number }[]; chartData: { labels: string[]; datasets: { label: string; data: (number | null)[]; borderColor: string; backgroundColor: string; }[] } };
     eChartsRadarData: { indicator: { name: string; max: number }[]; current: { value: number[]; name: string }[]; cumulative: { value: number[]; name: string }[] };
     currentMonthAverage: string;
     cumulativeAverage: string;
@@ -125,7 +125,8 @@ export default function AnalyticsPageContent() {
         const comments = evaluationsForMonth.map(e => ({ evaluator: e.evaluator_name, comment: e.comment || 'コメントはありません。' })).sort((a, b) => a.evaluator.localeCompare(b.evaluator));
 
         // Monthly Summary
-        const monthlySummaryRaw = filterOptions.months.slice(0, 6).sort((a, b) => a.localeCompare(b)).map(month => {
+        // Monthly Summary for table
+        const monthlySummaryRaw = filterOptions.months.slice(0, 6).map(month => {
             const monthEvals = allEvaluations.filter(e => e.month === month);
             const monthNumEvals = monthEvals.length;
             if (monthNumEvals === 0) return null;
@@ -138,11 +139,23 @@ export default function AnalyticsPageContent() {
         }).filter((row): row is { month: string; '合計': number; [key: string]: string | number } => row !== null);
 
         const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#8A2BE2', '#D2691E', '#7FFF00'];
+
+        const lastSixMonths = [...Array(6)].map((_, i) => {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            return d.toISOString().slice(0, 7); // YYYY-MM
+        }).reverse();
+
         const monthlySummaryChart = {
-            labels: monthlySummaryRaw.map(d => d.month).reverse(),
+            labels: lastSixMonths.map(m => formatMonth(m, 'short')),
             datasets: evaluationItemKeys.map((key, index) => ({
                 label: evaluationItemLabels[key],
-                data: monthlySummaryRaw.map(d => d[evaluationItemLabels[key]] as number).reverse(),
+                data: lastSixMonths.map(month => {
+                    const monthData = monthlySummaryRaw.find(d => d.month === formatMonth(month, 'short'));
+                    if (!monthData) return null;
+                    const avg = monthData[evaluationItemLabels[key]] as number;
+                    return key === 'potential' ? avg / 2 : avg;
+                }),
                 borderColor: colors[index % colors.length],
                 backgroundColor: colors[index % colors.length] + '80',
             }))
@@ -213,8 +226,7 @@ export default function AnalyticsPageContent() {
                 </Nav>
             </div>
 
-            <main style={{ marginLeft: '20px', width: '100%' }}>
-                <div style={{ maxWidth: '960px' }}>
+            <main style={{ marginLeft: 'calc(16.666667% + 260px)', paddingRight: '20px' }}>
                     <h1 className="mb-4">集計・分析</h1>
                     {loading ? <div className="text-center my-4"><Spinner animation="border" /></div> : (
                         <>
@@ -303,7 +315,6 @@ export default function AnalyticsPageContent() {
                         </Alert>
                     </>
                 )}
-                </div>
             </main>
         </div>
     );
