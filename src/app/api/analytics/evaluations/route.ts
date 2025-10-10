@@ -1,22 +1,11 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-// --- Constants ---
-const evaluationItemKeys = ['accuracy', 'discipline', 'cooperation', 'proactiveness', 'agility', 'judgment', 'expression', 'comprehension', 'interpersonal', 'potential'];
-const evaluationItemLabels: { [key: string]: string } = { accuracy: '正確性', discipline: '規律性', cooperation: '協調性', proactiveness: '積極性', agility: '俊敏性', judgment: '判断力', expression: '表現力', comprehension: '理解力', interpersonal: '対人性', potential: '将来性' };
-const MAX_TOTAL_SCORE = 55;
+// Minimal API to fetch all data for a given target.
+// All filtering and processing will be done on the client-side.
 
-// --- Type Definitions ---
 interface UserFromDb { id: number; name: string; }
 interface EvaluationFromDb { evaluator_name: string; scores_json: { [key: string]: number }; total_score: number; comment: string | null; evaluation_month: string; }
-
-// --- Helper Functions ---
-const formatMonth = (month: string | null) => {
-    if (!month) return '';
-    // Assuming month is 'YYYY-MM' format from the database
-    const [year, monthNum] = month.split('-');
-    return `${year}年${parseInt(monthNum, 10)}月度`;
-};
 
 // --- Main API Route Handler ---
 export async function GET(request: Request) {
