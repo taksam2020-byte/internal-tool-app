@@ -124,8 +124,7 @@ export default function AnalyticsPageContent() {
         // Comments
         const comments = evaluationsForMonth.map(e => ({ evaluator: e.evaluator_name, comment: e.comment || 'コメントはありません。' })).sort((a, b) => a.evaluator.localeCompare(b.evaluator));
 
-        // Monthly Summary
-        // Monthly Summary for table
+        // Monthly Summary for table (descending order)
         const monthlySummaryRaw = filterOptions.months.slice(0, 6).map(month => {
             const monthEvals = allEvaluations.filter(e => e.month === month);
             const monthNumEvals = monthEvals.length;
@@ -138,19 +137,14 @@ export default function AnalyticsPageContent() {
             return { month: formatMonth(month, 'short'), ...itemAvgs, '合計': totalAvg };
         }).filter((row): row is { month: string; '合計': number; [key: string]: string | number } => row !== null);
 
+        // Chart data (ascending order)
+        const lastSixMonthsForChart = filterOptions.months.slice(0, 6).reverse(); // Ascending
         const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#8A2BE2', '#D2691E', '#7FFF00'];
-
-        const lastSixMonths = [...Array(6)].map((_, i) => {
-            const d = new Date();
-            d.setMonth(d.getMonth() - i);
-            return d.toISOString().slice(0, 7); // YYYY-MM
-        }).reverse();
-
         const monthlySummaryChart = {
-            labels: lastSixMonths.map(m => formatMonth(m, 'short')),
+            labels: lastSixMonthsForChart.map(m => formatMonth(m, 'short')),
             datasets: evaluationItemKeys.map((key, index) => ({
                 label: evaluationItemLabels[key],
-                data: lastSixMonths.map(month => {
+                data: lastSixMonthsForChart.map(month => {
                     const monthData = monthlySummaryRaw.find(d => d.month === formatMonth(month, 'short'));
                     if (!monthData) return null;
                     const avg = monthData[evaluationItemLabels[key]] as number;
@@ -226,7 +220,7 @@ export default function AnalyticsPageContent() {
                 </Nav>
             </div>
 
-            <main style={{ marginLeft: 'calc(16.666667% + 260px)', paddingRight: '20px' }}>
+            <main style={{ marginLeft: 'calc(16.666667% + 240px)', padding: '0 20px' }}>
                     <h1 className="mb-4">集計・分析</h1>
                     {loading ? <div className="text-center my-4"><Spinner animation="border" /></div> : (
                         <>
