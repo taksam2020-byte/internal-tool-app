@@ -26,6 +26,7 @@ let nextId = 5;
 export default function ProposalsPage() {
   const { settings, isSettingsLoaded } = useSettings();
   const [users, setUsers] = useState<User[]>([]);
+  const [allowedUsers, setAllowedUsers] = useState<User[]>([]);
   const [proposerName, setProposerName] = useState('');
   const [proposals, setProposals] = useState<ProposalItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
