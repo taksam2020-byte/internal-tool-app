@@ -25,12 +25,11 @@ function UserManagement() {
         setLoading(true);
         try {
             const res = await axios.get<User[]>('/api/users');
-            const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3 };
+            const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3, '営業研修生': 4, '内勤研修生': 5 };
             const sortedUsers = res.data.sort((a, b) => {
-                const roleA = a.role || '内勤';
-                const roleB = b.role || '内勤';
-                const orderA = roleOrder[roleA] || 4;
-                const orderB = roleOrder[roleB] || 4;
+                const getSortKey = (user: User) => user.is_trainee ? `${user.role}研修生` : user.role;
+                const orderA = roleOrder[getSortKey(a)] || 99;
+                const orderB = roleOrder[getSortKey(b)] || 99;
                 if (orderA !== orderB) return orderA - orderB;
                 return a.id - b.id;
             });
@@ -100,10 +99,8 @@ function UserManagement() {
     const currentUsers = users.slice(indexOfFirstUser, indexOfLastUser);
     const totalPages = Math.ceil(users.length / usersPerPage);
 
-    const userColumns: [User[], User[]] = [[], []];
-    currentUsers.forEach((user, index) => {
-        userColumns[index % 2].push(user);
-    });
+    const half = Math.ceil(currentUsers.length / 2);
+    const userColumns: [User[], User[]] = [currentUsers.slice(0, half), currentUsers.slice(half)];
 
     return (
         <Card className="mb-4">
@@ -283,12 +280,11 @@ function ApplicationsManagement() {
                 axios.get<User[]>('/api/users'),
             ]);
             setApplications(appsRes.data);
-            const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3 };
+            const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3, '営業研修生': 4, '内勤研修生': 5 };
             const sortedUsers = usersRes.data.sort((a, b) => {
-                const roleA = a.role || '内勤';
-                const roleB = b.role || '内勤';
-                const orderA = roleOrder[roleA] || 4;
-                const orderB = roleOrder[roleB] || 4;
+                const getSortKey = (user: User) => user.is_trainee ? `${user.role}研修生` : user.role;
+                const orderA = roleOrder[getSortKey(a)] || 99;
+                const orderB = roleOrder[getSortKey(b)] || 99;
                 if (orderA !== orderB) return orderA - orderB;
                 return a.id - b.id;
             });
