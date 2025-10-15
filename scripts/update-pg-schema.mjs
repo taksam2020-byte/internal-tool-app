@@ -23,6 +23,15 @@ async function updateSchema() {
   `;
   console.log('Table "applications" created or already exists.');
 
+  // Create a new app_settings table if it doesn't exist
+  await sql`
+    CREATE TABLE IF NOT EXISTS app_settings (
+      key VARCHAR(255) PRIMARY KEY,
+      value JSONB NOT NULL
+    );
+  `;
+  console.log('Table "app_settings" created or already exists.');
+
   console.log('Schema update complete.');
 }
 

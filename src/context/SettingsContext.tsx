@@ -54,42 +54,28 @@ const SettingsContext = createContext<SettingsContextType>({
 
 export const useSettings = () => useContext(SettingsContext);
 
+import axios from 'axios';
+
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const [settings, setSettings] = useState<AppSettings>(defaultSettings);
     const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
 
     useEffect(() => {
-        try {
-            const savedSettings = localStorage.getItem(SETTINGS_KEY);
-            if (savedSettings) {
-                const parsed = JSON.parse(savedSettings);
-                // Ensure array fields exist for backward compatibility
-                parsed.customerEmails = Array.isArray(parsed.customerEmails) ? parsed.customerEmails : [];
-                parsed.reservationEmails = Array.isArray(parsed.reservationEmails) ? parsed.reservationEmails : [];
-                parsed.proposalEmails = Array.isArray(parsed.proposalEmails) ? parsed.proposalEmails : [];
-                parsed.evaluationTargets = Array.isArray(parsed.evaluationTargets) ? parsed.evaluationTargets : [];
-                parsed.customerAllowedRoles = Array.isArray(parsed.customerAllowedRoles) ? parsed.customerAllowedRoles : [];
-                parsed.reservationAllowedRoles = Array.isArray(parsed.reservationAllowedRoles) ? parsed.reservationAllowedRoles : [];
-                parsed.evaluationAllowedRoles = Array.isArray(parsed.evaluationAllowedRoles) ? parsed.evaluationAllowedRoles : [];
-                parsed.proposalAllowedRoles = Array.isArray(parsed.proposalAllowedRoles) ? parsed.proposalAllowedRoles : [];
-                parsed.evaluationDeadline = parsed.evaluationDeadline || '';
-                setSettings(prev => ({ ...prev, ...parsed }));
-            }
-        } catch (error) {
-            console.error("Failed to load settings from localStorage", error);
-        }
-        setIsSettingsLoaded(true);
-    }, []);
-
-    useEffect(() => {
-        if (isSettingsLoaded) {
+        const fetchSettings = async () => {
             try {
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+                const response = await axios.get('/api/settings');
+                if (response.data && Object.keys(response.data).length > 0) {
+                    // Merge fetched settings with defaults to ensure all keys are present
+                    setSettings(prev => ({ ...prev, ...response.data }));
+                }
             } catch (error) {
-                console.error("Failed to save settings to localStorage", error);
+                console.error("Failed to load settings from database", error);
             }
-        }
-    }, [settings, isSettingsLoaded]);
+            setIsSettingsLoaded(true);
+        };
+
+        fetchSettings();
+    }, []);
 
     return (
         <SettingsContext.Provider value={{ settings, setSettings, isSettingsLoaded }}>

@@ -407,11 +407,18 @@ function ApplicationsManagement() {
 
 export default function AdminPage() {
     const { isAuthenticated } = useAuth();
+    const { settings } = useSettings(); // Get settings to save
     const router = useRouter();
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-    const handleSave = () => {
-        setShowSuccessModal(true);
+    const handleSave = async () => {
+        try {
+            await axios.post('/api/settings', settings);
+            setShowSuccessModal(true);
+        } catch (error) {
+            console.error("Failed to save settings", error);
+            alert('設定の保存に失敗しました。');
+        }
     };
 
     useEffect(() => {
