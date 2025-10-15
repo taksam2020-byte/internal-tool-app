@@ -199,6 +199,9 @@ export default function NewCustomerPage() {
                 </Form.Group>
                 <Form.Group as={Col} md="6">
                     <Form.Label>担当者<span className="text-danger">*</span></Form.Label>
+                    {isSettingsLoaded && allowedUsers.length === 0 && users.length > 0 &&
+                        <Alert variant="warning">表示できる担当者がいません。管理画面のメニュー管理で、この機能を利用する権限が設定されているか確認してください。</Alert>
+                    }
                     <select required name="contactPerson" defaultValue="" className="form-select">
                         <option value="" disabled>選択してください...</option>
                         {allowedUsers.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}

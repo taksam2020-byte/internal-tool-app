@@ -118,6 +118,9 @@ export default function ReservationsPage() {
             <Row className="mb-3">
               <Form.Group as={Col} md="6">
                 <Form.Label>申請者</Form.Label>
+                {isSettingsLoaded && allowedUsers.length === 0 && users.length > 0 &&
+                    <Alert variant="warning">表示できる申請者がいません。管理画面のメニュー管理で、この機能を利用する権限が設定されているか確認してください。</Alert>
+                }
                 <select required name="applicant" defaultValue="" className="form-select">
                     <option value="" disabled>選択してください...</option>
                     {allowedUsers.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}
