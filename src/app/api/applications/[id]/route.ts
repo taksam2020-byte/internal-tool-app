@@ -2,9 +2,9 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-export async function PUT(request: NextRequest, context: { params: { id: string } }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = context.params;
+    const { id } = await context.params;
     const { status, processed_by } = await request.json();
 
     if (!status || !processed_by) {
