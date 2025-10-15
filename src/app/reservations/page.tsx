@@ -149,6 +149,7 @@ export default function ReservationsPage() {
                             locale="ja"
                             minDate={new Date()}
                             popperClassName="datepicker-popper"
+                            formatMonthYear={date => `${date.getFullYear()}年${date.getMonth() + 1}月`}
                         />
                         {dates.length > 1 && <Button variant="outline-danger" onClick={() => removeDateField(index)}>削除</Button>}
                     </InputGroup>
