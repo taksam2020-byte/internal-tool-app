@@ -25,7 +25,16 @@ function UserManagement() {
         setLoading(true);
         try {
             const res = await axios.get<User[]>('/api/users');
-            setUsers(res.data);
+            const roleOrder = { '社長': 1, '営業': 2, '内勤': 3 };
+            const sortedUsers = res.data.sort((a, b) => {
+                const roleA = a.role || '内勤';
+                const roleB = b.role || '内勤';
+                const orderA = roleOrder[roleA] || 4;
+                const orderB = roleOrder[roleB] || 4;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.id - b.id;
+            });
+            setUsers(sortedUsers);
         } catch { setError('ユーザーの読み込みに失敗しました。'); }
         finally { setLoading(false); }
     };
@@ -176,17 +185,20 @@ function MenuManagement() {
                     <Card.Body>
                         <StringListEditor title="通知先メールアドレス" list={settings.customerEmails} onUpdate={(list) => setSettings(p => ({...p, customerEmails: list}))} />
                         <RoleSelector title="申請可能ユーザー" roles={userRoles} selectedRoles={settings.customerAllowedRoles} onChange={(role) => handleAllowedRolesChange('customer', role)} />
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>研修生を含める</Form.Label><Col sm={9}><Form.Check type="switch" checked={settings.customerIncludeTrainees} onChange={(e) => setSettings(p => ({...p, customerIncludeTrainees: e.target.checked}))} /></Col></Form.Group>
                     </Card.Body>
                 </Tab>
                 <Tab eventKey="reservations" title="施設予約">
                     <Card.Body>
                         <StringListEditor title="通知先メールアドレス" list={settings.reservationEmails} onUpdate={(list) => setSettings(p => ({...p, reservationEmails: list}))} />
                         <RoleSelector title="申請可能ユーザー" roles={userRoles} selectedRoles={settings.reservationAllowedRoles} onChange={(role) => handleAllowedRolesChange('reservation', role)} />
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>研修生を含める</Form.Label><Col sm={9}><Form.Check type="switch" checked={settings.reservationIncludeTrainees} onChange={(e) => setSettings(p => ({...p, reservationIncludeTrainees: e.target.checked}))} /></Col></Form.Group>
                     </Card.Body>
                 </Tab>
                 <Tab eventKey="evaluations" title="新人考課">
                     <Card.Body>
                         <RoleSelector title="提出可能ユーザー" roles={userRoles} selectedRoles={settings.evaluationAllowedRoles} onChange={(role) => handleAllowedRolesChange('evaluation', role)} />
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>研修生を含める</Form.Label><Col sm={9}><Form.Check type="switch" checked={settings.evaluationIncludeTrainees} onChange={(e) => setSettings(p => ({...p, evaluationIncludeTrainees: e.target.checked}))} /></Col></Form.Group>
                         <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>受付状況</Form.Label><Col sm={9}><Form.Check type="switch" name="isEvaluationOpen" label={settings.isEvaluationOpen ? "受付中" : "停止中"} checked={settings.isEvaluationOpen} onChange={(e) => setSettings(p=>({...p, isEvaluationOpen: e.target.checked}))}/></Col></Form.Group>
                         <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>対象月度</Form.Label><Col sm={9}><Form.Select name="evaluationMonth" value={settings.evaluationMonth} onChange={(e) => setSettings(p=>({...p, evaluationMonth: e.target.value}))}>{Array.from({ length: 12 }, (_, i) => <option key={i+1} value={i+1}>{i+1}月</option>)}</Form.Select></Col></Form.Group>
                         <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>締切日</Form.Label><Col sm={9}><Form.Control type="date" name="evaluationDeadline" value={settings.evaluationDeadline || ''} onChange={(e) => setSettings(p=>({...p, evaluationDeadline: e.target.value}))}/></Col></Form.Group>
@@ -196,6 +208,7 @@ function MenuManagement() {
                     <Card.Body>
                         <StringListEditor title="通知先メールアドレス" list={settings.proposalEmails} onUpdate={(list) => setSettings(p => ({...p, proposalEmails: list}))} />
                         <RoleSelector title="提出可能ユーザー" roles={userRoles} selectedRoles={settings.proposalAllowedRoles} onChange={(role) => handleAllowedRolesChange('proposal', role)} />
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>研修生を含める</Form.Label><Col sm={9}><Form.Check type="switch" checked={settings.proposalIncludeTrainees} onChange={(e) => setSettings(p => ({...p, proposalIncludeTrainees: e.target.checked}))} /></Col></Form.Group>
                         <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>受付状況</Form.Label><Col sm={9}><Form.Check type="switch" name="isProposalOpen" label={settings.isProposalOpen ? "受付中" : "停止中"} checked={settings.isProposalOpen} onChange={(e) => setSettings(p=>({...p, isProposalOpen: e.target.checked}))}/></Col></Form.Group>
                         <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>提案年度</Form.Label><Col sm={9}><Form.Control type="number" name="proposalYear" value={settings.proposalYear} onChange={(e) => setSettings(p=>({...p, proposalYear: e.target.value}))}/></Col></Form.Group>
                         <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>締切日</Form.Label><Col sm={9}><Form.Control type="date" name="proposalDeadline" value={settings.proposalDeadline || ''} onChange={(e) => setSettings(p=>({...p, proposalDeadline: e.target.value}))}/></Col></Form.Group>
@@ -270,7 +283,16 @@ function ApplicationsManagement() {
                 axios.get<User[]>('/api/users'),
             ]);
             setApplications(appsRes.data);
-            setUsers(usersRes.data);
+            const roleOrder = { '社長': 1, '営業': 2, '内勤': 3 };
+            const sortedUsers = usersRes.data.sort((a, b) => {
+                const roleA = a.role || '内勤';
+                const roleB = b.role || '内勤';
+                const orderA = roleOrder[roleA] || 4;
+                const orderB = roleOrder[roleB] || 4;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.id - b.id;
+            });
+            setUsers(sortedUsers);
         } catch { 
             // setError('データの読み込みに失敗しました。'); 
         }

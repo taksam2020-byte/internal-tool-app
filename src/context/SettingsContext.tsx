@@ -14,6 +14,12 @@ export interface AppSettings {
     reservationAllowedRoles: string[];
     evaluationAllowedRoles: string[];
     proposalAllowedRoles: string[];
+    // New settings for including trainees
+    customerIncludeTrainees: boolean;
+    reservationIncludeTrainees: boolean;
+    evaluationIncludeTrainees: boolean;
+    proposalIncludeTrainees: boolean;
+    // New settings for evaluations
     evaluationTargets: string[];
     isEvaluationOpen: boolean;
     evaluationMonth: string;
@@ -37,6 +43,12 @@ const defaultSettings: AppSettings = {
     reservationAllowedRoles: [],
     evaluationAllowedRoles: [],
     proposalAllowedRoles: [],
+    // Defaults for new trainee inclusion settings
+    customerIncludeTrainees: false,
+    reservationIncludeTrainees: false,
+    evaluationIncludeTrainees: false,
+    proposalIncludeTrainees: false,
+    // Defaults for new settings
     evaluationTargets: [],
     isEvaluationOpen: true,
     evaluationMonth: (new Date().getMonth() + 1).toString(),

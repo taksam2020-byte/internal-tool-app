@@ -36,7 +36,16 @@ export default function ProposalsPage() {
     const fetchUsers = async () => {
         try {
             const res = await axios.get('/api/users');
-            setUsers(res.data);
+            const roleOrder = { '社長': 1, '営業': 2, '内勤': 3 };
+            const sortedUsers = res.data.sort((a: User, b: User) => {
+                const roleA = a.role || '内勤';
+                const roleB = b.role || '内勤';
+                const orderA = roleOrder[roleA] || 4;
+                const orderB = roleOrder[roleB] || 4;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.id - b.id;
+            });
+            setUsers(sortedUsers);
         } catch (err) {
             console.error("Failed to fetch users", err);
         }
@@ -44,7 +53,15 @@ export default function ProposalsPage() {
     fetchUsers();
   }, []);
 
-  const allowedUsers = users.filter(user => user.is_active && settings.proposalAllowedRoles.includes(user.role));
+  useEffect(() => {
+    if (isSettingsLoaded) {
+        setAllowedUsers(users.filter(user => {
+            if (!user.is_active) return false;
+            if (user.is_trainee && !settings.proposalIncludeTrainees) return false;
+            return settings.proposalAllowedRoles.includes(user.role);
+        }));
+    }
+  }, [users, settings.proposalAllowedRoles, settings.proposalIncludeTrainees, isSettingsLoaded]);
 
   const getDraftKey = useCallback(() => `proposalDraft-${settings.proposalYear}-${proposerName || 'unknown'}`, [settings.proposalYear, proposerName]);
 

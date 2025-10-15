@@ -40,7 +40,16 @@ export default function ReservationsPage() {
     const fetchUsers = async () => {
         try {
             const res = await axios.get<User[]>('/api/users');
-            setUsers(res.data);
+            const roleOrder = { '社長': 1, '営業': 2, '内勤': 3 };
+            const sortedUsers = res.data.sort((a, b) => {
+                const roleA = a.role || '内勤';
+                const roleB = b.role || '内勤';
+                const orderA = roleOrder[roleA] || 4;
+                const orderB = roleOrder[roleB] || 4;
+                if (orderA !== orderB) return orderA - orderB;
+                return a.id - b.id;
+            });
+            setUsers(sortedUsers);
         } catch (err) { console.error("Failed to fetch users", err); }
     };
     fetchUsers();
@@ -48,9 +57,13 @@ export default function ReservationsPage() {
 
   useEffect(() => {
     if (isSettingsLoaded) {
-        setAllowedUsers(users.filter(user => user.is_active && settings.reservationAllowedRoles.includes(user.role)));
+        setAllowedUsers(users.filter(user => {
+            if (!user.is_active) return false;
+            if (user.is_trainee && !settings.reservationIncludeTrainees) return false;
+            return settings.reservationAllowedRoles.includes(user.role);
+        }));
     }
-  }, [users, settings.reservationAllowedRoles, isSettingsLoaded]);
+  }, [users, settings.reservationAllowedRoles, settings.reservationIncludeTrainees, isSettingsLoaded]);
 
   const handleDateChange = (date: Date | null, index: number) => {
     const newDates = [...dates];
