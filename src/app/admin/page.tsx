@@ -24,6 +24,7 @@ function UserManagement() {
     const fetchUsers = async () => {
         setLoading(true);
         try {
+            const res = await axios.get<User[]>('/api/users');
             const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3 };
             const sortedUsers = res.data.sort((a, b) => {
                 const roleA = a.role || '内勤';
