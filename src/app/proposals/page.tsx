@@ -36,7 +36,7 @@ export default function ProposalsPage() {
     const fetchUsers = async () => {
         try {
             const res = await axios.get('/api/users');
-            const roleOrder = { '社長': 1, '営業': 2, '内勤': 3 };
+            const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3 };
             const sortedUsers = res.data.sort((a: User, b: User) => {
                 const roleA = a.role || '内勤';
                 const roleB = b.role || '内勤';
