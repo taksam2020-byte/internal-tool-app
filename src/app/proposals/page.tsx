@@ -18,6 +18,7 @@ interface User {
     name: string;
     role: string;
     is_active: boolean;
+    is_trainee: boolean;
 }
 
 let nextId = 5;

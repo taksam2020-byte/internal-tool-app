@@ -11,7 +11,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 // Register the Japanese locale
 registerLocale('ja', ja);
 
-interface User { id: number; name: string; role: string; is_active: boolean; }
+interface User { id: number; name: string; role: string; is_active: boolean; is_trainee: boolean; }
 
 const fieldLabels: { [key: string]: string } = {
     applicant: '申請者',

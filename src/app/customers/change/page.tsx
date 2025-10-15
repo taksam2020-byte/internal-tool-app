@@ -5,7 +5,7 @@ import { Form, Button, Row, Col, Card, Spinner, InputGroup, Alert, Modal } from 
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
 
-interface User { id: number; name: string; role: string; is_active: boolean; }
+interface User { id: number; name: string; role: string; is_active: boolean; is_trainee: boolean; }
 
 const changeableFields = {
     customerName: '得意先名',
