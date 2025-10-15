@@ -162,10 +162,10 @@ export default function ChangeCustomerPage() {
                 </Form.Group>
                 <Form.Group as={Col} md="6">
                     <Form.Label>担当者<span className="text-danger">*</span></Form.Label>
-                    <Form.Select required name="contactPerson" defaultValue="">
+                    <select required name="contactPerson" defaultValue="" className="form-select">
                         <option value="" disabled>選択してください...</option>
                         {allowedUsers.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}
-                    </Form.Select>
+                    </select>
                 </Form.Group>
             </Row>
             <Row className="mb-4">

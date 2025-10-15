@@ -118,10 +118,10 @@ export default function ReservationsPage() {
             <Row className="mb-3">
               <Form.Group as={Col} md="6">
                 <Form.Label>申請者</Form.Label>
-                <Form.Select required name="applicant" defaultValue="">
+                <select required name="applicant" defaultValue="" className="form-select">
                     <option value="" disabled>選択してください...</option>
                     {allowedUsers.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}
-                </Form.Select>
+                </select>
               </Form.Group>
               <Form.Group as={Col} md="6">
                 <Form.Label>利用日</Form.Label>
