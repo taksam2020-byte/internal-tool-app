@@ -4,8 +4,12 @@ import { useState, useEffect } from 'react';
 import { Form, Button, Row, Col, Card, Modal, Alert, Spinner, InputGroup } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
-import DatePicker from 'react-datepicker';
+import { registerLocale } from 'react-datepicker';
+import ja from 'date-fns/locale/ja';
 import 'react-datepicker/dist/react-datepicker.css';
+
+// Register the Japanese locale
+registerLocale('ja', ja);
 
 interface User { id: number; name: string; role: string; is_active: boolean; }
 
@@ -111,6 +115,12 @@ export default function ReservationsPage() {
 
   return (
     <div>
+      {/* Add a global style for the datepicker popper to ensure it has a high z-index */}
+      <style jsx global>{`
+        .datepicker-popper {
+          z-index: 1050 !important; 
+        }
+      `}</style>
       <h1 className="mb-4">本社施設予約</h1>
       <Card className="mb-4">
         <Card.Body>
@@ -130,7 +140,16 @@ export default function ReservationsPage() {
                 <Form.Label>利用日</Form.Label>
                 {dates.map((date, index) => (
                     <InputGroup className="mb-2" key={index}>
-                        <DatePicker selected={date} onChange={(d) => handleDateChange(d, index)} className="form-control" required dateFormat="yyyy/MM/dd" />
+                        <DatePicker 
+                            selected={date} 
+                            onChange={(d) => handleDateChange(d, index)} 
+                            className="form-control" 
+                            required 
+                            dateFormat="yyyy/MM/dd"
+                            locale="ja"
+                            minDate={new Date()}
+                            popperClassName="datepicker-popper"
+                        />
                         {dates.length > 1 && <Button variant="outline-danger" onClick={() => removeDateField(index)}>削除</Button>}
                     </InputGroup>
                 ))}
@@ -164,11 +183,37 @@ export default function ReservationsPage() {
             <Row className="mb-3">
                 <Form.Group as={Col} md="6">
                     <Form.Label>開始時間 (準備含む)</Form.Label>
-                    <DatePicker selected={startTime} onChange={(date: Date | null) => setStartTime(date)} showTimeSelect showTimeSelectOnly timeIntervals={30} timeCaption="Time" dateFormat="HH:mm" timeFormat="HH:mm" className="form-control" required />
+                    <DatePicker 
+                        selected={startTime} 
+                        onChange={(date: Date | null) => setStartTime(date)} 
+                        showTimeSelect 
+                        showTimeSelectOnly 
+                        timeIntervals={30} 
+                        timeCaption="時間" 
+                        dateFormat="HH:mm" 
+                        timeFormat="HH:mm" 
+                        className="form-control" 
+                        required 
+                        locale="ja"
+                        popperClassName="datepicker-popper"
+                    />
                 </Form.Group>
                 <Form.Group as={Col} md="6">
                     <Form.Label>終了時間 (片付け含む)</Form.Label>
-                    <DatePicker selected={endTime} onChange={(date: Date | null) => setEndTime(date)} showTimeSelect showTimeSelectOnly timeIntervals={30} timeCaption="Time" dateFormat="HH:mm" timeFormat="HH:mm" className="form-control" required />
+                    <DatePicker 
+                        selected={endTime} 
+                        onChange={(date: Date | null) => setEndTime(date)} 
+                        showTimeSelect 
+                        showTimeSelectOnly 
+                        timeIntervals={30} 
+                        timeCaption="時間" 
+                        dateFormat="HH:mm" 
+                        timeFormat="HH:mm" 
+                        className="form-control" 
+                        required 
+                        locale="ja"
+                        popperClassName="datepicker-popper"
+                    />
                 </Form.Group>
             </Row>
 
