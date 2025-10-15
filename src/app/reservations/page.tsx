@@ -148,8 +148,20 @@ export default function ReservationsPage() {
                             dateFormat="yyyy/MM/dd"
                             locale="ja"
                             minDate={new Date()}
-                            popperClassName="datepicker-popper"
-                            formatMonthYear={date => `${date.getFullYear()}年${date.getMonth() + 1}月`}
+                                                        popperClassName="datepicker-popper"
+                                                        renderCustomHeader={({
+                                                            date,
+                                                            decreaseMonth,
+                                                            increaseMonth,
+                                                            prevMonthButtonDisabled,
+                                                            nextMonthButtonDisabled,
+                                                        }) => (
+                                                            <div className="d-flex justify-content-center align-items-center">
+                                                                <Button variant="light" onClick={decreaseMonth} disabled={prevMonthButtonDisabled} size="sm">{'<'}</Button>
+                                                                <span className="mx-2">{date.getFullYear()}年{date.getMonth() + 1}月</span>
+                                                                <Button variant="light" onClick={increaseMonth} disabled={nextMonthButtonDisabled} size="sm">{'>'}</Button>
+                                                            </div>
+                                                        )}
                         />
                         {dates.length > 1 && <Button variant="outline-danger" onClick={() => removeDateField(index)}>削除</Button>}
                     </InputGroup>
