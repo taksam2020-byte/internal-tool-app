@@ -250,22 +250,28 @@ interface Application {
   processed_at: string | null;
 }
 
-function ApplicationsManagement({ user }: { user: User | null }) {
+function ApplicationsManagement() {
     const [applications, setApplications] = useState<Application[]>([]);
+    const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [processorName, setProcessorName] = useState('');
     const applicationsPerPage = 10;
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await axios.get<Application[]>('/api/applications');
-            setApplications(res.data);
+            const [appsRes, usersRes] = await Promise.all([
+                axios.get<Application[]>('/api/applications'),
+                axios.get<User[]>('/api/users'),
+            ]);
+            setApplications(appsRes.data);
+            setUsers(usersRes.data);
         } catch { 
-            // setError('申請の読み込みに失敗しました。'); 
+            // setError('データの読み込みに失敗しました。'); 
         }
         finally { setLoading(false); }
     };
@@ -278,10 +284,13 @@ function ApplicationsManagement({ user }: { user: User | null }) {
     }
 
     const handleStatusChange = async (id: number, newStatus: string) => {
-        if (!user) return;
+        if (!processorName) {
+            alert('ステータスを変更する前に、上部で処理者を選択してください。');
+            return;
+        }
         try {
             await axios.put(`/api/applications/${id}`,
-                { status: newStatus, processed_by: user.name });
+                { status: newStatus, processed_by: processorName });
             fetchData(); // Refresh the data
         } catch (error) {
             console.error("Failed to update status", error);
@@ -301,14 +310,21 @@ function ApplicationsManagement({ user }: { user: User | null }) {
             <Card.Body>
                 {loading ? <div className="text-center"><Spinner/></div> : (
                     <>
-                        <Form.Group as={Row} className="mb-3">
+                        <Form.Group as={Row} className="mb-3 align-items-center">
                             <Form.Label column sm={2}>申請種別で絞り込み</Form.Label>
-                            <Col sm={10}>
+                            <Col sm={4}>
                                 <Form.Select value={filterType} onChange={e => setFilterType(e.target.value)}>
                                     <option value="all">すべて</option>
                                     <option value="customer_registration">得意先新規登録</option>
                                     <option value="customer_change">得意先情報変更</option>
                                     <option value="facility_reservation">施設予約</option>
+                                </Form.Select>
+                            </Col>
+                            <Form.Label column sm={1}>処理者:</Form.Label>
+                            <Col sm={5}>
+                                <Form.Select value={processorName} onChange={e => setProcessorName(e.target.value)}>
+                                    <option value="">選択してください...</option>
+                                    {users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                                 </Form.Select>
                             </Col>
                         </Form.Group>
@@ -389,7 +405,7 @@ function ApplicationsManagement({ user }: { user: User | null }) {
 }
 
 export default function AdminPage() {
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated } = useAuth();
     const router = useRouter();
     const [showSuccessModal, setShowSuccessModal] = useState(false);
 
@@ -408,7 +424,7 @@ export default function AdminPage() {
             <h1 className="mb-4">管理画面</h1>
             <UserManagement />
             <MenuManagement />
-            <ApplicationsManagement user={user} />
+            <ApplicationsManagement />
 
             <div className="mt-4 d-grid">
                 <Button variant="primary" size="lg" onClick={handleSave}>すべての設定を保存</Button>
