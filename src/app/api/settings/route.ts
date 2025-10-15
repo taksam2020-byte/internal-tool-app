@@ -9,8 +9,8 @@ export async function GET() {
     if (rows.length > 0) {
       return NextResponse.json(rows[0].value, { status: 200 });
     }
-    // If no settings are found, we could return a default object, but we'll let the client handle it.
-    return NextResponse.json({}, { status: 404 });
+    // If no settings are found, return a 404
+    return new NextResponse('Settings not found', { status: 404 });
   } catch (error) {
     console.error('Failed to fetch settings:', error);
     return NextResponse.json({ message: 'Failed to fetch settings' }, { status: 500 });

@@ -64,12 +64,16 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         const fetchSettings = async () => {
             try {
                 const response = await axios.get('/api/settings');
-                if (response.data && Object.keys(response.data).length > 0) {
-                    // Merge fetched settings with defaults to ensure all keys are present
+                if (response.data) {
                     setSettings(prev => ({ ...prev, ...response.data }));
                 }
             } catch (error) {
-                console.error("Failed to load settings from database", error);
+                if (axios.isAxiosError(error) && error.response?.status === 404) {
+                    // This is expected if no settings are in the DB yet. 
+                    // The component will use defaultSettings.
+                } else {
+                    console.error("Failed to load settings from database", error);
+                }
             }
             setIsSettingsLoaded(true);
         };
