@@ -5,7 +5,7 @@ import { Form, Button, Row, Col, Card, Modal, Alert, Spinner, InputGroup } from 
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
 import DatePicker, { registerLocale } from 'react-datepicker';
-import ja from 'date-fns/locale/ja';
+import { ja } from 'date-fns/locale/ja';
 import 'react-datepicker/dist/react-datepicker.css';
 
 // Register the Japanese locale
