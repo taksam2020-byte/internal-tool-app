@@ -1,7 +1,6 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
-
 import axios from 'axios';
 
 export interface AppSettings {
@@ -15,7 +14,6 @@ export interface AppSettings {
     reservationAllowedRoles: string[];
     evaluationAllowedRoles: string[];
     proposalAllowedRoles: string[];
-    // New settings for evaluations
     evaluationTargets: string[];
     isEvaluationOpen: boolean;
     evaluationMonth: string;
@@ -39,7 +37,6 @@ const defaultSettings: AppSettings = {
     reservationAllowedRoles: [],
     evaluationAllowedRoles: [],
     proposalAllowedRoles: [],
-    // Defaults for new settings
     evaluationTargets: [],
     isEvaluationOpen: true,
     evaluationMonth: (new Date().getMonth() + 1).toString(),
@@ -53,8 +50,6 @@ const SettingsContext = createContext<SettingsContextType>({
 });
 
 export const useSettings = () => useContext(SettingsContext);
-
-import axios from 'axios';
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const [settings, setSettings] = useState<AppSettings>(defaultSettings);
