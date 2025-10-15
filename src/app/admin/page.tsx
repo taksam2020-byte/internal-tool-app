@@ -6,12 +6,9 @@ import { Form, Button, Card, Row, Col, Alert, InputGroup, Spinner, Table, Tabs, 
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
 
 // --- Type Definitions ---
 interface User { id: number; name: string; role: '社長' | '営業' | '内勤'; is_trainee: boolean; is_active: boolean; }
-interface EvaluationSubmission { id: number; submitted_at: string; evaluator_name: string; target_employee_name: string; }
-interface ProposalSubmission { id: number; submitted_at: string; proposer_name: string; event_name: string; proposal_year: string; }
 
 // --- User Management Component ---
 function UserManagement() {
