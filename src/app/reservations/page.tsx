@@ -20,8 +20,9 @@ const fieldLabels: { [key: string]: string } = {
 };
 
 export default function ReservationsPage() {
-  const { settings } = useSettings();
+  const { settings, isSettingsLoaded } = useSettings();
   const [users, setUsers] = useState<User[]>([]);
+  const [allowedUsers, setAllowedUsers] = useState<User[]>([]);
   const [validated, setValidated] = useState(false);
   const [showWifiModal, setShowWifiModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,7 +42,11 @@ export default function ReservationsPage() {
     fetchUsers();
   }, []);
 
-  const allowedUsers = users.filter(user => user.is_active && settings.reservationAllowedRoles.includes(user.role));
+  useEffect(() => {
+    if (isSettingsLoaded) {
+        setAllowedUsers(users.filter(user => user.is_active && settings.reservationAllowedRoles.includes(user.role)));
+    }
+  }, [users, settings.reservationAllowedRoles, isSettingsLoaded]);
 
   const handleDateChange = (date: Date | null, index: number) => {
     const newDates = [...dates];
@@ -70,23 +75,26 @@ export default function ReservationsPage() {
     setSubmitStatus(null);
 
     const formData = new FormData(form);
-    const equipmentValues = formData.getAll('equipment');
     const data = Object.fromEntries(formData.entries());
-    data.equipment = equipmentValues.join(', ');
     data.usageDate = dates.map(d => d?.toLocaleDateString('ja-JP')).join(', ');
     data.startTime = startTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', hour12: false });
     data.endTime = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', hour12: false });
 
-    const subject = '【社内ツール】施設予約申請';
-    const body = Object.entries(data).map(([key, value]) => {
+    const details = Object.entries(data).reduce((acc, [key, value]) => {
         const label = fieldLabels[key] || key;
-        if (key === 'equipment' && !value) return null;
-        return `${label}: ${value}`;
-      }).filter(Boolean).join('\n');
+        acc[label] = value as string;
+        return acc;
+    }, {} as Record<string, string>);
 
     try {
-      await axios.post('/api/send-email', { to: settings.reservationEmails, subject, body });
-      setSubmitStatus({ success: true, message: `申請が正常に送信されました。\n送信先: ${settings.reservationEmails.join(', ')}` });
+      await axios.post('/api/applications', { 
+        application_type: 'facility_reservation',
+        applicant_name: data.applicant as string,
+        title: '施設予約申請',
+        details: details,
+        emails: settings.reservationEmails
+      });
+      setSubmitStatus({ success: true, message: `申請が正常に送信されました。` });
       form.reset();
       setValidated(false);
       setDates([null]);

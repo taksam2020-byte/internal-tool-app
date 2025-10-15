@@ -225,9 +225,8 @@ export default function AnalyticsPageContent() {
                 </Nav>
             </div>
 
-            <main style={{ paddingLeft: '240px', width: '100%' }}>
-                <div style={{ maxWidth: '960px', padding: '0 20px' }}>
-                    <h1 className="mb-4">集計・分析</h1>
+            <main style={{ paddingLeft: '260px', paddingRight: '20px' }}>
+                <h1 className="mb-4">集計・分析</h1>
                     {loading ? <div className="text-center my-4"><Spinner animation="border" /></div> : (
                         <>
                             <Card className="mb-4">
@@ -315,7 +314,6 @@ export default function AnalyticsPageContent() {
                         </Alert>
                     </>
                 )}
-                </div>
             </main>
         </div>
     );

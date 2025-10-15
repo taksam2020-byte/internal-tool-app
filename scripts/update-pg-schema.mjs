@@ -7,24 +7,21 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 async function updateSchema() {
   console.log('Running Postgres schema update...');
 
-  // Drop the old proposals table
-  await sql`DROP TABLE IF EXISTS proposals;`;
-  console.log('Old "proposals" table dropped.');
-
-  // Create a new proposals table to store each proposal item individually
+  // Create a new applications table if it doesn't exist
   await sql`
-    CREATE TABLE proposals (
+    CREATE TABLE IF NOT EXISTS applications (
       id SERIAL PRIMARY KEY,
-      proposer_name VARCHAR(255) NOT NULL,
-      proposal_year VARCHAR(4) NOT NULL,
-      event_name VARCHAR(255) NOT NULL, -- New field
-      timing VARCHAR(255) NOT NULL,
-      type VARCHAR(255) NOT NULL,
-      content TEXT NOT NULL,
-      submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      application_type VARCHAR(255) NOT NULL,
+      applicant_name VARCHAR(255) NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      details JSONB NOT NULL,
+      submitted_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      status VARCHAR(255) NOT NULL DEFAULT '未処理',
+      processed_by VARCHAR(255),
+      processed_at TIMESTAMP
     );
   `;
-  console.log('New "proposals" table created.');
+  console.log('Table "applications" created or already exists.');
 
   console.log('Schema update complete.');
 }

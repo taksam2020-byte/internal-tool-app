@@ -28,8 +28,9 @@ const fieldLabels: { [key: string]: string } = {
 };
 
 export default function NewCustomerPage() {
-  const { settings } = useSettings();
+  const { settings, isSettingsLoaded } = useSettings();
   const [users, setUsers] = useState<User[]>([]);
+  const [allowedUsers, setAllowedUsers] = useState<User[]>([]);
   const [validated, setValidated] = useState(false);
   const [zipCode, setZipCode] = useState('');
   const [zipCodeError, setZipCodeError] = useState(false);
@@ -50,7 +51,11 @@ export default function NewCustomerPage() {
     fetchUsers();
   }, []);
 
-  const allowedUsers = users.filter(user => user.is_active && settings.customerAllowedRoles.includes(user.role));
+  useEffect(() => {
+    if (isSettingsLoaded) {
+        setAllowedUsers(users.filter(user => user.is_active && settings.customerAllowedRoles.includes(user.role)));
+    }
+  }, [users, settings.customerAllowedRoles, isSettingsLoaded]);
 
   const handleZipCodeSearch = async () => {
     if (!zipCode || !zipCode.match(/^\d{7}$/)) {
@@ -93,15 +98,21 @@ export default function NewCustomerPage() {
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
 
-    const subject = '【社内ツール】得意先新規登録申請';
-    const body = Object.entries(data).map(([key, value]) => {
+    const details = Object.entries(data).reduce((acc, [key, value]) => {
         const label = fieldLabels[key] || key;
-        return `${label}: ${value}`;
-      }).join('\n');
+        acc[label] = value as string;
+        return acc;
+    }, {} as Record<string, string>);
 
     try {
-      await axios.post('/api/send-email', { to: settings.customerEmails, subject, body });
-      setSubmitStatus({ success: true, message: `申請が正常に送信されました.\n送信先: ${settings.customerEmails.join(', ')}` });
+      await axios.post('/api/applications', { 
+        application_type: 'customer_registration',
+        applicant_name: data.contactPerson as string,
+        title: '得意先新規登録申請',
+        details: details,
+        emails: settings.customerEmails
+      });
+      setSubmitStatus({ success: true, message: `申請が正常に送信されました。` });
       form.reset();
       setValidated(false);
       setZipCode('');
