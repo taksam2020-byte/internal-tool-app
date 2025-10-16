@@ -250,7 +250,7 @@ export default function NewCustomerPage() {
                             <Col md={6}><Form.Control name="billingCustomerCode" placeholder="請求先コード" /></Col>
                         </Row>
                         {personalAccount === '要' && (
-                            <Form.Group as={Row} className="mt-3">
+                            <Form.Group as={Row} className="mt-3 align-items-center">
                                 <Form.Label column sm={4}>個人口座を別請求先に含めるか</Form.Label>
                                 <Col sm={8}>
                                     <Form.Check inline label="含める" name="includePersonalAccountInBilling" type="radio" value="含める" defaultChecked />
