@@ -50,8 +50,7 @@ export default function HomePage() {
       title: '申請履歴',
       description: '各種申請の履歴とステータスを確認します。',
       icon: <ClockHistory size={40} />,
-      bg: 'info',
-      textColor: 'dark',
+      style: { backgroundColor: '#6f42c1' },
       badge: pendingApplicationsCount > 0 ? pendingApplicationsCount : null,
       show: true
     },
@@ -60,8 +59,7 @@ export default function HomePage() {
       title: '催事提案',
       description: '新しい催事のアイデアを提案します。',
       icon: <Lightbulb size={40} />,
-      bg: 'warning',
-      textColor: 'dark',
+      style: { backgroundColor: '#ff8c00' },
       show: settings.isProposalOpen
     },
     {
@@ -104,7 +102,7 @@ export default function HomePage() {
         {menuItems.filter(item => item.show).map((item, idx) => (
           <Col key={idx}>
             <Link href={item.href} passHref legacyBehavior>
-              <Card as="a" bg={item.bg} text={item.textColor || 'white'} className="h-100 text-decoration-none position-relative">
+              <Card as="a" bg={item.bg} text="white" style={item.style} className="h-100 text-decoration-none position-relative">
                 {item.badge && <Badge pill bg="danger" className="position-absolute top-0 start-100 translate-middle">{item.badge}</Badge>}
                 <Card.Body className="d-flex align-items-center">
                   <div className="me-3">{item.icon}</div>
