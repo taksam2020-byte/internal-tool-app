@@ -24,6 +24,7 @@ const fieldLabels: { [key: string]: string } = {
     billingTarget: '請求先',
     billingCustomerName: '請求先名称',
     billingCustomerCode: '請求先コード',
+    includePersonalAccountInBilling: '別得意先への個人口座請求',
     remarks: '備考',
 };
 
@@ -37,6 +38,7 @@ export default function NewCustomerPage() {
   const [address1, setAddress1] = useState('');
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const [billingTarget, setBillingTarget] = useState('self');
+  const [personalAccount, setPersonalAccount] = useState('不要');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -155,8 +157,8 @@ export default function NewCustomerPage() {
               <Form.Group as={Col} md="6">
                 <Form.Label>個人口座<span className="text-danger">*</span></Form.Label>
                 <div>
-                  <Form.Check inline label="要" name="personalAccount" type="radio" id="personalAccountNeeded" value="要" required />
-                  <Form.Check inline label="不要" name="personalAccount" type="radio" id="personalAccountNotNeeded" value="不要" required defaultChecked />
+                  <Form.Check inline label="要" name="personalAccount" type="radio" id="personalAccountNeeded" value="要" required checked={personalAccount === '要'} onChange={(e) => setPersonalAccount(e.target.value)} />
+                  <Form.Check inline label="不要" name="personalAccount" type="radio" id="personalAccountNotNeeded" value="不要" required checked={personalAccount === '不要'} onChange={(e) => setPersonalAccount(e.target.value)} />
                 </div>
               </Form.Group>
             </Row>
@@ -242,10 +244,21 @@ export default function NewCustomerPage() {
                     <Form.Check inline label="別の得意先へ請求" name="billingTarget" type="radio" value="other" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} />
                 </div>
                 {billingTarget === 'other' && (
-                    <Row className="mt-2">
-                        <Col md={6}><Form.Control required name="billingCustomerName" placeholder="請求先名称" /></Col>
-                        <Col md={6}><Form.Control name="billingCustomerCode" placeholder="請求先コード" /></Col>
-                    </Row>
+                    <div className="mt-2 p-3 border rounded">
+                        <Row>
+                            <Col md={6}><Form.Control required name="billingCustomerName" placeholder="請求先名称" /></Col>
+                            <Col md={6}><Form.Control name="billingCustomerCode" placeholder="請求先コード" /></Col>
+                        </Row>
+                        {personalAccount === '要' && (
+                            <Form.Group as={Row} className="mt-3">
+                                <Form.Label column sm={4}>個人口座を別請求先に含めるか</Form.Label>
+                                <Col sm={8}>
+                                    <Form.Check inline label="含める" name="includePersonalAccountInBilling" type="radio" value="含める" defaultChecked />
+                                    <Form.Check inline label="含めない" name="includePersonalAccountInBilling" type="radio" value="含めない" />
+                                </Col>
+                            </Form.Group>
+                        )}
+                    </div>
                 )}
             </Form.Group>
 
