@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Form, Button, Card, Row, Col, Alert, InputGroup, Spinner, Table, Modal, Pagination, Badge } from 'react-bootstrap';
+import { Form, Button, Card, Row, Col, Spinner, Table, Modal, Pagination } from 'react-bootstrap';
 import axios from 'axios';
 
 interface User { id: number; name: string; role: '社長' | '営業' | '内勤'; is_trainee: boolean; is_active: boolean; }

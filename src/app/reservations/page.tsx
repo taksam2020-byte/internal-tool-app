@@ -4,6 +4,12 @@ import { useState, useEffect } from 'react';
 import { Form, Button, Row, Col, Card, Modal, Alert, Spinner, InputGroup } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { ja } from 'date-fns/locale/ja';
+import 'react-datepicker/dist/react-datepicker.css';
+
+// Register the Japanese locale
+registerLocale('ja', ja);
 
 interface User { id: number; name: string; role: string; is_active: boolean; is_trainee: boolean; }
 
@@ -17,6 +23,16 @@ const fieldLabels: { [key: string]: string } = {
     purpose: '利用目的',
 };
 
+// Generate time options for dropdown
+const timeOptions: string[] = [];
+for (let i = 0; i < 24; i++) {
+    for (let j = 0; j < 60; j += 30) {
+        const hour = i.toString().padStart(2, '0');
+        const minute = j.toString().padStart(2, '0');
+        timeOptions.push(`${hour}:${minute}`);
+    }
+}
+
 export default function ReservationsPage() {
   const { settings, isSettingsLoaded } = useSettings();
   const [users, setUsers] = useState<User[]>([]);
@@ -26,7 +42,7 @@ export default function ReservationsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [dates, setDates] = useState<string[]>(['']);
+  const [dates, setDates] = useState<(Date | null)[]>([null]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -56,13 +72,13 @@ export default function ReservationsPage() {
     }
   }, [users, settings.reservationAllowedRoles, settings.reservationIncludeTrainees, isSettingsLoaded]);
 
-  const handleDateChange = (date: string, index: number) => {
+  const handleDateChange = (date: Date | null, index: number) => {
     const newDates = [...dates];
     newDates[index] = date;
     setDates(newDates);
   };
 
-  const addDateField = () => setDates([...dates, '']);
+  const addDateField = () => setDates([...dates, null]);
   const removeDateField = (index: number) => setDates(dates.filter((_, i) => i !== index));
 
   const handleWifiCheck = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,7 +89,7 @@ export default function ReservationsPage() {
     event.preventDefault();
     const form = event.currentTarget;
 
-    if (form.checkValidity() === false || dates.some(d => d === '')) {
+    if (form.checkValidity() === false || dates.some(d => d === null)) {
       event.stopPropagation();
       setValidated(true);
       return;
@@ -84,8 +100,7 @@ export default function ReservationsPage() {
 
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
-    // Manually collect all date values
-    data.usageDate = formData.getAll('usageDate').join(', ');
+    data.usageDate = dates.map(d => d?.toLocaleDateString('ja-JP')).join(', ');
 
     const details = Object.entries(data).reduce((acc, [key, value]) => {
         const label = fieldLabels[key] || key;
@@ -104,7 +119,7 @@ export default function ReservationsPage() {
       setSubmitStatus({ success: true, message: `申請が正常に送信されました。` });
       form.reset();
       setValidated(false);
-      setDates(['']);
+      setDates([null]);
     } catch (error) {
       console.error("Submit error:", error);
       setSubmitStatus({ success: false, message: '申請の送信に失敗しました。' });
@@ -116,6 +131,11 @@ export default function ReservationsPage() {
 
   return (
     <div>
+      <style jsx global>{`
+        .react-datepicker-popper {
+          z-index: 1050 !important; 
+        }
+      `}</style>
       <h1 className="mb-4">本社施設予約</h1>
       <Card className="mb-4">
         <Card.Body>
@@ -135,7 +155,29 @@ export default function ReservationsPage() {
                 <Form.Label>利用日</Form.Label>
                 {dates.map((date, index) => (
                     <InputGroup className="mb-2" key={index}>
-                        <Form.Control type="date" name="usageDate" value={date} onChange={(e) => handleDateChange(e.target.value, index)} required min={new Date().toISOString().split('T')[0]} />
+                        <DatePicker 
+                            selected={date} 
+                            onChange={(d) => handleDateChange(d, index)} 
+                            className="form-control" 
+                            required 
+                            dateFormat="yyyy/MM/dd"
+                            locale="ja"
+                            minDate={new Date()}
+                            popperClassName="react-datepicker-popper"
+                            renderCustomHeader={({
+                                date,
+                                decreaseMonth,
+                                increaseMonth,
+                                prevMonthButtonDisabled,
+                                nextMonthButtonDisabled,
+                            }) => (
+                                <div className="d-flex justify-content-center align-items-center">
+                                    <Button variant="light" onClick={decreaseMonth} disabled={prevMonthButtonDisabled} size="sm">{'<'}</Button>
+                                    <span className="mx-2">{date.getFullYear()}年{date.getMonth() + 1}月</span>
+                                    <Button variant="light" onClick={increaseMonth} disabled={nextMonthButtonDisabled} size="sm">{'>'}</Button>
+                                </div>
+                            )}
+                        />
                         {dates.length > 1 && <Button variant="outline-danger" onClick={() => removeDateField(index)}>削除</Button>}
                     </InputGroup>
                 ))}
@@ -169,11 +211,15 @@ export default function ReservationsPage() {
             <Row className="mb-3">
                 <Form.Group as={Col} md="6">
                     <Form.Label>開始時間 (準備含む)</Form.Label>
-                    <Form.Control type="time" name="startTime" required defaultValue="09:00" step="1800" />
+                    <Form.Select name="startTime" required defaultValue="09:00">
+                        {timeOptions.map(time => <option key={`start-${time}`} value={time}>{time}</option>)}
+                    </Form.Select>
                 </Form.Group>
                 <Form.Group as={Col} md="6">
                     <Form.Label>終了時間 (片付け含む)</Form.Label>
-                    <Form.Control type="time" name="endTime" required defaultValue="09:00" step="1800" />
+                    <Form.Select name="endTime" required defaultValue="18:00">
+                        {timeOptions.map(time => <option key={`end-${time}`} value={time}>{time}</option>)}
+                    </Form.Select>
                 </Form.Group>
             </Row>
 
