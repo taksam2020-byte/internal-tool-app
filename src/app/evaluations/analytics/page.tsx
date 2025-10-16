@@ -40,6 +40,7 @@ export default function AnalyticsAuthPage() {
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         required
+                                        autoFocus
                                     />
                                 </Form.Group>
                                 {error && <Alert variant="danger" className="mt-3">{error}</Alert>}

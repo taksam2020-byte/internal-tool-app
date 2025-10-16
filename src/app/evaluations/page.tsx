@@ -41,7 +41,15 @@ export default function EvaluationPage() {
         const fetchUsers = async () => {
             try {
                 const res = await axios.get<User[]>('/api/users');
-                setUsers(res.data);
+                const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3, '営業研修生': 4, '内勤研修生': 5 };
+                const sortedUsers = res.data.sort((a, b) => {
+                    const getSortKey = (user: User) => user.is_trainee ? `${user.role}研修生` : user.role;
+                    const orderA = roleOrder[getSortKey(a)] || 99;
+                    const orderB = roleOrder[getSortKey(b)] || 99;
+                    if (orderA !== orderB) return orderA - orderB;
+                    return a.id - b.id;
+                });
+                setUsers(sortedUsers);
             } catch (err) { console.error("Failed to fetch users", err); }
         };
         fetchUsers();

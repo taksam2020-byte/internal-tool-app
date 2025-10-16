@@ -4,12 +4,6 @@ import { useState, useEffect } from 'react';
 import { Form, Button, Row, Col, Card, Modal, Alert, Spinner, InputGroup } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
-import DatePicker, { registerLocale } from 'react-datepicker';
-import { ja } from 'date-fns/locale/ja';
-import 'react-datepicker/dist/react-datepicker.css';
-
-// Register the Japanese locale
-registerLocale('ja', ja);
 
 interface User { id: number; name: string; role: string; is_active: boolean; is_trainee: boolean; }
 
@@ -32,9 +26,7 @@ export default function ReservationsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [dates, setDates] = useState<(Date | null)[]>([null]);
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const [endTime, setEndTime] = useState<Date | null>(null);
+  const [dates, setDates] = useState<string[]>(['']);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -64,13 +56,13 @@ export default function ReservationsPage() {
     }
   }, [users, settings.reservationAllowedRoles, settings.reservationIncludeTrainees, isSettingsLoaded]);
 
-  const handleDateChange = (date: Date | null, index: number) => {
+  const handleDateChange = (date: string, index: number) => {
     const newDates = [...dates];
     newDates[index] = date;
     setDates(newDates);
   };
 
-  const addDateField = () => setDates([...dates, null]);
+  const addDateField = () => setDates([...dates, '']);
   const removeDateField = (index: number) => setDates(dates.filter((_, i) => i !== index));
 
   const handleWifiCheck = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -81,7 +73,7 @@ export default function ReservationsPage() {
     event.preventDefault();
     const form = event.currentTarget;
 
-    if (form.checkValidity() === false || !startTime || !endTime || dates.some(d => d === null)) {
+    if (form.checkValidity() === false || dates.some(d => d === '')) {
       event.stopPropagation();
       setValidated(true);
       return;
@@ -92,9 +84,8 @@ export default function ReservationsPage() {
 
     const formData = new FormData(form);
     const data = Object.fromEntries(formData.entries());
-    data.usageDate = dates.map(d => d?.toLocaleDateString('ja-JP')).join(', ');
-    data.startTime = startTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', hour12: false });
-    data.endTime = endTime.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', hour12: false });
+    // Manually collect all date values
+    data.usageDate = formData.getAll('usageDate').join(', ');
 
     const details = Object.entries(data).reduce((acc, [key, value]) => {
         const label = fieldLabels[key] || key;
@@ -113,9 +104,7 @@ export default function ReservationsPage() {
       setSubmitStatus({ success: true, message: `申請が正常に送信されました。` });
       form.reset();
       setValidated(false);
-      setDates([null]);
-      setStartTime(null);
-      setEndTime(null);
+      setDates(['']);
     } catch (error) {
       console.error("Submit error:", error);
       setSubmitStatus({ success: false, message: '申請の送信に失敗しました。' });
@@ -127,12 +116,6 @@ export default function ReservationsPage() {
 
   return (
     <div>
-      {/* Add a global style for the datepicker popper to ensure it has a high z-index */}
-      <style jsx global>{`
-        .datepicker-popper {
-          z-index: 1050 !important; 
-        }
-      `}</style>
       <h1 className="mb-4">本社施設予約</h1>
       <Card className="mb-4">
         <Card.Body>
@@ -152,29 +135,7 @@ export default function ReservationsPage() {
                 <Form.Label>利用日</Form.Label>
                 {dates.map((date, index) => (
                     <InputGroup className="mb-2" key={index}>
-                        <DatePicker 
-                            selected={date} 
-                            onChange={(d) => handleDateChange(d, index)} 
-                            className="form-control" 
-                            required 
-                            dateFormat="yyyy/MM/dd"
-                            locale="ja"
-                            minDate={new Date()}
-                                                        popperClassName="datepicker-popper"
-                                                        renderCustomHeader={({
-                                                            date,
-                                                            decreaseMonth,
-                                                            increaseMonth,
-                                                            prevMonthButtonDisabled,
-                                                            nextMonthButtonDisabled,
-                                                        }) => (
-                                                            <div className="d-flex justify-content-center align-items-center">
-                                                                <Button variant="light" onClick={decreaseMonth} disabled={prevMonthButtonDisabled} size="sm">{'<'}</Button>
-                                                                <span className="mx-2">{date.getFullYear()}年{date.getMonth() + 1}月</span>
-                                                                <Button variant="light" onClick={increaseMonth} disabled={nextMonthButtonDisabled} size="sm">{'>'}</Button>
-                                                            </div>
-                                                        )}
-                        />
+                        <Form.Control type="date" name="usageDate" value={date} onChange={(e) => handleDateChange(e.target.value, index)} required min={new Date().toISOString().split('T')[0]} />
                         {dates.length > 1 && <Button variant="outline-danger" onClick={() => removeDateField(index)}>削除</Button>}
                     </InputGroup>
                 ))}
@@ -208,37 +169,11 @@ export default function ReservationsPage() {
             <Row className="mb-3">
                 <Form.Group as={Col} md="6">
                     <Form.Label>開始時間 (準備含む)</Form.Label>
-                    <DatePicker 
-                        selected={startTime} 
-                        onChange={(date: Date | null) => setStartTime(date)} 
-                        showTimeSelect 
-                        showTimeSelectOnly 
-                        timeIntervals={30} 
-                        timeCaption="時間" 
-                        dateFormat="HH:mm" 
-                        timeFormat="HH:mm" 
-                        className="form-control" 
-                        required 
-                        locale="ja"
-                        popperClassName="datepicker-popper"
-                    />
+                    <Form.Control type="time" name="startTime" required />
                 </Form.Group>
                 <Form.Group as={Col} md="6">
                     <Form.Label>終了時間 (片付け含む)</Form.Label>
-                    <DatePicker 
-                        selected={endTime} 
-                        onChange={(date: Date | null) => setEndTime(date)} 
-                        showTimeSelect 
-                        showTimeSelectOnly 
-                        timeIntervals={30} 
-                        timeCaption="時間" 
-                        dateFormat="HH:mm" 
-                        timeFormat="HH:mm" 
-                        className="form-control" 
-                        required 
-                        locale="ja"
-                        popperClassName="datepicker-popper"
-                    />
+                    <Form.Control type="time" name="endTime" required />
                 </Form.Group>
             </Row>
 

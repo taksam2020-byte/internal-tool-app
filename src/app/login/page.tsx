@@ -37,6 +37,7 @@ export default function LoginPage() {
                                         onChange={(e) => setPassword(e.target.value)} 
                                         placeholder="パスワードを入力"
                                         required
+                                        autoFocus
                                     />
                                 </Form.Group>
                                 {error && <Alert variant="danger">{error}</Alert>}

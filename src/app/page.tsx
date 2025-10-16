@@ -75,7 +75,7 @@ export default function HomePage() {
         title: '考課結果閲覧',
         description: '新人考課の集計結果を閲覧します。',
         icon: <BarChart size={40} />,
-        bg: 'purple',
+        style: { backgroundColor: '#6f42c1' },
         show: settings.isEvaluationOpen
     },
     {
