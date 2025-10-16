@@ -20,6 +20,12 @@ interface Application {
   processed_at: string | null;
 }
 
+const applicationTypeMap: { [key: string]: string } = {
+  customer_registration: '得意先新規登録',
+  customer_change: '得意先情報変更',
+  facility_reservation: '施設予約',
+};
+
 function ApplicationsManagement() {
     const [applications, setApplications] = useState<Application[]>([]);
     const [users, setUsers] = useState<User[]>([]);
@@ -93,9 +99,9 @@ function ApplicationsManagement() {
                             <Col sm={4}>
                                 <Form.Select value={filterType} onChange={e => setFilterType(e.target.value)}>
                                     <option value="all">すべて</option>
-                                    <option value="customer_registration">得意先新規登録</option>
-                                    <option value="customer_change">得意先情報変更</option>
-                                    <option value="facility_reservation">施設予約</option>
+                                    {Object.entries(applicationTypeMap).map(([key, value]) => (
+                                        <option key={key} value={key}>{value}</option>
+                                    ))}
                                 </Form.Select>
                             </Col>
                             <Form.Label column sm={1}>処理者:</Form.Label>
@@ -123,7 +129,7 @@ function ApplicationsManagement() {
                             <tbody>
                                 {currentApplications.map(app => (
                                     <tr key={app.id}>
-                                        <td>{app.application_type}</td>
+                                        <td>{applicationTypeMap[app.application_type] || app.application_type}</td>
                                         <td>{app.title}</td>
                                         <td>{app.applicant_name}</td>
                                         <td>{new Date(app.submitted_at).toLocaleString()}</td>

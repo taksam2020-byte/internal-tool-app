@@ -1,6 +1,29 @@
-export async function GET() {
+import { NextResponse, NextRequest } from 'next/server';
+import { sql } from '@vercel/postgres';
+import nodemailer from 'nodemailer';
+
+const applicationTypeMap: { [key: string]: string } = {
+  customer_registration: '得意先新規登録',
+  customer_change: '得意先情報変更',
+  facility_reservation: '施設予約',
+};
+
+export async function GET(request: NextRequest) {
   try {
-    const { rows } = await sql`SELECT * FROM applications ORDER BY submitted_at DESC;`;
+    const { searchParams } = new URL(request.url);
+    const status = searchParams.get('status');
+
+    let query = 'SELECT * FROM applications';
+    const values = [];
+
+    if (status) {
+      query += ' WHERE status = $1';
+      values.push(status);
+    }
+
+    query += ' ORDER BY submitted_at DESC;';
+
+    const { rows } = await sql.query(query, values);
     return NextResponse.json(rows, { status: 200 });
   } catch (error: unknown) {
     console.error('API Error:', error);
@@ -8,10 +31,6 @@ export async function GET() {
     return NextResponse.json({ message: 'Error fetching applications', error: message }, { status: 500 });
   }
 }
-
-import { NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
-import nodemailer from 'nodemailer';
 
 export async function POST(request: Request) {
   try {
@@ -37,7 +56,7 @@ export async function POST(request: Request) {
     });
 
     const subject = `【社内ツール】${title}`;
-    const body = `申請種別: ${application_type}\n申請者: ${applicant_name}\n\n` + 
+    const body = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n` +
                  Object.entries(details).map(([key, value]) => `${key}: ${value}`).join('\n');
 
     await transporter.sendMail({

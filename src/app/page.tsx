@@ -1,14 +1,30 @@
 'use client';
 
-import { Card, Col, Row } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
+import { Card, Col, Row, Badge } from 'react-bootstrap';
 import Link from 'next/link';
 import { useSettings } from '@/context/SettingsContext';
-import { PersonPlus, Building, Lightbulb, GearFill, PencilSquare, BarChart } from 'react-bootstrap-icons';
+import { PersonPlus, Building, Lightbulb, GearFill, PencilSquare, BarChart, ClockHistory } from 'react-bootstrap-icons';
+import axios from 'axios';
 
 import Image from 'next/image';
 
 export default function HomePage() {
   const { settings, isSettingsLoaded } = useSettings();
+  const [pendingApplicationsCount, setPendingApplicationsCount] = useState(0);
+
+  useEffect(() => {
+    const fetchPendingApplications = async () => {
+      try {
+        const res = await axios.get('/api/applications?status=未処理');
+        setPendingApplicationsCount(res.data.length);
+      } catch (error) {
+        console.error("Failed to fetch pending applications", error);
+      }
+    };
+
+    fetchPendingApplications();
+  }, []);
 
   const menuItems = [
     {
@@ -25,6 +41,15 @@ export default function HomePage() {
       description: '本社施設の利用予約を申請します。',
       icon: <Building size={40} />,
       bg: 'success',
+      show: true
+    },
+    {
+      href: '/history',
+      title: '申請履歴',
+      description: '各種申請の履歴とステータスを確認します。',
+      icon: <ClockHistory size={40} />,
+      bg: 'warning',
+      badge: pendingApplicationsCount > 0 ? pendingApplicationsCount : null,
       show: true
     },
     {
@@ -71,11 +96,12 @@ export default function HomePage() {
         <Image src="/logo.png" alt="Logo" width={50} height={50} className="me-3" />
         <span>社内ツール</span>
       </h1>
-      <Row xs={1} md={2} className="g-4">
+      <Row xs={1} md={2} lg={3} className="g-4">
         {menuItems.filter(item => item.show).map((item, idx) => (
           <Col key={idx}>
             <Link href={item.href} passHref legacyBehavior>
-              <Card as="a" {...(item.bg && {bg: item.bg})} text="white" className="h-100 text-decoration-none" style={item.style}>
+              <Card as="a" {...(item.bg && {bg: item.bg})} text="white" className="h-100 text-decoration-none position-relative">
+                {item.badge && <Badge pill bg="danger" className="position-absolute top-0 start-100 translate-middle">{item.badge}</Badge>}
                 <Card.Body className="d-flex align-items-center">
                   <div className="me-3">{item.icon}</div>
                   <div>
