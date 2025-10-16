@@ -169,11 +169,11 @@ export default function ReservationsPage() {
             <Row className="mb-3">
                 <Form.Group as={Col} md="6">
                     <Form.Label>開始時間 (準備含む)</Form.Label>
-                    <Form.Control type="time" name="startTime" required />
+                    <Form.Control type="time" name="startTime" required defaultValue="09:00" step="1800" />
                 </Form.Group>
                 <Form.Group as={Col} md="6">
                     <Form.Label>終了時間 (片付け含む)</Form.Label>
-                    <Form.Control type="time" name="endTime" required />
+                    <Form.Control type="time" name="endTime" required defaultValue="09:00" step="1800" />
                 </Form.Group>
             </Row>
 
