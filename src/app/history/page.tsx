@@ -1,9 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Form, Button, Card, Row, Col, Alert, InputGroup, Spinner, Table, Modal, Pagination, Badge } from 'react-bootstrap';
-import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
 
 interface User { id: number; name: string; role: '社長' | '営業' | '内勤'; is_trainee: boolean; is_active: boolean; }
@@ -189,19 +187,6 @@ function ApplicationsManagement() {
 }
 
 export default function HistoryPage() {
-    const { isAuthenticated } = useAuth();
-    const router = useRouter();
-
-    useEffect(() => {
-        if (!isAuthenticated) {
-            router.push('/login');
-        }
-    }, [isAuthenticated, router]);
-
-    if (!isAuthenticated) {
-        return <div>読み込み中...</div>;
-    }
-
     return (
         <div>
             <h1 className="mb-4">申請履歴</h1>
