@@ -79,6 +79,10 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
         </Nav.Item>
       )}
 
+      <Nav.Item className="mb-2">
+        <Link href="/history" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>申請履歴</Nav.Link></Link>
+      </Nav.Item>
+
       <Nav.Item>
         <Link href="/admin" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>管理画面</Nav.Link></Link>
       </Nav.Item>

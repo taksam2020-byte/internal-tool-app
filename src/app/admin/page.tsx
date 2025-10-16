@@ -450,7 +450,6 @@ export default function AdminPage() {
             <h1 className="mb-4">管理画面</h1>
             <UserManagement />
             <MenuManagement />
-            <ApplicationsManagement />
 
             <div className="mt-4 d-grid">
                 <Button variant="primary" size="lg" onClick={handleSave}>すべての設定を保存</Button>
