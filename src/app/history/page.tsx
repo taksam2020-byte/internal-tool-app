@@ -23,7 +23,6 @@ const applicationTypeMap: { [key: string]: string } = {
   customer_registration: '得意先新規登録',
   customer_change: '得意先情報変更',
   facility_reservation: '施設予約',
-  proposal: '催事提案',
 };
 
 function ApplicationsManagement() {
@@ -35,7 +34,6 @@ function ApplicationsManagement() {
     const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [processorName, setProcessorName] = useState('');
-    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
     const applicationsPerPage = 10;
 
     const fetchData = async () => {
@@ -45,7 +43,7 @@ function ApplicationsManagement() {
                 axios.get<Application[]>('/api/applications'),
                 axios.get<User[]>('/api/users'),
             ]);
-            setApplications(appsRes.data);
+            setApplications(appsRes.data.filter(app => app.application_type !== 'proposal' && app.application_type !== 'evaluation'));
             const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3, '営業研修生': 4, '内勤研修生': 5 };
             const sortedUsers = usersRes.data.sort((a, b) => {
                 const getSortKey = (user: User) => user.is_trainee ? `${user.role}研修生` : user.role;
@@ -148,7 +146,6 @@ function ApplicationsManagement() {
                             <thead>
                                 <tr>
                                     <th>申請種別</th>
-                                    <th>件名</th>
                                     <th>申請者</th>
                                     <th>申請日</th>
                                     <th>ステータス</th>
@@ -159,17 +156,14 @@ function ApplicationsManagement() {
                             </thead>
                             <tbody>
                                 {currentApplications.map(app => (
-                                    <tr key={app.id}>
+                                    <tr key={app.id} className={app.status === '未処理' ? 'table-warning' : ''}>
                                         <td>{applicationTypeMap[app.application_type] || app.application_type}</td>
-                                        <td>{app.title}</td>
                                         <td>{app.applicant_name}</td>
                                         <td>{new Date(app.submitted_at).toLocaleString()}</td>
                                         <td>
                                             <Form.Select size="sm" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value)}>
                                                 <option value="未処理">未処理</option>
-                                                <option value="処理中">処理中</option>
                                                 <option value="処理済み">処理済み</option>
-                                                <option value="差戻し">差戻し</option>
                                             </Form.Select>
                                         </td>
                                         <td>{app.processed_by}</td>

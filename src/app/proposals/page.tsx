@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Form, Button, Row, Col, Card, CloseButton, Alert, Spinner, Modal } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
@@ -33,6 +33,7 @@ export default function ProposalsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -135,9 +136,16 @@ export default function ProposalsPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const form = event.currentTarget;
     const allFilled = proposals.every(p => p.eventName && p.timing && p.type && p.content);
 
     if (!proposerName || !allFilled) {
+        if (form.checkValidity() === false) {
+            const firstInvalidField = form.querySelector(':invalid') as HTMLElement;
+            if (firstInvalidField) {
+                firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
         alert('氏名と、すべての提案項目（企画名、時期、種別、内容）を入力してください。');
         return;
     }
@@ -197,7 +205,7 @@ export default function ProposalsPage() {
         </Alert>
       }
       <p>催事のアイデアを5つ以上提案してください。項目は「+」ボタンで追加できます。</p>
-      <Form onSubmit={handleSubmit}>
+      <Form onSubmit={handleSubmit} ref={formRef}>
         <Card className="mb-3">
             <Card.Body>
                 <Form.Group as={Row} className="align-items-center">

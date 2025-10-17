@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Form, Button, Row, Col, Card, Spinner, InputGroup, Alert, Modal } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
@@ -55,6 +55,7 @@ export default function ChangeCustomerPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -122,6 +123,11 @@ export default function ChangeCustomerPage() {
     if (form.checkValidity() === false) {
       event.stopPropagation();
       setValidated(true);
+      const firstInvalidField = form.querySelector(':invalid') as HTMLElement;
+      if (firstInvalidField) {
+        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        alert('必須項目が未入力です。該当箇所にスクロールします。');
+      }
       return;
     }
 
@@ -165,7 +171,7 @@ export default function ChangeCustomerPage() {
       <h1 className="mb-4">既存情報の変更</h1>
       <Card>
         <Card.Body>
-          <Form noValidate validated={validated} onSubmit={handleSubmit}>
+          <Form noValidate validated={validated} onSubmit={handleSubmit} ref={formRef}>
             <h5 className="mb-3">必須項目</h5>
             <Row className="mb-3">
                 <Form.Group as={Col} md="6">

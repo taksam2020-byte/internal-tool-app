@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Form, Button, Row, Col, Card, Spinner, Alert, Modal } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
@@ -96,6 +96,8 @@ export default function NewCustomerPage() {
     }
   };
 
+  const formRef = useRef<HTMLFormElement>(null);
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -103,6 +105,12 @@ export default function NewCustomerPage() {
     if (form.checkValidity() === false) {
       event.stopPropagation();
       setValidated(true);
+      // Find first invalid field and scroll to it
+      const firstInvalidField = form.querySelector(':invalid') as HTMLElement;
+      if (firstInvalidField) {
+        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        alert('必須項目が未入力です。該当箇所にスクロールします。');
+      }
       return;
     }
 
@@ -145,7 +153,7 @@ export default function NewCustomerPage() {
       <h1 className="mb-4">得意先 新規登録</h1>
       <Card>
         <Card.Body>
-          <Form noValidate validated={validated} onSubmit={handleSubmit}>
+          <Form noValidate validated={validated} onSubmit={handleSubmit} ref={formRef}>
             <Row className="mb-3">
               <Form.Group as={Col} md="6">
                 <Form.Label>サロン種別<span className="text-danger">*</span></Form.Label>

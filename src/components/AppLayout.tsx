@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { Container, Row, Col, Nav, Navbar, Offcanvas, Accordion, useAccordionButton, Card } from 'react-bootstrap';
+import { useState, useEffect } from 'react';
+import { Container, Row, Col, Nav, Navbar, Offcanvas, Accordion, useAccordionButton, Card, Badge } from 'react-bootstrap';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSettings } from '@/context/SettingsContext';
+import axios from 'axios';
 
 function CustomAccordionToggle({ children, eventKey, callback }: { children: React.ReactNode, eventKey: string, callback?: () => void }) {
   const decoratedOnClick = useAccordionButton(eventKey, callback);
@@ -16,10 +17,26 @@ function CustomAccordionToggle({ children, eventKey, callback }: { children: Rea
   );
 }
 
+interface Application { application_type: string; }
+
 function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const { settings, isSettingsLoaded } = useSettings();
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const res = await axios.get('/api/applications?status=未処理');
+        setPendingCount(res.data.filter((app: Application) => app.application_type !== 'proposal' && app.application_type !== 'evaluation').length);
+      } catch (error) {
+        console.error("Failed to fetch pending applications count", error);
+      }
+    };
+
+    fetchPendingCount();
+  }, []);
 
   const isCustomerRoute = pathname.startsWith('/customers');
 
@@ -62,13 +79,14 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
         <Link href="/reservations" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>施設予約</Nav.Link></Link>
       </Nav.Item>
 
+      <Nav.Item className="mb-2">
+        <Link href="/history" passHref legacyBehavior><Nav.Link className="text-white d-flex justify-content-between align-items-center" onClick={onLinkClick}>申請履歴 {pendingCount > 0 && <Badge pill bg="danger">{pendingCount}</Badge>}</Nav.Link></Link>
+      </Nav.Item>
+
       {settings.isEvaluationOpen && (
         <>
           <Nav.Item className="mb-2">
             <Link href="/evaluations" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>新人考課</Nav.Link></Link>
-          </Nav.Item>
-          <Nav.Item className="mb-2">
-            <Link href="/evaluations/analytics" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>考課結果閲覧</Nav.Link></Link>
           </Nav.Item>
         </>
       )}
@@ -78,10 +96,6 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
           <Link href="/proposals" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>催事提案</Nav.Link></Link>
         </Nav.Item>
       )}
-
-      <Nav.Item className="mb-2">
-        <Link href="/history" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>申請履歴</Nav.Link></Link>
-      </Nav.Item>
 
       <Nav.Item>
         <Link href="/admin" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>管理画面</Nav.Link></Link>

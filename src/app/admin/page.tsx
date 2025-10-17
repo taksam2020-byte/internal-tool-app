@@ -251,6 +251,85 @@ function RoleSelector({ title, roles, selectedRoles, onChange }: { title: string
 
 
 
+function DataManagement() {
+    const [key, setKey] = useState('proposals');
+    const [applications, setApplications] = useState<Application[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const res = await axios.get<Application[]>('/api/applications');
+            setApplications(res.data);
+        } catch { /* Failed to fetch applications */ }
+        setLoading(false);
+    };
+
+    useEffect(() => { fetchData(); }, []);
+
+    const handleExcelExport = async () => {
+        try {
+            const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
+            const dataToExport = res.data.map((p: Application) => ({
+                '提出日': new Date(p.submitted_at).toLocaleString(),
+                '提案者': p.applicant_name,
+                ...p.details
+            }));
+
+            if (dataToExport.length === 0) {
+                alert('エクスポートするデータがありません。');
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Proposals");
+            XLSX.writeFile(workbook, `${selectedYear}年度_催事提案一覧.xlsx`);
+        } catch { alert('Excelファイルの出力に失敗しました。'); }
+    };
+
+    const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal').map(a => a.details.proposal_year))).sort((a, b) => b.localeCompare(a));
+    const proposals = applications.filter(a => a.application_type === 'proposal');
+    const evaluations = applications.filter(a => a.application_type === 'evaluation');
+
+    return (
+        <Card className="mb-4">
+            <Card.Header as="h5">データ管理</Card.Header>
+            <Card.Body>
+                {loading ? <div className="text-center"><Spinner/></div> : (
+                    <Tabs id="data-management-tabs" activeKey={key} onSelect={(k) => setKey(k as string)} className="mb-3" variant="pills" justify>
+                        <Tab eventKey="proposals" title={`催事提案 (${proposals.length})`}>
+                            <Row className="my-3 align-items-center">
+                                <Col md={3}><Form.Select value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>{proposalYears.map(y => <option key={y} value={y}>{y}年度</option>)}</Form.Select></Col>
+                                <Col><Button onClick={handleExcelExport}>Excel出力</Button></Col>
+                            </Row>
+                             <Table striped bordered hover size="sm">
+                                <thead><tr><th>提出日</th><th>提案者</th><th>件名</th></tr></thead>
+                                <tbody>
+                                    {proposals.map((s) => (
+                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{s.applicant_name}</td><td>{s.title}</td></tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </Tab>
+                        <Tab eventKey="evaluations" title={`新人考課 (${evaluations.length})`}>
+                            <Table striped bordered hover size="sm">
+                                <thead><tr><th>提出日</th><th>回答者</th><th>対象者</th></tr></thead>
+                                <tbody>
+                                    {evaluations.map((s) => (
+                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{s.details.evaluator}</td><td>{s.details.targetEmployee}</td></tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </Tab>
+                    </Tabs>
+                )}
+            </Card.Body>
+        </Card>
+    );
+}
+
 export default function AdminPage() {
     const { isAuthenticated } = useAuth();
     const { settings } = useSettings(); // Get settings to save
@@ -278,6 +357,7 @@ export default function AdminPage() {
             <h1 className="mb-4">管理画面</h1>
             <UserManagement />
             <MenuManagement />
+            <DataManagement />
 
             <div className="mt-4 d-grid">
                 <Button variant="primary" size="lg" onClick={handleSave}>すべての設定を保存</Button>

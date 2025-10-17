@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Form, Button, Row, Col, Card, Modal, Alert, Spinner, InputGroup } from 'react-bootstrap';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
@@ -43,6 +43,7 @@ export default function ReservationsPage() {
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [dates, setDates] = useState<(Date | null)[]>([null]);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -92,6 +93,11 @@ export default function ReservationsPage() {
     if (form.checkValidity() === false || dates.some(d => d === null)) {
       event.stopPropagation();
       setValidated(true);
+      const firstInvalidField = form.querySelector(':invalid') as HTMLElement;
+      if (firstInvalidField) {
+        firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        alert('必須項目が未入力です。該当箇所にスクロールします。');
+      }
       return;
     }
 
@@ -139,7 +145,7 @@ export default function ReservationsPage() {
       <h1 className="mb-4">本社施設予約</h1>
       <Card className="mb-4">
         <Card.Body>
-          <Form noValidate validated={validated} onSubmit={handleSubmit} id="reservation-form">
+          <Form noValidate validated={validated} onSubmit={handleSubmit} id="reservation-form" ref={formRef}>
             <Row className="mb-3">
               <Form.Group as={Col} md="6">
                 <Form.Label>申請者</Form.Label>
