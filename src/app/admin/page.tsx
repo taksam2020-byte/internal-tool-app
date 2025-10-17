@@ -280,11 +280,16 @@ function DataManagement() {
     const handleExcelExport = async () => {
         try {
             const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
-            const dataToExport = res.data.map((p: Application) => ({
-                '提出日': new Date(p.submitted_at).toLocaleString(),
-                '提案者': p.applicant_name,
-                ...p.details
-            }));
+            const dataToExport = res.data.flatMap((p: Application) => 
+                p.details.proposals.map((proposal: any) => ({
+                    '提出日': new Date(p.submitted_at).toLocaleString(),
+                    '提案者': p.applicant_name,
+                    '企画名': proposal.eventName,
+                    '時期': proposal.timing,
+                    '種別': proposal.type,
+                    '内容': proposal.content,
+                }))
+            );
 
             if (dataToExport.length === 0) {
                 alert('エクスポートするデータがありません。');

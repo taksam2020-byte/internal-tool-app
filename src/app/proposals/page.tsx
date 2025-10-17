@@ -155,7 +155,7 @@ export default function ProposalsPage() {
 
     const details = {
         proposal_year: settings.proposalYear,
-        ...proposals.reduce((acc, p, i) => ({...acc, [`提案${i+1}_企画名`]: p.eventName, [`提案${i+1}_時期`]: p.timing, [`提案${i+1}_種別`]: p.type, [`提案${i+1}_内容`]: p.content }), {})
+        proposals: proposals.map(p => ({ eventName: p.eventName, timing: p.timing, type: p.type, content: p.content }))
     };
 
     try {
