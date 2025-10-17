@@ -11,14 +11,25 @@ const applicationTypeMap: { [key: string]: string } = {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const type = searchParams.get('type');
+    const year = searchParams.get('year');
 
     let query = 'SELECT * FROM applications';
     const values = [];
+    const conditions = [];
 
-    if (status) {
-      query += ' WHERE status = $1';
-      values.push(status);
+    if (type) {
+      conditions.push(`application_type = $${values.length + 1}`);
+      values.push(type);
+    }
+
+    if (year) {
+      conditions.push(`details->>'proposal_year' = $${values.length + 1}`);
+      values.push(year);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
     }
 
     query += ' ORDER BY submitted_at DESC;';

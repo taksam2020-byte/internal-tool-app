@@ -145,17 +145,18 @@ export default function ProposalsPage() {
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-    const subject = `【社内ツール】${settings.proposalYear}年度 催事提案`;
-    let body = `提案年度: ${settings.proposalYear}\n提案者: ${proposerName}\n\n`;
-    body += proposals.map((p, i) => {
-        return `--- 提案 ${i + 1} ---\n企画(行事)名: ${p.eventName}\n時期: ${p.timing}\n種別: ${p.type}\n内容: ${p.content}`;
-    }).join('\n\n');
+    const details = {
+        proposal_year: settings.proposalYear,
+        ...proposals.reduce((acc, p, i) => ({...acc, [`提案${i+1}_企画名`]: p.eventName, [`提案${i+1}_時期`]: p.timing, [`提案${i+1}_種別`]: p.type, [`提案${i+1}_内容`]: p.content }), {})
+    };
 
     try {
-      await axios.post('/api/send-email', {
-        to: settings.proposalEmails,
-        subject,
-        body,
+      await axios.post('/api/applications', { 
+        application_type: 'proposal',
+        applicant_name: proposerName,
+        title: `${settings.proposalYear}年度 催事提案`,
+        details: details,
+        emails: settings.proposalEmails
       });
       setSubmitStatus({ success: true, message: '提案が正常に送信されました。' });
       setProposerName('');

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Form, Button, Card, Row, Col, Spinner, Table, Modal, Pagination } from 'react-bootstrap';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 interface User { id: number; name: string; role: '社長' | '営業' | '内勤'; is_trainee: boolean; is_active: boolean; }
 
@@ -22,6 +23,7 @@ const applicationTypeMap: { [key: string]: string } = {
   customer_registration: '得意先新規登録',
   customer_change: '得意先情報変更',
   facility_reservation: '施設予約',
+  proposal: '催事提案',
 };
 
 function ApplicationsManagement() {
@@ -33,6 +35,7 @@ function ApplicationsManagement() {
     const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [processorName, setProcessorName] = useState('');
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
     const applicationsPerPage = 10;
 
     const fetchData = async () => {
@@ -80,7 +83,30 @@ function ApplicationsManagement() {
         }
     };
 
+    const handleExcelExport = async () => {
+        try {
+            const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
+            const dataToExport = res.data.map((p: Application) => ({
+                '提出日': new Date(p.submitted_at).toLocaleString(),
+                '提案者': p.applicant_name,
+                '件名': p.title,
+                ...p.details
+            }));
+
+            if (dataToExport.length === 0) {
+                alert('エクスポートするデータがありません。');
+                return;
+            }
+
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Proposals");
+            XLSX.writeFile(workbook, `${selectedYear}年度_催事提案一覧.xlsx`);
+        } catch { alert('Excelファイルの出力に失敗しました。'); }
+    };
+
     const filteredApplications = applications.filter(app => filterType === 'all' || app.application_type === filterType);
+    const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal').map(a => a.details.proposal_year))).sort((a, b) => b.localeCompare(a));
     const indexOfLastApplication = currentPage * applicationsPerPage;
     const indexOfFirstApplication = indexOfLastApplication - applicationsPerPage;
     const currentApplications = filteredApplications.slice(indexOfFirstApplication, indexOfLastApplication);
@@ -110,6 +136,13 @@ function ApplicationsManagement() {
                                 </Form.Select>
                             </Col>
                         </Form.Group>
+
+                        {filterType === 'proposal' && (
+                            <Row className="my-3 align-items-center">
+                                <Col md={3}><Form.Select value={selectedYear} onChange={e => setSelectedYear(e.target.value)}>{proposalYears.map(y => <option key={y} value={y}>{y}年度</option>)}</Form.Select></Col>
+                                <Col><Button onClick={handleExcelExport}>Excel出力</Button></Col>
+                            </Row>
+                        )}
 
                         <Table striped bordered hover size="sm">
                             <thead>
