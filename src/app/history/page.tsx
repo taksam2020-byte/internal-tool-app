@@ -40,7 +40,14 @@ function ApplicationsManagement() {
         try {
             const appTypes = ['customer_registration', 'customer_change', 'facility_reservation'];
             const [appsRes, usersRes] = await Promise.all([
-                axios.get<Application[]>(`/api/applications?type=${appTypes.join(',')}`),
+                axios.get<Application[]>('/api/applications', { 
+                    params: { type: appTypes },
+                    paramsSerializer: params => {
+                        return Object.entries(params).map(([key, value]) => 
+                            Array.isArray(value) ? value.map(v => `${key}=${v}`).join('&') : `${key}=${value}`
+                        ).join('&');
+                    }
+                }),
                 axios.get<User[]>('/api/users'),
             ]);
             setApplications(appsRes.data);

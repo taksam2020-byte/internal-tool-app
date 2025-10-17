@@ -15,7 +15,7 @@ const applicationTypeMap: { [key: string]: string } = {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type');
+    const types = searchParams.getAll('type');
     const year = searchParams.get('year');
     const status = searchParams.get('status');
 
@@ -23,8 +23,7 @@ export async function GET(request: NextRequest) {
     const values = [];
     const conditions = [];
 
-    if (type) {
-      const types = type.split(',');
+    if (types.length > 0) {
       conditions.push(`application_type IN (${types.map((_, i) => `$${values.length + i + 1}`).join(',')})`);
       values.push(...types);
     }
