@@ -42,6 +42,7 @@ export default function NewCustomerPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -96,8 +97,6 @@ export default function NewCustomerPage() {
     }
   };
 
-  const formRef = useRef<HTMLFormElement>(null);
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -105,7 +104,6 @@ export default function NewCustomerPage() {
     if (form.checkValidity() === false) {
       event.stopPropagation();
       setValidated(true);
-      // Find first invalid field and scroll to it
       const firstInvalidField = form.querySelector(':invalid') as HTMLElement;
       if (firstInvalidField) {
         firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });

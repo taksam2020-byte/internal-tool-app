@@ -1,4 +1,3 @@
-// Force re-build
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,9 +6,21 @@ import { Form, Button, Card, Row, Col, Alert, InputGroup, Spinner, Table, Tabs, 
 import { useSettings } from '@/context/SettingsContext';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 // --- Type Definitions ---
 interface User { id: number; name: string; role: '社長' | '営業' | '内勤'; is_trainee: boolean; is_active: boolean; }
+interface Application {
+  id: number;
+  application_type: string;
+  applicant_name: string;
+  title: string;
+  details: Record<string, string>;
+  submitted_at: string;
+  status: string;
+  processed_by: string | null;
+  processed_at: string | null;
+}
 
 // --- User Management Component ---
 function UserManagement() {
@@ -248,8 +259,6 @@ function RoleSelector({ title, roles, selectedRoles, onChange }: { title: string
         </Form.Group>
     );
 }
-
-
 
 function DataManagement() {
     const [key, setKey] = useState('proposals');

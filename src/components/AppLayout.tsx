@@ -8,6 +8,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
 
+interface Application { application_type: string; }
+
 function CustomAccordionToggle({ children, eventKey, callback }: { children: React.ReactNode, eventKey: string, callback?: () => void }) {
   const decoratedOnClick = useAccordionButton(eventKey, callback);
   return (
@@ -16,8 +18,6 @@ function CustomAccordionToggle({ children, eventKey, callback }: { children: Rea
     </div>
   );
 }
-
-interface Application { application_type: string; }
 
 function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
