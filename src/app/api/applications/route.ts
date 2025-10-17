@@ -24,8 +24,9 @@ export async function GET(request: NextRequest) {
     const conditions = [];
 
     if (type) {
-      conditions.push(`application_type = $${values.length + 1}`);
-      values.push(type);
+      const types = type.split(',');
+      conditions.push(`application_type IN (${types.map((_, i) => `$${values.length + i + 1}`).join(',')})`);
+      values.push(...types);
     }
 
     if (year) {

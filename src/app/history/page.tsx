@@ -38,11 +38,12 @@ function ApplicationsManagement() {
     const fetchData = async () => {
         setLoading(true);
         try {
+            const appTypes = ['customer_registration', 'customer_change', 'facility_reservation'];
             const [appsRes, usersRes] = await Promise.all([
-                axios.get<Application[]>('/api/applications'),
+                axios.get<Application[]>(`/api/applications?type=${appTypes.join(',')}`),
                 axios.get<User[]>('/api/users'),
             ]);
-            setApplications(appsRes.data.filter(app => app.application_type !== 'proposal' && app.application_type !== 'evaluation'));
+            setApplications(appsRes.data);
             const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3, '営業研修生': 4, '内勤研修生': 5 };
             const sortedUsers = usersRes.data.sort((a, b) => {
                 const getSortKey = (user: User) => user.is_trainee ? `${user.role}研修生` : user.role;
