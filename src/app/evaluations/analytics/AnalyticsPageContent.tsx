@@ -138,11 +138,7 @@ export default function AnalyticsPageContent() {
         }).filter((row): row is { month: string; '合計': number; [key: string]: string | number } => row !== null);
 
         // Chart data (last 6 months, ascending)
-        const lastSixMonths = [...Array(6)].map((_, i) => {
-            const d = new Date();
-            d.setMonth(d.getMonth() - i);
-            return d.toISOString().slice(0, 7); // YYYY-MM
-        }).reverse(); // ascending
+        const lastSixMonths = filterOptions.months.slice(0, 6).reverse(); // Use available months, ascending
 
         const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#8A2BE2', '#D2691E', '#7FFF00'];
         const monthlySummaryChart = {
