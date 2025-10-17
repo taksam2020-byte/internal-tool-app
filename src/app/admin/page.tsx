@@ -15,11 +15,18 @@ interface Application {
   application_type: string;
   applicant_name: string;
   title: string;
-  details: Record<string, string>;
+  details: Record<string, any>; // Allow details to be flexible
   submitted_at: string;
   status: string;
   processed_by: string | null;
   processed_at: string | null;
+}
+
+interface ProposalItem {
+  eventName: string;
+  timing: string;
+  type: string;
+  content: string;
 }
 
 // --- User Management Component ---
@@ -281,7 +288,7 @@ function DataManagement() {
         try {
             const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
             const dataToExport = res.data.flatMap((p: Application) => 
-                p.details.proposals.map((proposal: any) => ({
+                p.details.proposals.map((proposal: ProposalItem) => ({
                     '提出日': new Date(p.submitted_at).toLocaleString(),
                     '提案者': p.applicant_name,
                     '企画名': proposal.eventName,

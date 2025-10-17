@@ -35,7 +35,7 @@ const MAX_TOTAL_SCORE = 55;
 const formatMonth = (monthStr: string | null, format: 'long' | 'short') => {
     if (!monthStr) return '';
     const monthNum = parseInt(monthStr, 10);
-    if (isNaN(monthNum)) return ''; // Return empty if not a number
+    if (isNaN(monthNum)) return monthStr; // Return original string if not a number (like YYYY-MM)
 
     if (format === 'long') {
         return `${monthNum}月度`;
@@ -200,7 +200,6 @@ export default function AnalyticsPageContent() {
     const { filterOptions } = apiResponse;
     const { crossTabData, comments, monthlySummary, eChartsRadarData, currentMonthAverage, cumulativeAverage, selectedMonthLong } = processedData;
     const paginatedComments = comments?.slice(commentPage, commentPage + 1);
-    const totalCommentPages = comments?.length || 0;
 
     return (
         <div style={{ display: 'flex' }}>
