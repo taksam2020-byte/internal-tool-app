@@ -11,7 +11,7 @@ interface Application {
   application_type: string;
   applicant_name: string;
   title: string;
-  details: Record<string, string>;
+  details: Record<string, any>; // Allow details to be flexible
   submitted_at: string;
   status: string;
   processed_by: string | null;
