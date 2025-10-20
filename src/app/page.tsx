@@ -16,7 +16,8 @@ export default function HomePage() {
   useEffect(() => {
     const fetchPendingApplications = async () => {
       try {
-        const res = await axios.get('/api/applications?status=未処理');
+        const appTypes = ['customer_registration', 'customer_change', 'facility_reservation'];
+        const res = await axios.get(`/api/applications?status=未処理&type=${appTypes.join(',')}`);
         setPendingApplicationsCount(res.data.length);
       } catch (error) {
         console.error("Failed to fetch pending applications", error);

@@ -28,8 +28,9 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
   useEffect(() => {
     const fetchPendingCount = async () => {
       try {
-        const res = await axios.get('/api/applications?status=未処理');
-        setPendingCount(res.data.filter((app: Application) => app.application_type !== 'proposal' && app.application_type !== 'evaluation').length);
+        const appTypes = ['customer_registration', 'customer_change', 'facility_reservation'];
+        const res = await axios.get(`/api/applications?status=未処理&type=${appTypes.join(',')}`);
+        setPendingCount(res.data.length);
       } catch (error) {
         console.error("Failed to fetch pending applications count", error);
       }
