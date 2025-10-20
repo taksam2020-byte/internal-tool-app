@@ -28,8 +28,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (year) {
-      conditions.push(`details->>'proposal_year' = $${values.length + 1}`);
-      values.push(year);
+      conditions.push(`(details->>'proposal_year')::int = $${values.length + 1}`);
+      values.push(parseInt(year, 10));
     }
 
     if (status) {
