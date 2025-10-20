@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (year) {
-      conditions.push(`details->>'提案年度' = $${values.length + 1}`);
+      conditions.push(`details->>'proposal_year' = $${values.length + 1}`);
       values.push(year);
     }
 
@@ -61,7 +61,6 @@ export async function POST(request: Request) {
     }
 
     const fieldLabelMap: { [key: string]: string } = {
-        proposal_year: '提案年度',
         evaluator: '回答者',
         targetEmployee: '対象者',
         totalScore: '合計点',
