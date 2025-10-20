@@ -22,7 +22,7 @@ function CustomAccordionToggle({ children, eventKey, callback }: { children: Rea
 function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { settings, isSettingsLoaded } = useSettings();
+  const { settings, isSettingsLoaded, refreshKey } = useSettings();
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
@@ -36,7 +36,7 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
     };
 
     fetchPendingCount();
-  }, []);
+  }, [refreshKey]);
 
   const isCustomerRoute = pathname.startsWith('/customers');
 

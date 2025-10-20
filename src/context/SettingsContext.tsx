@@ -30,6 +30,8 @@ interface SettingsContextType {
     settings: AppSettings;
     setSettings: Dispatch<SetStateAction<AppSettings>>;
     isSettingsLoaded: boolean;
+    refreshKey: number;
+    triggerRefresh: () => void;
 }
 
 const defaultSettings: AppSettings = {
@@ -43,7 +45,6 @@ const defaultSettings: AppSettings = {
     reservationAllowedRoles: [],
     evaluationAllowedRoles: [],
     proposalAllowedRoles: [],
-    // Defaults for new trainee inclusion settings
     customerIncludeTrainees: false,
     reservationIncludeTrainees: false,
     evaluationIncludeTrainees: false,
@@ -59,6 +60,8 @@ const SettingsContext = createContext<SettingsContextType>({
     settings: defaultSettings,
     setSettings: () => {},
     isSettingsLoaded: false,
+    refreshKey: 0,
+    triggerRefresh: () => {},
 });
 
 export const useSettings = () => useContext(SettingsContext);
@@ -66,31 +69,46 @@ export const useSettings = () => useContext(SettingsContext);
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const [settings, setSettings] = useState<AppSettings>(defaultSettings);
     const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
     useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const response = await axios.get('/api/settings');
-                if (response.data) {
-                    setSettings(prev => ({ ...prev, ...response.data }));
-                }
-            } catch (error) {
-                if (axios.isAxiosError(error) && error.response?.status === 404) {
-                    // This is expected if no settings are in the DB yet. 
-                    // The component will use defaultSettings.
-                } else {
-                    console.error("Failed to load settings from database", error);
-                }
+        try {
+            const savedSettings = localStorage.getItem(SETTINGS_KEY);
+            if (savedSettings) {
+                const parsed = JSON.parse(savedSettings);
+                // Ensure array fields exist for backward compatibility
+                parsed.customerEmails = Array.isArray(parsed.customerEmails) ? parsed.customerEmails : [];
+                parsed.reservationEmails = Array.isArray(parsed.reservationEmails) ? parsed.reservationEmails : [];
+                parsed.proposalEmails = Array.isArray(parsed.proposalEmails) ? parsed.proposalEmails : [];
+                parsed.evaluationTargets = Array.isArray(parsed.evaluationTargets) ? parsed.evaluationTargets : [];
+                parsed.customerAllowedRoles = Array.isArray(parsed.customerAllowedRoles) ? parsed.customerAllowedRoles : [];
+                parsed.reservationAllowedRoles = Array.isArray(parsed.reservationAllowedRoles) ? parsed.reservationAllowedRoles : [];
+                parsed.evaluationAllowedRoles = Array.isArray(parsed.evaluationAllowedRoles) ? parsed.evaluationAllowedRoles : [];
+                parsed.proposalAllowedRoles = Array.isArray(parsed.proposalAllowedRoles) ? parsed.proposalAllowedRoles : [];
+                parsed.evaluationDeadline = parsed.evaluationDeadline || '';
+                setSettings(prev => ({ ...prev, ...parsed }));
             }
-            setIsSettingsLoaded(true);
-        };
-
-        fetchSettings();
+        } catch (error) {
+            console.error("Failed to load settings from localStorage", error);
+        }
+        setIsSettingsLoaded(true);
     }, []);
 
+    useEffect(() => {
+        if (isSettingsLoaded) {
+            try {
+                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+            } catch (error) {
+                console.error("Failed to save settings to localStorage", error);
+            }
+        }
+    }, [settings, isSettingsLoaded]);
+
     return (
-        <SettingsContext.Provider value={{ settings, setSettings, isSettingsLoaded }}>
+        <SettingsContext.Provider value={{ settings, setSettings, isSettingsLoaded, refreshKey, triggerRefresh }}>
             {children}
         </SettingsContext.Provider>
     );
-};
+}

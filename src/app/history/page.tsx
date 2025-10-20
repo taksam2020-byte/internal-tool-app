@@ -19,6 +19,8 @@ interface Application {
   processed_at: string | null;
 }
 
+import { useSettings } from '@/context/SettingsContext';
+
 const applicationTypeMap: { [key: string]: string } = {
   customer_registration: '得意先新規登録',
   customer_change: '得意先情報変更',
@@ -26,6 +28,7 @@ const applicationTypeMap: { [key: string]: string } = {
 };
 
 function ApplicationsManagement() {
+    const { triggerRefresh } = useSettings();
     const [applications, setApplications] = useState<Application[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -76,6 +79,7 @@ function ApplicationsManagement() {
             await axios.put(`/api/applications/${id}`,
                 { status: newStatus, processed_by: processorName });
             fetchData(); // Refresh the data
+            triggerRefresh(); // Trigger a global refresh
         } catch (error) {
             console.error("Failed to update status", error);
             alert('ステータスの更新に失敗しました。');
