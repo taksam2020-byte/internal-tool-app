@@ -311,7 +311,7 @@ function DataManagement() {
         } catch { alert('Excelファイルの出力に失敗しました。'); }
     };
 
-    const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal').map(a => JSON.parse(a.details as string).提案年度))).sort((a, b) => b.localeCompare(a));
+    const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal').map(a => JSON.parse(a.details as unknown as string).提案年度))).sort((a, b) => b.localeCompare(a));
     const proposals = applications.filter(a => a.application_type === 'proposal');
     const evaluations = applications.filter(a => a.application_type === 'evaluation');
 
