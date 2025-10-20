@@ -1,9 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
-
-const SETTINGS_KEY = 'appSettings';
-
+import axios from 'axios';
 
 export interface AppSettings {
     customerEmails: string[];
@@ -16,12 +14,10 @@ export interface AppSettings {
     reservationAllowedRoles: string[];
     evaluationAllowedRoles: string[];
     proposalAllowedRoles: string[];
-    // New settings for including trainees
     customerIncludeTrainees: boolean;
     reservationIncludeTrainees: boolean;
     evaluationIncludeTrainees: boolean;
     proposalIncludeTrainees: boolean;
-    // New settings for evaluations
     evaluationTargets: string[];
     isEvaluationOpen: boolean;
     evaluationMonth: string;
@@ -51,7 +47,6 @@ const defaultSettings: AppSettings = {
     reservationIncludeTrainees: false,
     evaluationIncludeTrainees: false,
     proposalIncludeTrainees: false,
-    // Defaults for new settings
     evaluationTargets: [],
     isEvaluationOpen: true,
     evaluationMonth: (new Date().getMonth() + 1).toString(),
@@ -76,41 +71,24 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
     useEffect(() => {
-        try {
-            const savedSettings = localStorage.getItem(SETTINGS_KEY);
-            if (savedSettings) {
-                const parsed = JSON.parse(savedSettings);
-                // Ensure array fields exist for backward compatibility
-                parsed.customerEmails = Array.isArray(parsed.customerEmails) ? parsed.customerEmails : [];
-                parsed.reservationEmails = Array.isArray(parsed.reservationEmails) ? parsed.reservationEmails : [];
-                parsed.proposalEmails = Array.isArray(parsed.proposalEmails) ? parsed.proposalEmails : [];
-                parsed.evaluationTargets = Array.isArray(parsed.evaluationTargets) ? parsed.evaluationTargets : [];
-                parsed.customerAllowedRoles = Array.isArray(parsed.customerAllowedRoles) ? parsed.customerAllowedRoles : [];
-                parsed.reservationAllowedRoles = Array.isArray(parsed.reservationAllowedRoles) ? parsed.reservationAllowedRoles : [];
-                parsed.evaluationAllowedRoles = Array.isArray(parsed.evaluationAllowedRoles) ? parsed.evaluationAllowedRoles : [];
-                parsed.proposalAllowedRoles = Array.isArray(parsed.proposalAllowedRoles) ? parsed.proposalAllowedRoles : [];
-                parsed.evaluationDeadline = parsed.evaluationDeadline || '';
-                setSettings(prev => ({ ...prev, ...parsed }));
-            }
-        } catch (error) {
-            console.error("Failed to load settings from localStorage", error);
-        }
-        setIsSettingsLoaded(true);
-    }, []);
-
-    useEffect(() => {
-        if (isSettingsLoaded) {
+        const fetchSettings = async () => {
             try {
-                localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+                const response = await axios.get('/api/settings');
+                if (response.data) {
+                    setSettings(response.data);
+                }
             } catch (error) {
-                console.error("Failed to save settings to localStorage", error);
+                console.error("Failed to load settings from DB", error);
             }
-        }
-    }, [settings, isSettingsLoaded]);
+            setIsSettingsLoaded(true);
+        };
+
+        fetchSettings();
+    }, [refreshKey]);
 
     return (
         <SettingsContext.Provider value={{ settings, setSettings, isSettingsLoaded, refreshKey, triggerRefresh }}>
             {children}
         </SettingsContext.Provider>
     );
-}
+};
