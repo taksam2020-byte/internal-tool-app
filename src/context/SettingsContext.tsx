@@ -1,7 +1,9 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, Dispatch, SetStateAction } from 'react';
-import axios from 'axios';
+
+const SETTINGS_KEY = 'appSettings';
+
 
 export interface AppSettings {
     customerEmails: string[];
