@@ -8,8 +8,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
 
-import { useState, useEffect } from 'react';
-
 function CustomAccordionToggle({ children, eventKey, callback }: { children: React.ReactNode, eventKey: string, callback?: () => void }) {
   const decoratedOnClick = useAccordionButton(eventKey, callback);
   return (
