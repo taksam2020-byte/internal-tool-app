@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (year) {
-      conditions.push(`details->>'提案年度' = $${values.length + 1}`);
+      conditions.push(`details->>'proposal_year' = $${values.length + 1}`);
       values.push(year);
     }
 
@@ -65,7 +65,6 @@ export async function POST(request: Request) {
     const { application_type, applicant_name, title, details, emails } = await request.json();
 
     const fieldLabelMap: { [key: string]: string } = {
-        proposal_year: '提案年度',
         evaluator: '回答者',
         targetEmployee: '対象者',
         totalScore: '合計点',
@@ -95,7 +94,7 @@ export async function POST(request: Request) {
         equipment: '設備利用',
         startTime: '開始時間',
         endTime: '終了時間',
-        purpose: '利用目的'
+        purpose: '利用目的',
     };
 
     if (!application_type || !applicant_name || !title || !details || !emails) {
