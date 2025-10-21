@@ -61,10 +61,15 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: Request) {
+  console.log('Received POST request to /api/applications');
   try {
-    const { application_type, applicant_name, title, details, emails } = await request.json();
+    const body = await request.json();
+    console.log('Request body:', body);
+
+    const { application_type, applicant_name, title, details, emails } = body;
 
     if (!application_type || !applicant_name || !title || !details || !emails) {
+        console.error('Validation failed: Missing required fields');
         return NextResponse.json({ message: 'Missing or invalid required fields' }, { status: 400 });
     }
 
@@ -78,17 +83,20 @@ export async function POST(request: Request) {
         // Add all other field translations here
     };
 
+    console.log('Original details:', details);
     const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
         const translatedKey = fieldLabelMap[key] || key;
         acc[translatedKey] = value as string;
         return acc;
     }, {} as Record<string, string>);
+    console.log('Translated details before stringify:', translatedDetails);
 
     // Insert into database
     await sql`
       INSERT INTO applications (application_type, applicant_name, title, details)
       VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(translatedDetails)});
     `;
+    console.log('Successfully inserted into database');
 
     // Send email
     const transporter = nodemailer.createTransport({
@@ -100,31 +108,20 @@ export async function POST(request: Request) {
     });
 
     const subject = `【社内ツール】${title}`;
-    let body = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n`;
-
-    if (application_type === 'proposal' && translatedDetails.proposals && Array.isArray(translatedDetails.proposals)) {
-        body += `提案年度: ${translatedDetails.proposal_year}\n\n`;
-        translatedDetails.proposals.forEach((p: ProposalItem, i: number) => {
-            body += `--- 提案 ${i + 1} ---\n`;
-            body += `企画(行事)名: ${p.eventName}\n`;
-            body += `時期: ${p.timing}\n`;
-            body += `種別: ${p.type}\n`;
-            body += `内容: ${p.content}\n\n`;
-        });
-    } else {
-        body += Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
-    }
+    const bodyText = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n` +
+                 Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
 
     await transporter.sendMail({
         from: process.env.GMAIL_ADDRESS,
         to: emails,
         subject: subject,
-        text: body,
+        text: bodyText,
     });
+    console.log('Successfully sent email');
 
     return NextResponse.json({ message: 'Application submitted and email sent successfully' }, { status: 201 });
   } catch (error: unknown) {
-    console.error('API Error:', error);
+    console.error('API Error in POST /api/applications:', error);
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ message: 'Error submitting application', error: message }, { status: 500 });
   }
