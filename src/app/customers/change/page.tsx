@@ -118,6 +118,12 @@ export default function ChangeCustomerPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    if (!isSettingsLoaded) {
+        alert('設定を読み込み中です。少し待ってからもう一度お試しください。');
+        return;
+    }
+
     const form = event.currentTarget;
 
     if (form.checkValidity() === false) {

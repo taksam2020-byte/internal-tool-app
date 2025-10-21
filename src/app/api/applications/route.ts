@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (year) {
-      conditions.push(`details->>'提案年度' LIKE $${values.length + 1}`);
-      values.push(`%${year}%`);
+      conditions.push(`details->>'proposal_year' = $${values.length + 1}`);
+      values.push(year);
     }
 
     if (status) {
