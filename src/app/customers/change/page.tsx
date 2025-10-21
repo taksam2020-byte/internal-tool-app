@@ -141,11 +141,11 @@ export default function ChangeCustomerPage() {
     setSubmitStatus(null);
 
     const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
 
-    const details = Object.entries(data).reduce((acc, [key, value]) => {
-        const label = fieldLabels[key] || key;
-        acc[label] = value as string;
+    const details = Object.keys(fieldLabels).reduce((acc, key) => {
+        if (formData.has(key)) {
+            acc[fieldLabels[key]] = formData.get(key) as string;
+        }
         return acc;
     }, {} as Record<string, string>);
 
