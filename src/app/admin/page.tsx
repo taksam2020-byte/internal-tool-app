@@ -15,6 +15,7 @@ interface Application {
   application_type: string;
   applicant_name: string;
   title: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details: Record<string, any>; // Allow details to be flexible
   submitted_at: string;
   status: string;
@@ -347,8 +348,9 @@ function DataManagement() {
                                 <thead><tr><th>提出日</th><th>回答者</th><th>対象者</th></tr></thead>
                                 <tbody>
                                     {evaluations.map((s) => (
+                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                         <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{(s.details as any).evaluator}</td><td>{(s.details as any).targetEmployee}</td></tr>
-                                    ))}
+                                    ))}}
                                 </tbody>
                             </Table>
                         </Tab>

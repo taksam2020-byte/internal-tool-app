@@ -77,6 +77,7 @@ export async function POST(request: Request) {
         scores: 'スコア詳細',
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
         const translatedKey = fieldLabelMap[key] || key;
         acc[translatedKey] = value as string;
