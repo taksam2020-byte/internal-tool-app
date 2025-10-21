@@ -86,41 +86,51 @@ export async function POST(request: Request) {
     };
 
     console.log('Original details:', details);
-    const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
-        const translatedKey = fieldLabelMap[key] || key;
-        acc[translatedKey] = value as string;
-        return acc;
-    }, {} as Record<string, string>);
-    console.log('Translated details before stringify:', translatedDetails);
-
-    // Insert into database
-    await sql`
-      INSERT INTO applications (application_type, applicant_name, title, details)
-      VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(translatedDetails)});
-    `;
-    console.log('Successfully inserted into database');
-
-    // Send email
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.GMAIL_ADDRESS,
-            pass: process.env.GMAIL_APP_PASSWORD,
-        },
-    });
-
-    const subject = `【社内ツール】${title}`;
-    const bodyText = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n` + 
-                 Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
-
-    await transporter.sendMail({
-        from: process.env.GMAIL_ADDRESS,
-        to: emails,
-        subject: subject,
-        text: bodyText,
-    });
-    console.log('Successfully sent email');
-    */
+        const detailsToSave = application_type === 'proposal' 
+            ? details 
+            : Object.entries(details).reduce((acc, [key, value]) => {
+                const translatedKey = fieldLabelMap[key] || key;
+                acc[translatedKey] = value as string;
+                return acc;
+            }, {} as Record<string, string>);
+    
+        // Insert into database
+        await sql`
+          INSERT INTO applications (application_type, applicant_name, title, details)
+          VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(detailsToSave)});
+        `;
+    
+        // Send email
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_ADDRESS,
+                pass: process.env.GMAIL_APP_PASSWORD,
+            },
+        });
+    
+        const subject = `【社内ツール】${title}`;
+        let body = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n`;
+    
+        if (application_type === 'proposal' && details.proposals && Array.isArray(details.proposals)) {
+            body += `提案年度: ${details.proposal_year}\n\n`;
+            details.proposals.forEach((p: ProposalItem, i: number) => {
+                body += `--- 提案 ${i + 1} ---\n`;
+                body += `企画(行事)名: ${p.eventName}\n`;
+                body += `時期: ${p.timing}\n`;
+                body += `種別: ${p.type}\n`;
+                body += `内容: ${p.content}\n\n`;
+            });
+        } else {
+            body += Object.entries(detailsToSave).map(([key, value]) => `${key}: ${value}`).join('\n');
+        }
+    
+        await transporter.sendMail({
+            from: process.env.GMAIL_ADDRESS,
+            to: emails,
+            subject: subject,
+            text: body,
+        });    */
     // --- End of commented out block ---
 
     return NextResponse.json({ message: '[Debug] Request received successfully' }, { status: 200 });
