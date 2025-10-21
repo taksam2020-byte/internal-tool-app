@@ -15,12 +15,18 @@ interface Application {
   application_type: string;
   applicant_name: string;
   title: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details: Record<string, any>; // Allow details to be flexible
   submitted_at: string;
   status: string;
   processed_by: string | null;
   processed_at: string | null;
+}
+
+interface ProposalItem {
+  eventName: string;
+  timing: string;
+  type: string;
+  content: string;
 }
 
 // --- User Management Component ---
@@ -281,25 +287,17 @@ function DataManagement() {
     const handleExcelExport = async () => {
         try {
             const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
-            const dataToExport = res.data.map((p: Application) => {
+            const dataToExport = res.data.flatMap((p: Application) => {
                 const details = typeof p.details === 'string' ? JSON.parse(p.details) : p.details;
-                const proposals: any[] = [];
-                // Extract proposal items from flat structure
-                for (let i = 1; i <= 5; i++) {
-                    if (details[`提案${i}_企画名`]) {
-                        proposals.push({
-                            '企画名': details[`提案${i}_企画名`],
-                            '時期': details[`提案${i}_時期`],
-                            '種別': details[`提案${i}_種別`],
-                            '内容': details[`提案${i}_内容`]
-                        });
-                    }
-                }
-                return {
+                if (!details || !Array.isArray(details.proposals)) return [];
+                return details.proposals.map((proposal: ProposalItem) => ({
                     '提出日': new Date(p.submitted_at).toLocaleString(),
                     '提案者': p.applicant_name,
-                    ...proposals.reduce((acc, cur, i) => ({...acc, ...Object.fromEntries(Object.entries(cur).map(([k, v]) => [`提案${i+1}_${k}`, v])) }), {})
-                };
+                    '企画名': proposal.eventName,
+                    '時期': proposal.timing,
+                    '種別': proposal.type,
+                    '内容': proposal.content,
+                }));
             });
 
             if (dataToExport.length === 0) {
