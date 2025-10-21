@@ -101,6 +101,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Missing or invalid required fields' }, { status: 400 });
     }
 
+    const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
+        const translatedKey = fieldLabelMap[key] || key;
+        acc[translatedKey] = value as string;
+        return acc;
+    }, {} as Record<string, string>);
+
     console.log("Translated Details (Object):", translatedDetails);
     const detailsString = JSON.stringify(translatedDetails);
     console.log("Translated Details (String):", detailsString);
