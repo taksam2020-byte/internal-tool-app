@@ -352,7 +352,7 @@ function DataManagement() {
                                 <thead><tr><th>提出日</th><th>回答者</th><th>対象者</th></tr></thead>
                                 <tbody>
                                     {evaluations.map((s) => (
-                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{(s.details as any).evaluator}</td><td>{(s.details as any).targetEmployee}</td></tr>
+                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{(s.details as Record<string, any>).evaluator}</td><td>{(s.details as Record<string, any>).targetEmployee}</td></tr>
                                     ))}
                                 </tbody>
                             </Table>
