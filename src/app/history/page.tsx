@@ -28,7 +28,6 @@ const applicationTypeMap: { [key: string]: string } = {
 };
 
 function ApplicationsManagement() {
-    const { triggerRefresh } = useSettings();
     const [applications, setApplications] = useState<Application[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -38,6 +37,19 @@ function ApplicationsManagement() {
     const [showModal, setShowModal] = useState(false);
     const [processorName, setProcessorName] = useState('');
     const applicationsPerPage = 10;
+
+    const displayOrder = [
+        // Common
+        '申請者', '担当者', '適用開始日',
+        // Customer
+        'サロン種別', '個人口座', '得意先名（正式）', '得意先名（略称）', '郵便番号', '住所1', '住所2', '電話番号', 'FAX番号', '代表者氏名', '締日', 'メールアドレス', '請求先', '請求先名称', '請求先コード', '別得意先への個人口座請求',
+        // Change Customer
+        '変更元得意先コード', '変更元得意先名', '新しい得意先名（正式）', '新しい得意先名（略称）',
+        // Reservation
+        '利用日', '対象施設', '設備利用', '開始時間', '終了時間', '利用目的',
+        // Common
+        '備考',
+    ];
 
     const fetchData = async () => {
         setLoading(true);
@@ -79,7 +91,6 @@ function ApplicationsManagement() {
             await axios.put(`/api/applications/${id}`,
                 { status: newStatus, processed_by: processorName });
             fetchData(); // Refresh the data
-            triggerRefresh(); // Trigger a global refresh
         } catch (error) {
             console.error("Failed to update status", error);
             alert('ステータスの更新に失敗しました。');
@@ -117,7 +128,7 @@ function ApplicationsManagement() {
                             </Col>
                         </Form.Group>
 
-                        <Table striped bordered hover size="sm" responsive>
+                        <Table striped bordered hover size="sm">
                             <thead>
                                 <tr>
                                     <th>申請種別</th>
@@ -169,11 +180,19 @@ function ApplicationsManagement() {
                             <hr />
                             <Table striped bordered size="sm">
                                 <tbody>
-                                    {Object.entries(selectedApplication.details).map(([key, value]) => (
-                                        <tr key={key}>
-                                            <td><strong>{key}</strong></td>
-                                            <td>{value}</td>
-                                        </tr>
+                                    {Object.entries(selectedApplication.details)
+                                        .sort(([keyA], [keyB]) => {
+                                            const indexA = displayOrder.indexOf(keyA);
+                                            const indexB = displayOrder.indexOf(keyB);
+                                            if (indexA === -1) return 1;
+                                            if (indexB === -1) return -1;
+                                            return indexA - indexB;
+                                        })
+                                        .map(([key, value]) => (
+                                            <tr key={key}>
+                                                <td><strong>{key}</strong></td>
+                                                <td>{value}</td>
+                                            </tr>
                                     ))}
                                 </tbody>
                             </Table>
