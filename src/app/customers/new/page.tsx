@@ -121,20 +121,20 @@ export default function NewCustomerPage() {
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-    const formData = new FormData(form);
-
-    const details = Object.keys(fieldLabels).reduce((acc, key) => {
-        if (formData.has(key)) {
-            acc[fieldLabels[key]] = formData.get(key) as string;
-        }
-        return acc;
-    }, {} as Record<string, string>);
-
-    try {
-      await axios.post('/api/applications', { 
-        application_type: 'customer_registration',
-        applicant_name: data.contactPerson as string,
-        title: '得意先新規登録申請',
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+    
+        const details = Object.keys(fieldLabels).reduce((acc, key) => {
+            if (formData.has(key)) {
+                acc[fieldLabels[key]] = formData.get(key) as string;
+            }
+            return acc;
+        }, {} as Record<string, string>);
+    
+        try {
+          await axios.post('/api/applications', {
+            application_type: 'customer_registration',
+            applicant_name: data.contactPerson as string,        title: '得意先新規登録申請',
         details: details,
         emails: settings.customerEmails
       });
