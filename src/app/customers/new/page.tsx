@@ -25,6 +25,8 @@ const fieldLabels: { [key: string]: string } = {
     billingCustomerName: '請求先名称',
     billingCustomerCode: '請求先コード',
     includePersonalAccountInBilling: '別得意先への個人口座請求',
+    addToDirectDebit: '既存の自動引落に追加',
+    includePersonalAccountInDebit: '個人口座を含めて引き落とす',
     remarks: '備考',
 };
 
@@ -252,8 +254,8 @@ export default function NewCustomerPage() {
             <Form.Group className="mb-3">
                 <Form.Label>請求先<span className="text-danger">*</span></Form.Label>
                 <div>
-                    <Form.Check inline label="この得意先へ請求" name="billingTarget" type="radio" value="self" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} />
-                    <Form.Check inline label="別の得意先へ請求" name="billingTarget" type="radio" value="other" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} />
+                    <Form.Check inline label="この得意先へ請求（単独）" name="billingTarget" type="radio" value="self" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} />
+                    <Form.Check inline label="別の得意先へ請求（親子or名寄せ）" name="billingTarget" type="radio" value="other" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} />
                 </div>
                 {billingTarget === 'other' && (
                     <div className="mt-2 p-3 border rounded">
@@ -261,12 +263,15 @@ export default function NewCustomerPage() {
                             <Col md={6}><Form.Control required name="billingCustomerName" placeholder="請求先名称" /></Col>
                             <Col md={6}><Form.Control name="billingCustomerCode" placeholder="請求先コード" /></Col>
                         </Row>
+                        <Form.Group as={Row} className="mt-3">
+                            <Col>
+                                <Form.Check type="checkbox" name="addToDirectDebit" label="既存の自動引落に追加" />
+                            </Col>
+                        </Form.Group>
                         {personalAccount === '要' && (
-                            <Form.Group as={Row} className="mt-3 align-items-center">
-                                <Form.Label column sm={4}>個人口座を別請求先に含めるか</Form.Label>
-                                <Col sm={8}>
-                                    <Form.Check inline label="含める" name="includePersonalAccountInBilling" type="radio" value="含める" defaultChecked />
-                                    <Form.Check inline label="含めない" name="includePersonalAccountInBilling" type="radio" value="含めない" />
+                            <Form.Group as={Row} className="mt-3">
+                                <Col>
+                                    <Form.Check type="checkbox" name="includePersonalAccountInDebit" label="個人口座を含めて引き落とす" />
                                 </Col>
                             </Form.Group>
                         )}
