@@ -10,6 +10,13 @@ const applicationTypeMap: { [key: string]: string } = {
   evaluation: '新人考課',
 };
 
+interface ProposalItem {
+  eventName: string;
+  timing: string;
+  type: string;
+  content: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -95,7 +102,7 @@ export async function POST(request: Request) {
 
     if (application_type === 'proposal' && translatedDetails.proposals && Array.isArray(translatedDetails.proposals)) {
         body += `提案年度: ${translatedDetails.proposal_year}\n\n`;
-        translatedDetails.proposals.forEach((p: any, i: number) => {
+        translatedDetails.proposals.forEach((p: ProposalItem, i: number) => {
             body += `--- 提案 ${i + 1} ---\n`;
             body += `企画(行事)名: ${p.eventName}\n`;
             body += `時期: ${p.timing}\n`;
