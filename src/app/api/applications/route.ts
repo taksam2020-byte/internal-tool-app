@@ -101,10 +101,14 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Missing or invalid required fields' }, { status: 400 });
     }
 
+    console.log("Translated Details (Object):", translatedDetails);
+    const detailsString = JSON.stringify(translatedDetails);
+    console.log("Translated Details (String):", detailsString);
+
     // Insert into database
     await sql`
       INSERT INTO applications (application_type, applicant_name, title, details)
-      VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(details)});
+      VALUES (${application_type}, ${applicant_name}, ${title}, ${detailsString});
     `;
 
     // Send email
