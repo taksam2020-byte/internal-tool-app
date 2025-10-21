@@ -64,8 +64,10 @@ export async function POST(request: Request) {
   console.log('Received POST request to /api/applications');
   try {
     const body = await request.json();
-    console.log('Request body:', body);
+    console.log('Request body received:', body);
 
+    // --- Start of commented out block for debugging ---
+    /*
     const { application_type, applicant_name, title, details, emails } = body;
 
     if (!application_type || !applicant_name || !title || !details || !emails) {
@@ -108,7 +110,7 @@ export async function POST(request: Request) {
     });
 
     const subject = `【社内ツール】${title}`;
-    const bodyText = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n` +
+    const bodyText = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n` + 
                  Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
 
     await transporter.sendMail({
@@ -118,8 +120,11 @@ export async function POST(request: Request) {
         text: bodyText,
     });
     console.log('Successfully sent email');
+    */
+    // --- End of commented out block ---
 
-    return NextResponse.json({ message: 'Application submitted and email sent successfully' }, { status: 201 });
+    return NextResponse.json({ message: '[Debug] Request received successfully' }, { status: 200 });
+
   } catch (error: unknown) {
     console.error('API Error in POST /api/applications:', error);
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
