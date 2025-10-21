@@ -1,3 +1,5 @@
+'use client';
+
 import { NextResponse, NextRequest } from 'next/server';
 import { sql } from '@vercel/postgres';
 import nodemailer from 'nodemailer';
@@ -62,6 +64,10 @@ export async function POST(request: Request) {
   try {
     const { application_type, applicant_name, title, details, emails } = await request.json();
 
+    if (!application_type || !applicant_name || !title || !details || !emails) {
+        return NextResponse.json({ message: 'Missing or invalid required fields' }, { status: 400 });
+    }
+
     const fieldLabelMap: { [key: string]: string } = {
         evaluator: '回答者',
         targetEmployee: '対象者',
@@ -95,10 +101,6 @@ export async function POST(request: Request) {
         purpose: '利用目的',
     };
 
-    if (!application_type || !applicant_name || !title || !details || !emails) {
-        return NextResponse.json({ message: 'Missing or invalid required fields' }, { status: 400 });
-    }
-
     const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
         const translatedKey = fieldLabelMap[key] || key;
         let translatedValue = value as string;
@@ -110,14 +112,10 @@ export async function POST(request: Request) {
         return acc;
     }, {} as Record<string, string>);
 
-    console.log("Translated Details (Object):", translatedDetails);
-    const detailsString = JSON.stringify(translatedDetails);
-    console.log("Translated Details (String):", detailsString);
-
     // Insert into database
     await sql`
       INSERT INTO applications (application_type, applicant_name, title, details)
-      VALUES (${application_type}, ${applicant_name}, ${title}, ${detailsString});
+      VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(translatedDetails)});
     `;
 
     // Send email
@@ -142,7 +140,7 @@ export async function POST(request: Request) {
             body += `内容: ${p.content}\n\n`;
         });
     } else {
-        body += Object.entries(details).map(([key, value]) => `${key}: ${value}`).join('\n');
+        body += Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
     }
 
     await transporter.sendMail({
