@@ -23,13 +23,6 @@ interface Application {
   processed_at: string | null;
 }
 
-interface ProposalItem {
-  eventName: string;
-  timing: string;
-  type: string;
-  content: string;
-}
-
 // --- User Management Component ---
 function UserManagement() {
     const [users, setUsers] = useState<User[]>([]);
@@ -356,7 +349,7 @@ function DataManagement() {
                                 <thead><tr><th>提出日</th><th>回答者</th><th>対象者</th></tr></thead>
                                 <tbody>
                                     {evaluations.map((s) => (
-                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{s.details.evaluator}</td><td>{s.details.targetEmployee}</td></tr>
+                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{(s.details as any).evaluator}</td><td>{(s.details as any).targetEmployee}</td></tr>
                                     ))}
                                 </tbody>
                             </Table>
