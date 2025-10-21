@@ -285,69 +285,49 @@ function DataManagement() {
 
     useEffect(() => { fetchData(); }, []);
 
-        const handleExcelExport = async () => {
-
-            try {
-
-                const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
-
-                const dataToExport = res.data.flatMap((p: Application) => {
-
-                    const details = typeof p.details === 'string' ? JSON.parse(p.details) : p.details;
-
-                    if (!details || !Array.isArray(details.proposals)) return [];
-
-                    return details.proposals.map((proposal: ProposalItem) => ({
-
-                        '提出日': new Date(p.submitted_at).toLocaleString(),
-
-                        '提案者': p.applicant_name,
-
-                        '企画名': proposal.eventName,
-
-                        '時期': proposal.timing,
-
-                        '種別': proposal.type,
-
-                        '内容': proposal.content,
-
-                    }));
-
-                });
-
-    
-
-                if (dataToExport.length === 0) {
-
-                    alert('エクスポートするデータがありません。');
-
-                    return;
-
+    const handleExcelExport = async () => {
+        try {
+            const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
+            const dataToExport = res.data.map((p: Application) => {
+                const details = typeof p.details === 'string' ? JSON.parse(p.details) : p.details;
+                const proposals: any[] = [];
+                // Extract proposal items from flat structure
+                for (let i = 1; i <= 5; i++) {
+                    if (details[`提案${i}_企画名`]) {
+                        proposals.push({
+                            '企画名': details[`提案${i}_企画名`],
+                            '時期': details[`提案${i}_時期`],
+                            '種別': details[`提案${i}_種別`],
+                            '内容': details[`提案${i}_内容`]
+                        });
+                    }
                 }
+                return {
+                    '提出日': new Date(p.submitted_at).toLocaleString(),
+                    '提案者': p.applicant_name,
+                    ...proposals.reduce((acc, cur, i) => ({...acc, ...Object.fromEntries(Object.entries(cur).map(([k, v]) => [`提案${i+1}_${k}`, v])) }), {})
+                };
+            });
 
-    
-
-                const worksheet = XLSX.utils.json_to_sheet(dataToExport);
-
-                const workbook = XLSX.utils.book_new();
-
-                XLSX.utils.book_append_sheet(workbook, worksheet, "Proposals");
-
-                XLSX.writeFile(workbook, `${selectedYear}年度_催事提案一覧.xlsx`);
-
-            } catch (err) {
-
-                 alert('Excelファイルの出力に失敗しました。');
-
-                 console.error(err);
-
+            if (dataToExport.length === 0) {
+                alert('エクスポートするデータがありません。');
+                return;
             }
 
-        };
+            const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Proposals");
+            XLSX.writeFile(workbook, `${selectedYear}年度_催事提案一覧.xlsx`);
+        } catch (err) {
+             alert('Excelファイルの出力に失敗しました。');
+             console.error(err);
+        }
+    };
 
-    
-
-        const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal').map(a => a.details.proposal_year))).sort((a, b) => b.localeCompare(a));
+    const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal').map(a => {
+        const details = typeof a.details === 'string' ? JSON.parse(a.details) : a.details;
+        return details.proposal_year;
+    }))).sort((a, b) => b.localeCompare(a));
     const proposals = applications.filter(a => a.application_type === 'proposal');
     const evaluations = applications.filter(a => a.application_type === 'evaluation');
 

@@ -61,58 +61,34 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: Request) {
-  console.log('Received POST request to /api/applications');
   try {
-    const body = await request.json();
-    console.log('Request body received:', body);
-
-    // --- Start of commented out block for debugging ---
-    /*
-    const { application_type, applicant_name, title, details, emails } = body;
+    const { application_type, applicant_name, title, details, emails } = await request.json();
 
     if (!application_type || !applicant_name || !title || !details || !emails) {
-        console.error('Validation failed: Missing required fields');
         return NextResponse.json({ message: 'Missing or invalid required fields' }, { status: 400 });
     }
 
-    const fieldLabelMap: { [key: string]: string } = {
-        proposal_year: '提案年度',
-        evaluator: '回答者',
-        targetEmployee: '対象者',
-        totalScore: '合計点',
-        comment: 'コメント',
-        scores: 'スコア詳細',
-        // Add all other field translations here
-    };
+    // Insert into database
+    await sql`
+      INSERT INTO applications (application_type, applicant_name, title, details)
+      VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(details)});
+    `;
 
-    console.log('Original details:', details);
-        const detailsToSave = application_type === 'proposal' 
-            ? details 
-            : Object.entries(details).reduce((acc, [key, value]) => {
-                const translatedKey = fieldLabelMap[key] || key;
-                acc[translatedKey] = value as string;
-                return acc;
-            }, {} as Record<string, string>);
-    
-        // Insert into database
-        await sql`
-          INSERT INTO applications (application_type, applicant_name, title, details)
-          VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(detailsToSave)});
-        `;
-    
-        // Send email
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.GMAIL_ADDRESS,
-                pass: process.env.GMAIL_APP_PASSWORD,
-            },
-        });
-    
-        const subject = `【社内ツール】${title}`;
-        let body = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n`;
-    
-        if (application_type === 'proposal' && details.proposals && Array.isArray(details.proposals)) {
+    // Send email
+    const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.GMAIL_ADDRESS,
+            pass: process.env.GMAIL_APP_PASSWORD,
+        },
+    });
+
+    const subject = `【社内ツール】${title}`;
+    let body = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n`;
+
+    if (application_type === 'proposal') {
+        const details = translatedDetails as any;
+        if (details.proposals && Array.isArray(details.proposals)) {
             body += `提案年度: ${details.proposal_year}\n\n`;
             details.proposals.forEach((p: ProposalItem, i: number) => {
                 body += `--- 提案 ${i + 1} ---\n`;
@@ -121,22 +97,21 @@ export async function POST(request: Request) {
                 body += `種別: ${p.type}\n`;
                 body += `内容: ${p.content}\n\n`;
             });
-        } else {
-            body += Object.entries(detailsToSave).map(([key, value]) => `${key}: ${value}`).join('\n');
         }
-    
-        await transporter.sendMail({
-            from: process.env.GMAIL_ADDRESS,
-            to: emails,
-            subject: subject,
-            text: body,
-        });    */
-    // --- End of commented out block ---
+    } else {
+        body += Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
+    }
 
-    return NextResponse.json({ message: '[Debug] Request received successfully' }, { status: 200 });
+    await transporter.sendMail({
+        from: process.env.GMAIL_ADDRESS,
+        to: emails,
+        subject: subject,
+        text: body,
+    });
 
+    return NextResponse.json({ message: 'Application submitted and email sent successfully' }, { status: 201 });
   } catch (error: unknown) {
-    console.error('API Error in POST /api/applications:', error);
+    console.error('API Error:', error);
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ message: 'Error submitting application', error: message }, { status: 500 });
   }
