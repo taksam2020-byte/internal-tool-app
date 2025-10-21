@@ -117,7 +117,7 @@ function ApplicationsManagement() {
                             </Col>
                         </Form.Group>
 
-                        <Table striped bordered hover size="sm">
+                        <Table striped bordered hover size="sm" responsive>
                             <thead>
                                 <tr>
                                     <th>申請種別</th>
