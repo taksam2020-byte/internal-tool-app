@@ -101,7 +101,12 @@ export async function POST(request: Request) {
 
     const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
         const translatedKey = fieldLabelMap[key] || key;
-        acc[translatedKey] = value as string;
+        let translatedValue = value as string;
+        if (translatedKey === '請求先') {
+            if (value === 'self') translatedValue = 'この得意先へ請求';
+            if (value === 'other') translatedValue = '別の得意先へ請求';
+        }
+        acc[translatedKey] = translatedValue;
         return acc;
     }, {} as Record<string, string>);
 
