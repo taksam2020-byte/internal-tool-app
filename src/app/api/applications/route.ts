@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         const details = translatedDetails as any;
         if (details.proposals && Array.isArray(details.proposals)) {
             body += `提案年度: ${details.proposal_year}\n\n`;
-            details.proposals.forEach((p: ProposalItem, i: number) => {
+        (translatedDetails as any).proposals.forEach((p: ProposalItem, i: number) => {
                 body += `--- 提案 ${i + 1} ---\n`;
                 body += `企画(行事)名: ${p.eventName}\n`;
                 body += `時期: ${p.timing}\n`;
