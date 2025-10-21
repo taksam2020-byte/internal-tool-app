@@ -1,3 +1,5 @@
+'use client';
+
 import { NextResponse, NextRequest } from 'next/server';
 import { sql } from '@vercel/postgres';
 import nodemailer from 'nodemailer';
@@ -20,7 +22,7 @@ interface ProposalItem {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type');
+    const types = searchParams.getAll('type');
     const year = searchParams.get('year');
     const status = searchParams.get('status');
 
@@ -28,15 +30,14 @@ export async function GET(request: NextRequest) {
     const values = [];
     const conditions = [];
 
-    if (type) {
-      const types = type.split(',');
+    if (types.length > 0) {
       conditions.push(`application_type IN (${types.map((_, i) => `$${values.length + i + 1}`).join(',')})`);
       values.push(...types);
     }
 
     if (year) {
-      conditions.push(`(details->>'proposal_year')::int = $${values.length + 1}`);
-      values.push(parseInt(year, 10));
+      conditions.push(`details->>'提案年度' LIKE $${values.length + 1}`);
+      values.push(`%${year}%`);
     }
 
     if (status) {
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
     }
 
     const fieldLabelMap: { [key: string]: string } = {
+        proposal_year: '提案年度',
         evaluator: '回答者',
         targetEmployee: '対象者',
         totalScore: '合計点',
