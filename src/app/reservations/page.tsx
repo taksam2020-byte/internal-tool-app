@@ -110,26 +110,20 @@ export default function ReservationsPage() {
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-    const formData = new FormData(form);
-    // Manually add date values to formData as they are not standard inputs
-    dates.forEach(date => {
-        if (date) formData.append('usageDate', date.toLocaleDateString('ja-JP'));
-    });
-
-    const details = Object.keys(fieldLabels).reduce((acc, key) => {
-        if (formData.has(key)) {
-            // Handle multiple values for the same key (e.g., usageDate)
-            const values = formData.getAll(key);
-            acc[fieldLabels[key]] = values.join(', ');
-        }
-        return acc;
-    }, {} as Record<string, string>);
-
-    try {
-      await axios.post('/api/applications', { 
-        application_type: 'facility_reservation',
-        applicant_name: data.applicant as string,
-        title: '施設予約申請',
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        data.usageDate = dates.map(d => d?.toLocaleDateString('ja-JP')).join(', ');
+    
+        const details = Object.entries(data).reduce((acc, [key, value]) => {
+            const label = fieldLabels[key] || key;
+            acc[label] = value as string;
+            return acc;
+        }, {} as Record<string, string>);
+    
+        try {
+          await axios.post('/api/applications', {
+            application_type: 'facility_reservation',
+            applicant_name: data.applicant as string,        title: '施設予約申請',
         details: details,
         emails: settings.reservationEmails
       });
