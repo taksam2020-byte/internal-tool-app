@@ -91,8 +91,20 @@ export async function POST(request: Request) {
     });
 
     const subject = `【社内ツール】${title}`;
-    const body = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n` + 
-                 Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
+    let body = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n`;
+
+    if (application_type === 'proposal' && translatedDetails.proposals && Array.isArray(translatedDetails.proposals)) {
+        body += `提案年度: ${translatedDetails.proposal_year}\n\n`;
+        translatedDetails.proposals.forEach((p: any, i: number) => {
+            body += `--- 提案 ${i + 1} ---\n`;
+            body += `企画(行事)名: ${p.eventName}\n`;
+            body += `時期: ${p.timing}\n`;
+            body += `種別: ${p.type}\n`;
+            body += `内容: ${p.content}\n\n`;
+        });
+    } else {
+        body += Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
+    }
 
     await transporter.sendMail({
         from: process.env.GMAIL_ADDRESS,

@@ -290,7 +290,7 @@ function DataManagement() {
             const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
             const dataToExport = res.data.flatMap((p: Application) => {
                 const details = typeof p.details === 'string' ? JSON.parse(p.details) : p.details;
-                if (!details.proposals) return [];
+                if (!details || !Array.isArray(details.proposals)) return [];
                 return details.proposals.map((proposal: ProposalItem) => ({
                     '提出日': new Date(p.submitted_at).toLocaleString(),
                     '提案者': p.applicant_name,
@@ -310,7 +310,10 @@ function DataManagement() {
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Proposals");
             XLSX.writeFile(workbook, `${selectedYear}年度_催事提案一覧.xlsx`);
-        } catch { alert('Excelファイルの出力に失敗しました。'); }
+        } catch (err) {
+             alert('Excelファイルの出力に失敗しました。');
+             console.error(err);
+        }
     };
 
     const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal').map(a => {
