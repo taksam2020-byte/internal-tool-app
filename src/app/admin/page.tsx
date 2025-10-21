@@ -322,7 +322,7 @@ function DataManagement() {
 
     const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal').map(a => {
         const details = typeof a.details === 'string' ? JSON.parse(a.details) : a.details;
-        return details.proposal_year;
+        return details.提案年度;
     }))).sort((a, b) => b.localeCompare(a));
     const proposals = applications.filter(a => a.application_type === 'proposal');
     const evaluations = applications.filter(a => a.application_type === 'evaluation');
