@@ -288,7 +288,7 @@ function DataManagement() {
     const handleExcelExport = async () => {
         try {
             const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
-            console.log("Raw data from API:", res.data); // Debugging
+            console.log("First raw data from API:", res.data[0]); // Debugging
 
             const dataToExport = res.data.flatMap((p: Application) => {
                 const details = typeof p.details === 'string' ? JSON.parse(p.details) : p.details;
@@ -302,8 +302,6 @@ function DataManagement() {
                     '内容': proposal.content,
                 }));
             });
-
-            console.log("Data to export:", dataToExport); // Debugging
 
             if (dataToExport.length === 0) {
                 alert('エクスポートするデータがありません。');
