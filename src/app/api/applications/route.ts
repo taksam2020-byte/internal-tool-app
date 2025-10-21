@@ -68,27 +68,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Missing or invalid required fields' }, { status: 400 });
     }
 
-    const fieldLabelMap: { [key: string]: string } = {
-        proposal_year: '提案年度',
-        evaluator: '回答者',
-        targetEmployee: '対象者',
-        totalScore: '合計点',
-        comment: 'コメント',
-        scores: 'スコア詳細',
-    };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
-        const translatedKey = fieldLabelMap[key] || key;
-        acc[translatedKey] = value as string;
-        return acc;
-    }, {} as Record<string, any>);
-
+    // Insert into database
     await sql`
       INSERT INTO applications (application_type, applicant_name, title, details)
-      VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(translatedDetails)});
+      VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(details)});
     `;
 
+    // Send email
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
@@ -100,9 +86,9 @@ export async function POST(request: Request) {
     const subject = `【社内ツール】${title}`;
     let body = `申請種別: ${applicationTypeMap[application_type] || application_type}\n申請者: ${applicant_name}\n\n`;
 
-    if (application_type === 'proposal' && translatedDetails.proposals && Array.isArray(translatedDetails.proposals)) {
-        body += `提案年度: ${translatedDetails.proposal_year}\n\n`;
-        translatedDetails.proposals.forEach((p: ProposalItem, i: number) => {
+    if (application_type === 'proposal' && details.proposals && Array.isArray(details.proposals)) {
+        body += `提案年度: ${details.proposal_year}\n\n`;
+        details.proposals.forEach((p: ProposalItem, i: number) => {
             body += `--- 提案 ${i + 1} ---\n`;
             body += `企画(行事)名: ${p.eventName}\n`;
             body += `時期: ${p.timing}\n`;
@@ -110,7 +96,7 @@ export async function POST(request: Request) {
             body += `内容: ${p.content}\n\n`;
         });
     } else {
-        body += Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
+        body += Object.entries(details).map(([key, value]) => `${key}: ${value}`).join('\n');
     }
 
     await transporter.sendMail({
