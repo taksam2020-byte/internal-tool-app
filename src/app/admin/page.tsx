@@ -288,8 +288,6 @@ function DataManagement() {
     const handleExcelExport = async () => {
         try {
             const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
-            console.log("First raw data from API:", res.data[0]); // Debugging
-
             const dataToExport = res.data.flatMap((p: Application) => {
                 const details = typeof p.details === 'string' ? JSON.parse(p.details) : p.details;
                 if (!details || !Array.isArray(details.proposals)) return [];
@@ -302,8 +300,6 @@ function DataManagement() {
                     '内容': proposal.content,
                 }));
             });
-
-            console.log("Data to export:", dataToExport); // Debugging
 
             if (dataToExport.length === 0) {
                 alert('エクスポートするデータがありません。');
@@ -322,7 +318,7 @@ function DataManagement() {
 
     const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal').map(a => {
         const details = typeof a.details === 'string' ? JSON.parse(a.details) : a.details;
-        return details.proposal_year;
+        return details?.proposal_year;
     }))).sort((a, b) => b.localeCompare(a));
     const proposals = applications.filter(a => a.application_type === 'proposal');
     const evaluations = applications.filter(a => a.application_type === 'evaluation');
@@ -352,7 +348,7 @@ function DataManagement() {
                                 <thead><tr><th>提出日</th><th>回答者</th><th>対象者</th></tr></thead>
                                 <tbody>
                                     {evaluations.map((s) => (
-                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{(s.details as Record<string, any>).evaluator}</td><td>{(s.details as Record<string, any>).targetEmployee}</td></tr>
+                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{s.details?.evaluator}</td><td>{s.details?.targetEmployee}</td></tr>
                                     ))}
                                 </tbody>
                             </Table>
