@@ -103,10 +103,16 @@ export async function POST(request: Request) {
     const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
         const translatedKey = fieldLabelMap[key] || key;
         let translatedValue = value as string;
+
         if (translatedKey === '請求先') {
-            if (value === 'self') translatedValue = 'この得意先へ請求';
-            if (value === 'other') translatedValue = '別の得意先へ請求';
+            if (value === 'self') translatedValue = 'この得意先へ請求（単独）';
+            if (value === 'other') translatedValue = '別の得意先へ請求（親子or名寄せ）';
         }
+
+        if (translatedKey === '既存の自動引落に追加' || translatedKey === '個人口座を含めて引き落とす') {
+            if (value === 'on') translatedValue = 'Yes';
+        }
+
         acc[translatedKey] = translatedValue;
         return acc;
     }, {} as Record<string, string>);
