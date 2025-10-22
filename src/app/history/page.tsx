@@ -35,7 +35,6 @@ function ApplicationsManagement() {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
     const [showModal, setShowModal] = useState(false);
-    const [processorName, setProcessorName] = useState('');
     const applicationsPerPage = 10;
 
     const displayOrder = [
@@ -82,9 +81,9 @@ function ApplicationsManagement() {
         setShowModal(true);
     }
 
-    const handleStatusChange = async (id: number, newStatus: string) => {
+    const handleStatusChange = async (id: number, newStatus: string, processorName: string) => {
         if (!processorName) {
-            alert('ステータスを変更する前に、上部で処理者を選択してください。');
+            alert('処理者を指定してください。');
             return;
         }
         try {
@@ -111,19 +110,12 @@ function ApplicationsManagement() {
                     <>
                         <Form.Group as={Row} className="mb-3 align-items-center">
                             <Form.Label column sm={2}>申請種別で絞り込み</Form.Label>
-                            <Col sm={4}>
+                            <Col sm={10}>
                                 <Form.Select value={filterType} onChange={e => setFilterType(e.target.value)}>
                                     <option value="all">すべて</option>
                                     {Object.entries(applicationTypeMap).map(([key, value]) => (
                                         <option key={key} value={key}>{value}</option>
                                     ))}
-                                </Form.Select>
-                            </Col>
-                            <Form.Label column sm={1}>処理者:</Form.Label>
-                            <Col sm={5}>
-                                <Form.Select value={processorName} onChange={e => setProcessorName(e.target.value)}>
-                                    <option value="">選択してください...</option>
-                                    {users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                                 </Form.Select>
                             </Col>
                         </Form.Group>
@@ -134,8 +126,8 @@ function ApplicationsManagement() {
                                     <th>申請種別</th>
                                     <th>申請者</th>
                                     <th>申請日</th>
-                                    <th>ステータス</th>
                                     <th>処理者</th>
+                                    <th>ステータス</th>
                                     <th>処理日</th>
                                     <th>操作</th>
                                 </tr>
@@ -147,12 +139,17 @@ function ApplicationsManagement() {
                                         <td>{app.applicant_name}</td>
                                         <td>{new Date(app.submitted_at).toLocaleString()}</td>
                                         <td>
-                                            <Form.Select size="sm" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value)}>
+                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleStatusChange(app.id, app.status, e.target.value)}>
+                                                <option value="">未選択</option>
+                                                {users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                                            </Form.Select>
+                                        </td>
+                                        <td>
+                                            <Form.Select size="sm" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value, app.processed_by || '')}>
                                                 <option value="未処理">未処理</option>
                                                 <option value="処理済み">処理済み</option>
                                             </Form.Select>
                                         </td>
-                                        <td>{app.processed_by}</td>
                                         <td>{app.processed_at ? new Date(app.processed_at).toLocaleString() : ''}</td>
                                         <td>
                                             <Button variant="outline-primary" size="sm" onClick={() => handleShowModal(app)}>詳細</Button>
