@@ -1,5 +1,3 @@
-'use client';
-
 import { NextResponse, NextRequest } from 'next/server';
 import { sql } from '@vercel/postgres';
 import nodemailer from 'nodemailer';
