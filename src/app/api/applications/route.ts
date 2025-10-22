@@ -1,3 +1,5 @@
+'use client';
+
 import { NextResponse, NextRequest } from 'next/server';
 import { sql } from '@vercel/postgres';
 import nodemailer from 'nodemailer';
@@ -19,17 +21,18 @@ interface ProposalItem {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log("API GET request received");
     const { searchParams } = new URL(request.url);
-    const typeParam = searchParams.get('type');
+    const types = searchParams.getAll('type');
     const year = searchParams.get('year');
     const status = searchParams.get('status');
+    console.log("Query Params:", { types, year, status });
 
     let query = 'SELECT * FROM applications';
-    const values = [];
+    const values: (string | number)[] = [];
     const conditions = [];
 
-    if (typeParam) {
-      const types = typeParam.split(',');
+    if (types.length > 0) {
       conditions.push(`application_type IN (${types.map((_, i) => `$${values.length + i + 1}`).join(',')})`);
       values.push(...types);
     }
@@ -49,11 +52,15 @@ export async function GET(request: NextRequest) {
     }
 
     query += ' ORDER BY submitted_at DESC;';
+    console.log("Executing query:", query);
+    console.log("With values:", values);
 
     const { rows } = await sql.query(query, values);
+    console.log("Rows from DB:", rows);
+
     return NextResponse.json(rows, { status: 200 });
   } catch (error: unknown) {
-    console.error('API Error:', error);
+    console.error('API GET Error:', error);
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ message: 'Error fetching applications', error: message }, { status: 500 });
   }
@@ -90,6 +97,8 @@ export async function POST(request: Request) {
         billingCustomerName: '請求先名称',
         billingCustomerCode: '請求先コード',
         includePersonalAccountInBilling: '別得意先への個人口座請求',
+        addToDirectDebit: '既存の自動引落に追加',
+        includePersonalAccountInDebit: '個人口座を含めて引き落とす',
         remarks: '備考',
         applicant: '申請者',
         usageDate: '利用日',
@@ -117,10 +126,14 @@ export async function POST(request: Request) {
         return acc;
     }, {} as Record<string, string>);
 
+    console.log("Translated Details (Object):", translatedDetails);
+    const detailsString = JSON.stringify(translatedDetails);
+    console.log("Translated Details (String):", detailsString);
+
     // Insert into database
     await sql`
       INSERT INTO applications (application_type, applicant_name, title, details)
-      VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(translatedDetails)});
+      VALUES (${application_type}, ${applicant_name}, ${title}, ${detailsString});
     `;
 
     // Send email
@@ -157,7 +170,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ message: 'Application submitted and email sent successfully' }, { status: 201 });
   } catch (error: unknown) {
-    console.error('API Error:', error);
+    console.error('API POST Error:', error);
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
     return NextResponse.json({ message: 'Error submitting application', error: message }, { status: 500 });
   }

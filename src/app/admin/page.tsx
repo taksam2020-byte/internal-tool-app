@@ -286,8 +286,11 @@ function DataManagement() {
     useEffect(() => { fetchData(); }, []);
 
     const handleExcelExport = async () => {
+        console.log("Export button clicked. Year:", selectedYear);
         try {
             const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
+            console.log("Raw data from API:", res.data);
+
             const dataToExport = res.data.flatMap((p: Application) => {
                 const details = typeof p.details === 'string' ? JSON.parse(p.details) : p.details;
                 if (!details || !Array.isArray(details.proposals)) return [];
@@ -301,6 +304,8 @@ function DataManagement() {
                 }));
             });
 
+            console.log("Data to export:", dataToExport);
+
             if (dataToExport.length === 0) {
                 alert('エクスポートするデータがありません。');
                 return;
@@ -312,7 +317,7 @@ function DataManagement() {
             XLSX.writeFile(workbook, `${selectedYear}年度_催事提案一覧.xlsx`);
         } catch (err) {
              alert('Excelファイルの出力に失敗しました。');
-             console.error(err);
+             console.error("Excel export error:", err);
         }
     };
 
