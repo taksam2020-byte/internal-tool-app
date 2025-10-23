@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (year) {
-      conditions.push(`(details->>'proposal_year' = $${values.length + 1} OR details->>'提案年度' = $${values.length + 1})`);
+      conditions.push(`(details->>'proposal_year' = $${values.length + 1} OR details->>'提案年度' = $${values.length + 2})`);
       values.push(year, year);
     }
 
