@@ -19,7 +19,7 @@ interface Application {
   processed_at: string | null;
 }
 
-import { useSettings } from '@/context/SettingsContext';
+import { Form, Button, Card, Row, Col, Spinner, Table, Modal, Pagination } from 'react-bootstrap';
 
 const applicationTypeMap: { [key: string]: string } = {
   customer_registration: '得意先新規登録',
