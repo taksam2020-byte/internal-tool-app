@@ -27,7 +27,14 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
     const fetchPendingCount = async () => {
       try {
         const appTypes = ['customer_registration', 'customer_change', 'facility_reservation'];
-        const res = await axios.get(`/api/applications?status=未処理&type=${appTypes.join(',')}`);
+        const res = await axios.get('/api/applications', {
+          params: { status: '未処理', type: appTypes },
+          paramsSerializer: params => {
+            return Object.entries(params).map(([key, value]) => 
+              Array.isArray(value) ? value.map(v => `${key}=${v}`).join('&') : `${key}=${value}`
+            ).join('&');
+          }
+        });
         setPendingCount(res.data.length);
       } catch (error) {
         console.error("Failed to fetch pending applications count", error);
