@@ -320,7 +320,7 @@ function DataManagement() {
             const headers = Object.keys(dataToExport[0]);
             const contentColIndex = headers.indexOf('内容');
             if (contentColIndex > -1) {
-                const range = XLSX.utils.decode_range(worksheet['!ref']!);個人的に、
+                const range = XLSX.utils.decode_range(worksheet['!ref']!);
                 for (let R = 1; R <= range.e.r; ++R) {
                     const cell_address = { c: contentColIndex, r: R };
                     const cell_ref = XLSX.utils.encode_cell(cell_address);
