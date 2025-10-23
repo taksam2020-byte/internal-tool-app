@@ -294,30 +294,12 @@ function DataManagement() {
     }, []);
 
     const handleExcelExport = async () => {
-        console.log("Export button clicked. Year:", selectedYear);
         try {
             const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
-            console.log("Raw data from API:", res.data);
-
             const dataToExport = res.data.flatMap((p: Application) => {
                 const details = typeof p.details === 'string' ? JSON.parse(p.details) : p.details;
-                const proposals: ProposalItem[] = [];
-                const proposalKeys = Object.keys(details).filter(k => k.startsWith('提案'));
-                const proposalIndices = Array.from(new Set(proposalKeys.map(k => k.match(/(\d+)/)?.[0]))).filter(Boolean);
-
-                proposalIndices.forEach(index => {
-                    const proposal = {
-                        eventName: details[`提案${index}_企画名`],
-                        timing: details[`提案${index}_時期`],
-                        type: details[`提案${index}_種別`],
-                        content: details[`提案${index}_内容`],
-                    };
-                    proposals.push(proposal);
-                });
-
-                if (proposals.length === 0) return [];
-
-                return proposals.map((proposal: ProposalItem) => ({
+                if (!details || !Array.isArray(details.proposals)) return [];
+                return details.proposals.map((proposal: ProposalItem) => ({
                     '提出日': new Date(p.submitted_at).toLocaleString(),
                     '提案者': p.applicant_name,
                     '企画名': proposal.eventName,
@@ -327,14 +309,27 @@ function DataManagement() {
                 }));
             });
 
-            console.log("Data to export:", dataToExport);
-
             if (dataToExport.length === 0) {
                 alert('エクスポートするデータがありません。');
                 return;
             }
 
             const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+
+            // Set text wrapping for the '内容' column
+            const headers = Object.keys(dataToExport[0]);
+            const contentColIndex = headers.indexOf('内容');
+            if (contentColIndex > -1) {
+                const range = XLSX.utils.decode_range(worksheet['!ref']!);個人的に、
+                for (let R = 1; R <= range.e.r; ++R) {
+                    const cell_address = { c: contentColIndex, r: R };
+                    const cell_ref = XLSX.utils.encode_cell(cell_address);
+                    if (worksheet[cell_ref]) {
+                        worksheet[cell_ref].s = { alignment: { wrapText: true } };
+                    }
+                }
+            }
+
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Proposals");
             XLSX.writeFile(workbook, `${selectedYear}年度_催事提案一覧.xlsx`);
