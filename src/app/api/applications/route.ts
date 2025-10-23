@@ -19,12 +19,10 @@ interface ProposalItem {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log("API GET request received");
     const { searchParams } = new URL(request.url);
     const types = searchParams.getAll('type');
     const year = searchParams.get('year');
     const status = searchParams.get('status');
-    console.log("Query Params:", { types, year, status });
 
     let query = 'SELECT * FROM applications';
     const values: (string | number)[] = [];
@@ -36,8 +34,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (year) {
-      conditions.push(`(details->>'proposal_year' = $${values.length + 1} OR details->>'提案年度' = $${values.length + 2})`);
-      values.push(year, year);
+      conditions.push(`details->>'proposal_year' = $${values.length + 1}`);
+      values.push(year);
     }
 
     if (status) {
@@ -50,12 +48,8 @@ export async function GET(request: NextRequest) {
     }
 
     query += ' ORDER BY submitted_at DESC;';
-    console.log("Executing query:", query);
-    console.log("With values:", values);
 
     const { rows } = await sql.query(query, values);
-    console.log("Rows from DB:", rows);
-
     return NextResponse.json(rows, { status: 200 });
   } catch (error: unknown) {
     console.error('API GET Error:', error);
@@ -72,66 +66,10 @@ export async function POST(request: Request) {
         return NextResponse.json({ message: 'Missing or invalid required fields' }, { status: 400 });
     }
 
-    const fieldLabelMap: { [key: string]: string } = {
-        evaluator: '回答者',
-        targetEmployee: '対象者',
-        totalScore: '合計点',
-        comment: 'コメント',
-        scores: 'スコア詳細',
-        salonType: 'サロン種別',
-        personalAccount: '個人口座',
-        customerNameFull: '得意先名（正式）',
-        customerNameShort: '得意先名（略称）',
-        zipCode: '郵便番号',
-        address1: '住所1',
-        address2: '住所2',
-        phone: '電話番号',
-        fax: 'FAX番号',
-        representativeName: '代表者氏名',
-        contactPerson: '担当者',
-        closingDay: '締日',
-        email: 'メールアドレス',
-        billingTarget: '請求先',
-        billingCustomerName: '請求先名称',
-        billingCustomerCode: '請求先コード',
-        includePersonalAccountInBilling: '別得意先への個人口座請求',
-        addToDirectDebit: '既存の自動引落に追加',
-        includePersonalAccountInDebit: '個人口座を含めて引き落とす',
-        remarks: '備考',
-        applicant: '申請者',
-        usageDate: '利用日',
-        facility: '対象施設',
-        equipment: '設備利用',
-        startTime: '開始時間',
-        endTime: '終了時間',
-        purpose: '利用目的',
-    };
-
-    const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
-        const translatedKey = fieldLabelMap[key] || key;
-        let translatedValue = value as string;
-
-        if (translatedKey === '請求先') {
-            if (value === 'self') translatedValue = 'この得意先へ請求（単独）';
-            if (value === 'other') translatedValue = '別の得意先へ請求（親子or名寄せ）';
-        }
-
-        if (translatedKey === '既存の自動引落に追加' || translatedKey === '個人口座を含めて引き落とす') {
-            if (value === 'on') translatedValue = 'Yes';
-        }
-
-        acc[translatedKey] = translatedValue;
-        return acc;
-    }, {} as Record<string, string>);
-
-    console.log("Translated Details (Object):", translatedDetails);
-    const detailsString = JSON.stringify(translatedDetails);
-    console.log("Translated Details (String):", detailsString);
-
     // Insert into database
     await sql`
       INSERT INTO applications (application_type, applicant_name, title, details)
-      VALUES (${application_type}, ${applicant_name}, ${title}, ${detailsString});
+      VALUES (${application_type}, ${applicant_name}, ${title}, ${JSON.stringify(details)});
     `;
 
     // Send email
@@ -156,6 +94,48 @@ export async function POST(request: Request) {
             body += `内容: ${p.content}\n\n`;
         });
     } else {
+        const fieldLabelMap: { [key: string]: string } = {
+            salonType: 'サロン種別',
+            personalAccount: '個人口座',
+            customerNameFull: '得意先名（正式）',
+            customerNameShort: '得意先名（略称）',
+            zipCode: '郵便番号',
+            address1: '住所1',
+            address2: '住所2',
+            phone: '電話番号',
+            fax: 'FAX番号',
+            representativeName: '代表者氏名',
+            contactPerson: '担当者',
+            closingDay: '締日',
+            email: 'メールアドレス',
+            billingTarget: '請求先',
+            billingCustomerName: '請求先名称',
+            billingCustomerCode: '請求先コード',
+            includePersonalAccountInBilling: '別得意先への個人口座請求',
+            addToDirectDebit: '既存の自動引落に追加',
+            includePersonalAccountInDebit: '個人口座を含めて引き落とす',
+            remarks: '備考',
+            applicant: '申請者',
+            usageDate: '利用日',
+            facility: '対象施設',
+            equipment: '設備利用',
+            startTime: '開始時間',
+            endTime: '終了時間',
+            purpose: '利用目的',
+        };
+        const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
+            const translatedKey = fieldLabelMap[key] || key;
+            let translatedValue = value as string;
+            if (translatedKey === '請求先') {
+                if (value === 'self') translatedValue = 'この得意先へ請求（単独）';
+                if (value === 'other') translatedValue = '別の得意先へ請求（親子or名寄せ）';
+            }
+            if (translatedKey === '既存の自動引落に追加' || translatedKey === '個人口座を含めて引き落とす') {
+                if (value === 'on') translatedValue = 'Yes';
+            }
+            acc[translatedKey] = translatedValue;
+            return acc;
+        }, {} as Record<string, string>);
         body += Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
     }
 
