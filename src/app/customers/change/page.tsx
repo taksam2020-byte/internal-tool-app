@@ -53,7 +53,7 @@ export default function ChangeCustomerPage() {
   const [address1, setAddress1] = useState('');
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const [billingTarget, setBillingTarget] = useState('self');
-  const [personalAccount, setPersonalAccount] = useState('不要'); // Assume '不要' is a possible value
+  const [personalAccount] = useState('不要'); // Assume '不要' is a possible value
   const [selectedFields, setSelectedFields] = useState<FieldKey[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);

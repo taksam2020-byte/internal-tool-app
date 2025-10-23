@@ -298,7 +298,7 @@ function DataManagement() {
             const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
             const dataToExport = res.data.flatMap((p: Application) => {
                 const details = typeof p.details === 'string' ? JSON.parse(p.details) : p.details;
-                const proposals: any[] = [];
+                const proposals: ProposalItem[] = [];
                 const proposalKeys = Object.keys(details).filter(k => k.startsWith('提案'));
                 const proposalIndices = Array.from(new Set(proposalKeys.map(k => k.match(/(\d+)/)?.[0]))).filter(Boolean);
 
