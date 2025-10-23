@@ -145,6 +145,48 @@ export async function POST(request: Request) {
             body += `内容: ${p.content}\n\n`;
         });
     } else {
+        const fieldLabelMap: { [key: string]: string } = {
+            salonType: 'サロン種別',
+            personalAccount: '個人口座',
+            customerNameFull: '得意先名（正式）',
+            customerNameShort: '得意先名（略称）',
+            zipCode: '郵便番号',
+            address1: '住所1',
+            address2: '住所2',
+            phone: '電話番号',
+            fax: 'FAX番号',
+            representativeName: '代表者氏名',
+            contactPerson: '担当者',
+            closingDay: '締日',
+            email: 'メールアドレス',
+            billingTarget: '請求先',
+            billingCustomerName: '請求先名称',
+            billingCustomerCode: '請求先コード',
+            includePersonalAccountInBilling: '別得意先への個人口座請求',
+            addToDirectDebit: '既存の自動引落に追加',
+            includePersonalAccountInDebit: '個人口座を含めて引き落とす',
+            remarks: '備考',
+            applicant: '申請者',
+            usageDate: '利用日',
+            facility: '対象施設',
+            equipment: '設備利用',
+            startTime: '開始時間',
+            endTime: '終了時間',
+            purpose: '利用目的',
+        };
+        const translatedDetails = Object.entries(details).reduce((acc, [key, value]) => {
+            const translatedKey = fieldLabelMap[key] || key;
+            let translatedValue = value as string;
+            if (translatedKey === '請求先') {
+                if (value === 'self') translatedValue = 'この得意先へ請求（単独）';
+                if (value === 'other') translatedValue = '別の得意先へ請求（親子or名寄せ）';
+            }
+            if (translatedKey === '既存の自動引落に追加' || translatedKey === '個人口座を含めて引き落とす') {
+                if (value === 'on') translatedValue = 'Yes';
+            }
+            acc[translatedKey] = translatedValue;
+            return acc;
+        }, {} as Record<string, string>);
         body += Object.entries(translatedDetails).map(([key, value]) => `${key}: ${value}`).join('\n');
     }
 

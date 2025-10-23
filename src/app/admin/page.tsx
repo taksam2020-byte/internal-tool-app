@@ -272,26 +272,49 @@ function DataManagement() {
     const [key, setKey] = useState('proposals');
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+    const [selectedYear, setSelectedYear] = useState('');
 
-    const fetchData = async () => {
-        setLoading(true);
-        try {
-            const res = await axios.get<Application[]>('/api/applications');
-            setApplications(res.data);
-        } catch { /* Failed to fetch applications */ }
-        setLoading(false);
-    };
+    const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal' && a.details?.proposal_year).map(a => a.details.proposal_year))).sort((a, b) => b.localeCompare(a));
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => {
+        const fetchData = async () => {
+            setLoading(true);
+            try {
+                const res = await axios.get<Application[]>('/api/applications');
+                setApplications(res.data);
+                // Set initial selected year after data is fetched
+                const years = Array.from(new Set(res.data.filter(a => a.application_type === 'proposal' && a.details?.proposal_year).map(a => a.details.proposal_year))).sort((a, b) => b.localeCompare(a));
+                if (years.length > 0) {
+                    setSelectedYear(years[0]);
+                }
+            } catch { /* Failed to fetch applications */ }
+            setLoading(false);
+        };
+        fetchData();
+    }, []);
 
     const handleExcelExport = async () => {
         try {
             const res = await axios.get(`/api/applications?type=proposal&year=${selectedYear}`);
             const dataToExport = res.data.flatMap((p: Application) => {
                 const details = typeof p.details === 'string' ? JSON.parse(p.details) : p.details;
-                if (!details || !Array.isArray(details.proposals)) return [];
-                return details.proposals.map((proposal: ProposalItem) => ({
+                const proposals: any[] = [];
+                const proposalKeys = Object.keys(details).filter(k => k.startsWith('提案'));
+                const proposalIndices = Array.from(new Set(proposalKeys.map(k => k.match(/(\d+)/)?.[0]))).filter(Boolean);
+
+                proposalIndices.forEach(index => {
+                    const proposal = {
+                        eventName: details[`提案${index}_企画名`],
+                        timing: details[`提案${index}_時期`],
+                        type: details[`提案${index}_種別`],
+                        content: details[`提案${index}_内容`],
+                    };
+                    proposals.push(proposal);
+                });
+
+                if (proposals.length === 0) return [];
+
+                return proposals.map((proposal: ProposalItem) => ({
                     '提出日': new Date(p.submitted_at).toLocaleString(),
                     '提案者': p.applicant_name,
                     '企画名': proposal.eventName,
@@ -348,7 +371,7 @@ function DataManagement() {
                                 <thead><tr><th>提出日</th><th>回答者</th><th>対象者</th></tr></thead>
                                 <tbody>
                                     {evaluations.map((s) => (
-                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{s.details?.evaluator}</td><td>{s.details?.targetEmployee}</td></tr>
+                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{String(s.details?.evaluator || '')}</td><td>{String(s.details?.targetEmployee || '')}</td></tr>
                                     ))}
                                 </tbody>
                             </Table>
