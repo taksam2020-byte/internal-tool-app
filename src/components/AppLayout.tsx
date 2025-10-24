@@ -8,8 +8,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
 
-interface Application { application_type: string; }
-
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
   const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');

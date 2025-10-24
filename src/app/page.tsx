@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, Col, Row, Badge, Button } from 'react-bootstrap';
+import { Card, Col, Row, Badge } from 'react-bootstrap';
 import Link from 'next/link';
 import { useSettings } from '@/context/SettingsContext';
 import { PersonPlus, Building, Lightbulb, GearFill, PencilSquare, BarChart, ClockHistory } from 'react-bootstrap-icons';
