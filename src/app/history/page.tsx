@@ -27,9 +27,8 @@ const applicationTypeMap: { [key: string]: string } = {
 };
 
 function ApplicationsManagement() {
-    const { triggerRefresh } = useSettings();
     const [applications, setApplications] = useState<Application[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
+    const [processors, setProcessors] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
@@ -66,15 +65,8 @@ function ApplicationsManagement() {
                 axios.get<User[]>('/api/users'),
             ]);
             setApplications(appsRes.data);
-            const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3, '営業研修生': 4, '内勤研修生': 5 };
-            const sortedUsers = usersRes.data.sort((a, b) => {
-                const getSortKey = (user: User) => user.is_trainee ? `${user.role}研修生` : user.role;
-                const orderA = roleOrder[getSortKey(a)] || 99;
-                const orderB = roleOrder[getSortKey(b)] || 99;
-                if (orderA !== orderB) return orderA - orderB;
-                return a.id - b.id;
-            });
-            setUsers(sortedUsers);
+            const internalStaff = usersRes.data.filter(user => user.role === '内勤');
+            setProcessors(internalStaff);
         } catch { 
             // setError('データの読み込みに失敗しました。'); 
         }
@@ -97,7 +89,6 @@ function ApplicationsManagement() {
             await axios.put(`/api/applications/${id}`,
                 { status: newStatus, processed_by: processorName });
             fetchData(); // Refresh the data
-            triggerRefresh(); // Trigger a refresh for other components
         } catch (error) {
             console.error("Failed to update status", error);
             alert('ステータスの更新に失敗しました。');
@@ -149,7 +140,7 @@ function ApplicationsManagement() {
                                         <td>
                                             <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleStatusChange(app.id, app.status, e.target.value)}>
                                                 <option value="">未選択</option>
-                                                {users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                                                {processors.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                                             </Form.Select>
                                         </td>
                                         <td>
