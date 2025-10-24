@@ -10,6 +10,17 @@ import axios from 'axios';
 
 interface Application { application_type: string; }
 
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 function CustomAccordionToggle({ children, eventKey, callback }: { children: React.ReactNode, eventKey: string, callback?: () => void }) {
   const decoratedOnClick = useAccordionButton(eventKey, callback);
   return (
@@ -28,8 +39,16 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
   useEffect(() => {
     const fetchPendingCount = async () => {
       try {
-        const res = await axios.get('/api/applications?status=未処理');
-        setPendingCount(res.data.filter((app: Application) => app.application_type !== 'proposal' && app.application_type !== 'evaluation').length);
+        const appTypes = ['customer_registration', 'customer_change', 'facility_reservation'];
+        const res = await axios.get('/api/applications', { 
+            params: { status: '未処理', type: appTypes },
+            paramsSerializer: params => {
+                return Object.entries(params).map(([key, value]) => 
+                    Array.isArray(value) ? value.map(v => `${key}=${v}`).join('&') : `${key}=${value}`
+                ).join('&');
+            }
+        });
+        setPendingCount(res.data.length);
       } catch (error) {
         console.error("Failed to fetch pending applications count", error);
       }
@@ -122,6 +141,28 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const handleSubscribe = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('お使いのブラウザはプッシュ通知に対応していません。');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      alert('通知が許可されませんでした。');
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
+    });
+
+    await axios.post('/api/save-subscription', subscription);
+    alert('通知が許可されました！');
+  };
+
   const BrandLogo = () => (
     <div className="d-flex align-items-center">
 <Image src="/logo.png" alt="Logo" width={40} height={40} className="me-2" />
@@ -155,6 +196,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Col md={2} className="bg-dark text-white vh-100 d-none d-md-block p-3 position-fixed">
             <div className="mb-4 text-center"><BrandLogo /></div>
             <SidebarNav />
+            <div className="position-absolute bottom-0 start-0 p-3 d-none d-md-block">
+              <Button variant="info" size="sm" onClick={handleSubscribe}>通知を許可</Button>
+            </div>
           </Col>
 
           {/* Main Content */}

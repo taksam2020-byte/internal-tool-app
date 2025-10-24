@@ -9,16 +9,7 @@ import axios from 'axios';
 
 import Image from 'next/image';
 
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
+interface Application { application_type: string; }
 
 export default function HomePage() {
   const { settings, isSettingsLoaded } = useSettings();
@@ -27,7 +18,15 @@ export default function HomePage() {
   useEffect(() => {
     const fetchPendingApplications = async () => {
       try {
-        const res = await axios.get('/api/applications?status=未処理');
+        const appTypes = ['customer_registration', 'customer_change', 'facility_reservation'];
+        const res = await axios.get('/api/applications', { 
+            params: { status: '未処理', type: appTypes },
+            paramsSerializer: params => {
+                return Object.entries(params).map(([key, value]) => 
+                    Array.isArray(value) ? value.map(v => `${key}=${v}`).join('&') : `${key}=${value}`
+                ).join('&');
+            }
+        });
         setPendingApplicationsCount(res.data.length);
       } catch (error) {
         console.error("Failed to fetch pending applications", error);
@@ -38,28 +37,6 @@ export default function HomePage() {
         fetchPendingApplications();
     }
   }, [isSettingsLoaded]);
-
-  const handleSubscribe = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert('お使いのブラウザはプッシュ通知に対応していません。');
-      return;
-    }
-
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      alert('通知が許可されませんでした。');
-      return;
-    }
-
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
-    });
-
-    await axios.post('/api/save-subscription', subscription);
-    alert('通知が許可されました！');
-  };
 
   const menuItems = [
     {
@@ -132,7 +109,6 @@ export default function HomePage() {
             <Image src="/logo.png" alt="Logo" width={50} height={50} className="me-3" />
             <span>社内ツール</span>
         </h1>
-        <Button variant="outline-info" onClick={handleSubscribe}>通知を許可</Button>
       </div>
       <Row xs={1} md={2} lg={3} className="g-4">
         {menuItems.filter(item => item.show).map((item, idx) => (
