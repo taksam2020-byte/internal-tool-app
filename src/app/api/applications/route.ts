@@ -1,6 +1,13 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { sql } from '@vercel/postgres';
 import nodemailer from 'nodemailer';
+import webpush from 'web-push';
+
+webpush.setVapidDetails(
+  'mailto:your-email@example.com', // Replace with your email
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+);
 
 const applicationTypeMap: { [key: string]: string } = {
   customer_registration: '得意先新規登録',
@@ -147,6 +154,15 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ message: 'Application submitted and email sent successfully' }, { status: 201 });
+
+    // Send push notifications
+    const { rows: subscriptions } = await sql`SELECT * FROM subscriptions;`;
+    const notificationPayload = JSON.stringify({
+      title: `新しい申請: ${applicationTypeMap[application_type] || application_type}`,
+      body: `申請者: ${applicant_name}`,
+    });
+    await Promise.all(subscriptions.map(sub => webpush.sendNotification(sub.subscription, notificationPayload)));
+
   } catch (error: unknown) {
     console.error('API POST Error:', error);
     const message = error instanceof Error ? error.message : 'An unknown error occurred';

@@ -1,10 +1,16 @@
-
-import { NextResponse, NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
+import webpush from 'web-push';
 
-export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+webpush.setVapidDetails(
+  'mailto:your-email@example.com', // Replace with your email
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
+);
+
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
   try {
-    const { id } = await context.params;
+    const { id } = params;
     const { status, processed_by } = await request.json();
 
     if (!status || !processed_by) {
@@ -16,6 +22,14 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
       SET status = ${status}, processed_by = ${processed_by}, processed_at = CURRENT_TIMESTAMP
       WHERE id = ${id};
     `;
+
+    // Send push notifications
+    const { rows: subscriptions } = await sql`SELECT * FROM subscriptions;`;
+    const notificationPayload = JSON.stringify({
+      title: `ステータス更新: ${status}`,
+      body: `申請ID ${id} が ${processed_by} によって処理されました。`,
+    });
+    await Promise.all(subscriptions.map(sub => webpush.sendNotification(sub.subscription, notificationPayload)));
 
     return NextResponse.json({ message: 'Application status updated successfully' }, { status: 200 });
   } catch (error: unknown) {
