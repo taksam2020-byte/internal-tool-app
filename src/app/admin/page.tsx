@@ -16,6 +16,7 @@ interface Application {
   applicant_name: string;
   title: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   details: Record<string, any>; // Allow details to be flexible
   submitted_at: string;
   status: string;
