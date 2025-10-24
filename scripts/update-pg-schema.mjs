@@ -32,6 +32,15 @@ async function updateSchema() {
   `;
   console.log('Table "app_settings" created or already exists.');
 
+  // Create a new subscriptions table if it doesn't exist
+  await sql`
+    CREATE TABLE IF NOT EXISTS subscriptions (
+      id SERIAL PRIMARY KEY,
+      subscription JSONB NOT NULL
+    );
+  `;
+  console.log('Table "subscriptions" created or already exists.');
+
   console.log('Schema update complete.');
 }
 

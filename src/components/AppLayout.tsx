@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Container, Row, Col, Nav, Navbar, Offcanvas, Accordion, useAccordionButton, Card, Badge } from 'react-bootstrap';
+import { Container, Row, Col, Nav, Navbar, Offcanvas, Accordion, useAccordionButton, Card, Badge, Button } from 'react-bootstrap';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
+
+interface Application { application_type: string; }
 
 function CustomAccordionToggle({ children, eventKey, callback }: { children: React.ReactNode, eventKey: string, callback?: () => void }) {
   const decoratedOnClick = useAccordionButton(eventKey, callback);
@@ -20,29 +22,21 @@ function CustomAccordionToggle({ children, eventKey, callback }: { children: Rea
 function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { settings, isSettingsLoaded, refreshKey } = useSettings();
+  const { settings, isSettingsLoaded } = useSettings();
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     const fetchPendingCount = async () => {
       try {
-        const appTypes = ['customer_registration', 'customer_change', 'facility_reservation'];
-        const res = await axios.get('/api/applications', {
-          params: { status: '未処理', type: appTypes },
-          paramsSerializer: params => {
-            return Object.entries(params).map(([key, value]) => 
-              Array.isArray(value) ? value.map(v => `${key}=${v}`).join('&') : `${key}=${value}`
-            ).join('&');
-          }
-        });
-        setPendingCount(res.data.length);
+        const res = await axios.get('/api/applications?status=未処理');
+        setPendingCount(res.data.filter((app: Application) => app.application_type !== 'proposal' && app.application_type !== 'evaluation').length);
       } catch (error) {
         console.error("Failed to fetch pending applications count", error);
       }
     };
 
     fetchPendingCount();
-  }, [refreshKey]);
+  }, []);
 
   const isCustomerRoute = pathname.startsWith('/customers');
 
@@ -115,6 +109,35 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const handleClose = () => setShowMenu(false);
   const handleShow = () => setShowMenu(true);
 
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').then(
+        (registration) => {
+          console.log('Service worker registration successful:', registration);
+        },
+        (error) => {
+          console.error('Service worker registration failed:', error);
+        },
+      );
+    }
+  }, []);
+
+  const handleSubscribe = async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      alert('お使いのブラウザはプッシュ通知に対応していません。');
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    });
+
+    await axios.post('/api/save-subscription', subscription);
+    alert('通知が許可されました！');
+  };
+
   const BrandLogo = () => (
     <div className="d-flex align-items-center">
 <Image src="/logo.png" alt="Logo" width={40} height={40} className="me-2" />
@@ -148,6 +171,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Col md={2} className="bg-dark text-white vh-100 d-none d-md-block p-3 position-fixed">
             <div className="mb-4 text-center"><BrandLogo /></div>
             <SidebarNav />
+            <div className="position-absolute bottom-0 start-0 p-3">
+              <Button variant="info" size="sm" onClick={handleSubscribe}>通知を許可</Button>
+            </div>
           </Col>
 
           {/* Main Content */}
