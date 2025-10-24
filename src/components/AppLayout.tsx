@@ -104,17 +104,6 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
   );
 }
 
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [showMenu, setShowMenu] = useState(false);
   const handleClose = () => setShowMenu(false);
@@ -132,28 +121,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       );
     }
   }, []);
-
-  const handleSubscribe = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      alert('お使いのブラウザはプッシュ通知に対応していません。');
-      return;
-    }
-
-    const permission = await Notification.requestPermission();
-    if (permission !== 'granted') {
-      alert('通知が許可されませんでした。');
-      return;
-    }
-
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!),
-    });
-
-    await axios.post('/api/save-subscription', subscription);
-    alert('通知が許可されました！');
-  };
 
   const BrandLogo = () => (
     <div className="d-flex align-items-center">
@@ -188,9 +155,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Col md={2} className="bg-dark text-white vh-100 d-none d-md-block p-3 position-fixed">
             <div className="mb-4 text-center"><BrandLogo /></div>
             <SidebarNav />
-            <div className="position-absolute bottom-0 start-0 p-3">
-              <Button variant="info" size="sm" onClick={handleSubscribe}>通知を許可</Button>
-            </div>
           </Col>
 
           {/* Main Content */}
