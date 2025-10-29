@@ -30,6 +30,8 @@ interface SettingsContextType {
     isSettingsLoaded: boolean;
     refreshKey: number;
     triggerRefresh: () => void;
+    isDirty: boolean;
+    setIsDirty: Dispatch<SetStateAction<boolean>>;
 }
 
 const defaultSettings: AppSettings = {
@@ -59,6 +61,8 @@ const SettingsContext = createContext<SettingsContextType>({
     isSettingsLoaded: false,
     refreshKey: 0,
     triggerRefresh: () => {},
+    isDirty: false,
+    setIsDirty: () => {},
 });
 
 export const useSettings = () => useContext(SettingsContext);
@@ -67,6 +71,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const [settings, setSettings] = useState<AppSettings>(defaultSettings);
     const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
+    const [isDirty, setIsDirty] = useState(false);
 
     const triggerRefresh = () => setRefreshKey(prev => prev + 1);
 
@@ -87,7 +92,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     }, [refreshKey]);
 
     return (
-        <SettingsContext.Provider value={{ settings, setSettings, isSettingsLoaded, refreshKey, triggerRefresh }}>
+        <SettingsContext.Provider value={{ settings, setSettings, isSettingsLoaded, refreshKey, triggerRefresh, isDirty, setIsDirty }}>
             {children}
         </SettingsContext.Provider>
     );

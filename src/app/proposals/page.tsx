@@ -24,7 +24,7 @@ interface User {
 let nextId = 5;
 
 export default function ProposalsPage() {
-  const { settings, isSettingsLoaded } = useSettings();
+  const { settings, isSettingsLoaded, isDirty, setIsDirty } = useSettings();
   const [users, setUsers] = useState<User[]>([]);
   const [allowedUsers, setAllowedUsers] = useState<User[]>([]);
   const [proposerName, setProposerName] = useState('');
@@ -65,7 +65,7 @@ export default function ProposalsPage() {
     }
   }, [users, settings.proposalAllowedRoles, settings.proposalIncludeTrainees, isSettingsLoaded]);
 
-  const getDraftKey = useCallback(() => `proposalDraft-${settings.proposalYear}-${proposerName || 'unknown'}`, [settings.proposalYear, proposerName]);
+  const getDraftKey = useCallback(() => `proposalDraft-${settings.proposalYear}`, [settings.proposalYear]);
 
   useEffect(() => {
     if (isSettingsLoaded) {
@@ -96,8 +96,24 @@ export default function ProposalsPage() {
             setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
         }
         setIsLoaded(true);
+        setIsDirty(false);
     }
-  }, [isSettingsLoaded, getDraftKey, settings.proposalYear, proposerName]);
+  }, [isSettingsLoaded, getDraftKey, settings.proposalYear]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (isDirty) {
+        event.preventDefault();
+        event.returnValue = ''; // Required for Chrome
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isDirty]);
 
   const handleProposalChange = (index: number, field: keyof Omit<ProposalItem, 'id'>, value: string) => {
     const newProposals = proposals.map((p, i) => {
@@ -107,27 +123,27 @@ export default function ProposalsPage() {
       return p;
     });
     setProposals(newProposals);
+    setIsDirty(true);
   };
 
   const addProposal = () => {
     setProposals([...proposals, { id: nextId++, eventName: '', timing: '', type: '', content: '' }]);
+    setIsDirty(true);
   };
 
   const removeProposal = (id: number) => {
     if (proposals.length > 5) {
         setProposals(proposals.filter(p => p.id !== id));
+        setIsDirty(true);
     }
   };
 
   const handleSaveDraft = () => {
-    if (!proposerName) {
-        alert('一時保存する前に氏名を入力してください。');
-        return;
-    }
     try {
         const draft = JSON.stringify({ year: settings.proposalYear, proposerName, proposals });
         localStorage.setItem(getDraftKey(), draft);
         alert(`${settings.proposalYear}年度の提案を一時保存しました。`);
+        setIsDirty(false);
     } catch (error) {
         console.error("Failed to save draft to localStorage", error);
         alert('一時保存に失敗しました。');
@@ -179,6 +195,7 @@ export default function ProposalsPage() {
       setProposerName('');
       setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
       localStorage.removeItem(getDraftKey());
+      setIsDirty(false);
     } catch (error: unknown) {
       console.error("Failed to submit proposal", error);
       let errorMessage = '提案の送信に失敗しました。';
@@ -220,7 +237,7 @@ export default function ProposalsPage() {
                 <Form.Group as={Row} className="align-items-center">
                     <Form.Label column sm={2} className="fw-bold">氏名</Form.Label>
                     <Col sm={10}>
-                        <Form.Select required value={proposerName} onChange={(e) => setProposerName(e.target.value)}>
+                        <Form.Select required value={proposerName} onChange={(e) => { setProposerName(e.target.value); setIsDirty(true); }}>
                             <option value="">選択してください...</option>
                             {allowedUsers.map(user => (
                                 <option key={user.id} value={user.name}>{user.name}</option>
