@@ -40,7 +40,7 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
 
   const isCustomerRoute = pathname.startsWith('/customers');
 
-  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleLinkClick = (e: React.MouseEvent<HTMLElement>, href: string) => {
     if (isDirty) {
       if (!window.confirm('編集中の内容があります。ページを離れてもよろしいですか？')) {
         e.preventDefault();
