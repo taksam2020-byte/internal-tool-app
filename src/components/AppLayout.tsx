@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { Container, Row, Col, Nav, Navbar, Offcanvas, Accordion, useAccordionButton, Card, Badge } from 'react-bootstrap';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/router';
+import { usePathname } from 'next/navigation';
+import { useRouter } from 'next/router';
 import { useSettings } from '@/context/SettingsContext';
 import axios from 'axios';
 
