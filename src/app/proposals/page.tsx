@@ -79,17 +79,28 @@ export default function ProposalsPage() {
                     if (savedProposals && savedProposals.length > 0) {
                         setProposals(savedProposals);
                         nextId = Math.max(...savedProposals.map((p: ProposalItem) => p.id)) + 1;
-                    } else {
-                        setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
                     }
-                } else {
-                    // Year mismatch, clear old data
-                    localStorage.removeItem(draftKey);
-                    setProposerName('');
-                    setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
                 }
             } else {
-              setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
+                // --- Migration code ---
+                const oldDraftKey = `proposalDraft-${settings.proposalYear}-${proposerName || 'unknown'}`;
+                const oldSavedData = localStorage.getItem(oldDraftKey);
+                if (oldSavedData) {
+                    const { proposerName: savedName, proposals: savedProposals, year: savedYear } = JSON.parse(oldSavedData);
+                    if (savedYear === settings.proposalYear) {
+                        setProposerName(savedName || '');
+                        if (savedProposals && savedProposals.length > 0) {
+                            setProposals(savedProposals);
+                            nextId = Math.max(...savedProposals.map((p: ProposalItem) => p.id)) + 1;
+                            // Re-save with the new key and remove the old one
+                            localStorage.setItem(draftKey, oldSavedData);
+                            localStorage.removeItem(oldDraftKey);
+                        }
+                    }
+                } else {
+                    setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
+                }
+                // --- End of migration code ---
             }
         } catch (error) {
             console.error("Failed to load draft from localStorage", error);
