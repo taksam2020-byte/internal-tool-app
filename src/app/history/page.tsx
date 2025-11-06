@@ -19,8 +19,6 @@ interface Application {
   processed_at: string | null;
 }
 
-import { useSettings } from '@/context/SettingsContext';
-
 const applicationTypeMap: { [key: string]: string } = {
   customer_registration: '得意先新規登録',
   customer_change: '得意先情報変更',
@@ -41,7 +39,7 @@ function ApplicationsManagement() {
         // Common
         '申請者', '担当者', '適用開始日',
         // Customer
-        'サロン種別', '個人口座', '得意先名（正式）', '得意先名（略称）', '郵便番号', '住所1', '住所2', '電話番号', 'FAX番号', '代表者氏名', '締日', 'メールアドレス', '請求先', '請求先名称', '請求先コード', '別得意先への個人口座請求',
+        'サロン種別', '個人口座', '得意先名（正式）', '得意先名（略称）', '郵便番号', '住所1', '住所2', '電話番号', 'FAX番号', '代表者氏名', '締日', 'メールアドレス', '請求先', '請求先名称', '請求先コード', '別得意先への個人口座請求', '既存の自動引落に追加', '個人口座を含めて引き落とす',
         // Change Customer
         '変更元得意先コード', '変更元得意先名', '新しい得意先名（正式）', '新しい得意先名（略称）',
         // Reservation
@@ -82,7 +80,7 @@ function ApplicationsManagement() {
     }
 
     const handleStatusChange = async (id: number, newStatus: string, processorName: string) => {
-        if (!processorName) {
+        if (!processorName && newStatus === '処理済み') {
             alert('処理者を指定してください。');
             return;
         }

@@ -20,7 +20,7 @@ function CustomAccordionToggle({ children, eventKey, callback }: { children: Rea
 function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { settings, isSettingsLoaded, refreshKey } = useSettings();
+  const { settings, isSettingsLoaded, refreshKey, isDirty, setIsDirty } = useSettings();
   const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
@@ -39,10 +39,17 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
 
   const isCustomerRoute = pathname.startsWith('/customers');
 
-  const handleCustomerClick = () => {
-    router.push('/customers');
+  const handleLinkClick = (e: React.MouseEvent<HTMLElement>, href: string) => {
+    if (isDirty) {
+      if (!window.confirm('編集中の内容があります。ページを離れてもよろしいですか？')) {
+        e.preventDefault();
+        return;
+      }
+      setIsDirty(false); // ページ遷移を許可
+    }
+    router.push(href);
     if (onLinkClick) onLinkClick();
-  }
+  };
 
   if (!isSettingsLoaded) {
     return <div>読み込み中...</div>;
@@ -51,12 +58,12 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
   return (
     <Accordion as={Nav} activeKey={isCustomerRoute ? "0" : undefined} className="flex-column">
       <Nav.Item className="mb-2">
-        <Link href="/" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>ホーム</Nav.Link></Link>
+        <Link href="/" passHref legacyBehavior><Nav.Link className="text-white" onClick={(e) => handleLinkClick(e, '/')}>ホーム</Nav.Link></Link>
       </Nav.Item>
 
       <Card className="bg-dark text-white border-0">
         <Card.Header className="p-0 border-0">
-            <CustomAccordionToggle eventKey="0" callback={handleCustomerClick}>
+            <CustomAccordionToggle eventKey="0" callback={() => handleLinkClick({ preventDefault: () => {} } as React.MouseEvent<HTMLAnchorElement>, '/customers')}>
                 <div className={`nav-link text-white ${isCustomerRoute ? 'active' : ''}`}>得意先登録</div>
             </CustomAccordionToggle>
         </Card.Header>
@@ -64,10 +71,10 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
           <Card.Body className="py-1 ps-4">
             <Nav className="flex-column">
               <Nav.Item>
-                <Link href="/customers/new" passHref legacyBehavior><Nav.Link className="text-white py-1" onClick={onLinkClick}>新規登録</Nav.Link></Link>
+                <Link href="/customers/new" passHref legacyBehavior><Nav.Link className="text-white py-1" onClick={(e) => handleLinkClick(e, '/customers/new')}>新規登録</Nav.Link></Link>
               </Nav.Item>
               <Nav.Item>
-                <Link href="/customers/change" passHref legacyBehavior><Nav.Link className="text-white py-1" onClick={onLinkClick}>既存情報の変更</Nav.Link></Link>
+                <Link href="/customers/change" passHref legacyBehavior><Nav.Link className="text-white py-1" onClick={(e) => handleLinkClick(e, '/customers/change')}>既存情報の変更</Nav.Link></Link>
               </Nav.Item>
             </Nav>
           </Card.Body>
@@ -75,29 +82,29 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
       </Card>
 
       <Nav.Item className="mb-2">
-        <Link href="/reservations" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>施設予約</Nav.Link></Link>
+        <Link href="/reservations" passHref legacyBehavior><Nav.Link className="text-white" onClick={(e) => handleLinkClick(e, '/reservations')}>施設予約</Nav.Link></Link>
       </Nav.Item>
 
       <Nav.Item className="mb-2">
-        <Link href="/history" passHref legacyBehavior><Nav.Link className="text-white d-flex justify-content-between align-items-center" onClick={onLinkClick}>申請履歴 {pendingCount > 0 && <Badge pill bg="danger">{pendingCount}</Badge>}</Nav.Link></Link>
+        <Link href="/history" passHref legacyBehavior><Nav.Link className="text-white d-flex justify-content-between align-items-center" onClick={(e) => handleLinkClick(e, '/history')}>申請履歴 {pendingCount > 0 && <Badge pill bg="danger">{pendingCount}</Badge>}</Nav.Link></Link>
       </Nav.Item>
 
       {settings.isEvaluationOpen && (
         <>
           <Nav.Item className="mb-2">
-            <Link href="/evaluations" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>新人考課</Nav.Link></Link>
+            <Link href="/evaluations" passHref legacyBehavior><Nav.Link className="text-white" onClick={(e) => handleLinkClick(e, '/evaluations')}>新人考課</Nav.Link></Link>
           </Nav.Item>
         </>
       )}
 
       {settings.isProposalOpen && (
         <Nav.Item className="mb-2">
-          <Link href="/proposals" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>催事提案</Nav.Link></Link>
+          <Link href="/proposals" passHref legacyBehavior><Nav.Link className="text-white" onClick={(e) => handleLinkClick(e, '/proposals')}>催事提案</Nav.Link></Link>
         </Nav.Item>
       )}
 
       <Nav.Item>
-        <Link href="/admin" passHref legacyBehavior><Nav.Link className="text-white" onClick={onLinkClick}>管理画面</Nav.Link></Link>
+        <Link href="/admin" passHref legacyBehavior><Nav.Link className="text-white" onClick={(e) => handleLinkClick(e, '/admin')}>管理画面</Nav.Link></Link>
       </Nav.Item>
     </Accordion>
   );

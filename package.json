@@ -4,8 +4,8 @@
   "private": true,
   "description": "Internal tool for company operations. (Forced refresh)",
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build --turbopack",
+    "dev": "next dev",
+    "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "db:init": "node scripts/update-pg-schema.mjs"
@@ -19,25 +19,25 @@
     "dotenv": "^17.2.3",
     "echarts": "^5.6.0",
     "echarts-for-react": "^3.0.2",
-    "next": "15.5.4",
+    "next": "14.2.3",
     "nodemailer": "^7.0.6",
     "rc-slider": "^11.1.9",
-    "react": "19.1.0",
+    "react": "^18.2.0",
     "react-bootstrap": "^2.10.10",
     "react-bootstrap-icons": "^1.11.6",
     "react-chartjs-2": "^5.3.0",
     "react-datepicker": "^8.7.0",
-    "react-dom": "19.1.0",
+    "react-dom": "^18.2.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
     "@types/nodemailer": "^7.0.2",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "15.5.4",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.3",
     "typescript": "^5"
   }
 }
