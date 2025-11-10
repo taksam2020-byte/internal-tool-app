@@ -10,6 +10,8 @@ export interface AppSettings {
     isProposalOpen: boolean;
     proposalDeadline: string;
     proposalYear: string;
+    proposalMinCount: number;
+    proposalTypes: string[];
     customerAllowedRoles: string[];
     reservationAllowedRoles: string[];
     evaluationAllowedRoles: string[];
@@ -41,6 +43,8 @@ const defaultSettings: AppSettings = {
     isProposalOpen: true,
     proposalDeadline: '',
     proposalYear: new Date().getFullYear().toString(),
+    proposalMinCount: 3,
+    proposalTypes: ['セミナー', 'イベント'],
     customerAllowedRoles: [],
     reservationAllowedRoles: [],
     evaluationAllowedRoles: [],
@@ -80,7 +84,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             try {
                 const response = await axios.get('/api/settings');
                 if (response.data) {
-                    setSettings(response.data);
+                    setSettings(currentSettings => ({ ...defaultSettings, ...response.data }));
                 }
             } catch (error) {
                 console.error("Failed to load settings from DB", error);

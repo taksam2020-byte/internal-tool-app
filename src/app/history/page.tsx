@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Form, Button, Card, Row, Col, Spinner, Table, Modal, Pagination } from 'react-bootstrap';
+import { Clipboard, ClipboardCheck } from 'react-bootstrap-icons';
 import axios from 'axios';
+import { useSettings } from '@/context/SettingsContext';
 
 interface User { id: number; name: string; role: '社長' | '営業' | '内勤'; is_trainee: boolean; is_active: boolean; }
 
@@ -26,13 +28,16 @@ const applicationTypeMap: { [key: string]: string } = {
 };
 
 function ApplicationsManagement() {
+    const { triggerRefresh } = useSettings();
     const [applications, setApplications] = useState<Application[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [officeStaff, setOfficeStaff] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const applicationsPerPage = 10;
 
     const displayOrder = [
@@ -74,6 +79,11 @@ function ApplicationsManagement() {
 
     useEffect(() => { fetchData(); }, []);
 
+    useEffect(() => {
+        const internalStaff = users.filter(user => user.role === '内勤' && user.is_active);
+        setOfficeStaff(internalStaff);
+    }, [users]);
+
     const handleShowModal = (app: Application) => {
         setSelectedApplication(app);
         setShowModal(true);
@@ -86,12 +96,22 @@ function ApplicationsManagement() {
         }
         try {
             await axios.put(`/api/applications/${id}`,
-                { status: newStatus, processed_by: processorName });
+                { status: newStatus, processed_by: newStatus === '処理済み' ? processorName : null });
             fetchData(); // Refresh the data
+            triggerRefresh(); // Refresh the sidebar
         } catch (error) {
             console.error("Failed to update status", error);
             alert('ステータスの更新に失敗しました。');
         }
+    };
+
+    const handleCopyToClipboard = (text: string, key: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            setCopiedKey(key);
+            setTimeout(() => setCopiedKey(null), 1500);
+        }, (err) => {
+            console.error('Could not copy text: ', err);
+        });
     };
 
     const filteredApplications = applications.filter(app => filterType === 'all' || app.application_type === filterType);
@@ -99,6 +119,14 @@ function ApplicationsManagement() {
     const indexOfFirstApplication = indexOfLastApplication - applicationsPerPage;
     const currentApplications = filteredApplications.slice(indexOfFirstApplication, indexOfLastApplication);
     const totalPages = Math.ceil(filteredApplications.length / applicationsPerPage);
+
+    const getRowVariant = (status: string) => {
+        switch (status) {
+            case '未処理': return 'table-warning';
+            case 'キャンセル': return 'table-secondary';
+            default: return '';
+        }
+    }
 
     return (
         <Card className="mb-4">
@@ -132,20 +160,21 @@ function ApplicationsManagement() {
                             </thead>
                             <tbody>
                                 {currentApplications.map(app => (
-                                    <tr key={app.id} className={app.status === '未処理' ? 'table-warning' : ''}>
+                                    <tr key={app.id} className={getRowVariant(app.status)}>
                                         <td>{applicationTypeMap[app.application_type] || app.application_type}</td>
                                         <td>{app.applicant_name}</td>
                                         <td>{new Date(app.submitted_at).toLocaleString()}</td>
                                         <td>
-                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleStatusChange(app.id, app.status, e.target.value)}>
+                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleStatusChange(app.id, app.status, e.target.value)} disabled={app.status !== '未処理'}>
                                                 <option value="">未選択</option>
-                                                {users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                                                {officeStaff.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                                             </Form.Select>
                                         </td>
                                         <td>
                                             <Form.Select size="sm" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value, app.processed_by || '')}>
                                                 <option value="未処理">未処理</option>
                                                 <option value="処理済み">処理済み</option>
+                                                <option value="キャンセル">キャンセル</option>
                                             </Form.Select>
                                         </td>
                                         <td>{app.processed_at ? new Date(app.processed_at).toLocaleString() : ''}</td>
@@ -162,7 +191,7 @@ function ApplicationsManagement() {
                 )}
             </Card.Body>
 
-            <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
+            <Modal show={showModal} onHide={() => { setShowModal(false); setCopiedKey(null); }} centered size="lg">
                 <Modal.Header closeButton>
                     <Modal.Title>申請詳細</Modal.Title>
                 </Modal.Header>
@@ -186,7 +215,14 @@ function ApplicationsManagement() {
                                         .map(([key, value]) => (
                                             <tr key={key}>
                                                 <td><strong>{key}</strong></td>
-                                                <td>{value}</td>
+                                                <td>
+                                                    {String(value)}
+                                                    {value && String(value).trim() !== '' && (
+                                                        <Button variant="link" size="sm" onClick={() => handleCopyToClipboard(String(value), key)} className="p-0 ms-2 float-end">
+                                                            {copiedKey === key ? <ClipboardCheck color="green" size={20} /> : <Clipboard size={20} />}
+                                                        </Button>
+                                                    )}
+                                                </td>
                                             </tr>
                                     ))}
                                 </tbody>
@@ -195,7 +231,7 @@ function ApplicationsManagement() {
                     )}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowModal(false)}>閉じる</Button>
+                    <Button variant="secondary" onClick={() => { setShowModal(false); setCopiedKey(null); }}>閉じる</Button>
                 </Modal.Footer>
             </Modal>
         </Card>

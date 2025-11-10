@@ -228,6 +228,8 @@ function MenuManagement() {
                         <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>受付状況</Form.Label><Col sm={9}><Form.Check type="switch" name="isProposalOpen" label={settings.isProposalOpen ? "受付中" : "停止中"} checked={settings.isProposalOpen} onChange={(e) => setSettings(p=>({...p, isProposalOpen: e.target.checked}))}/></Col></Form.Group>
                         <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>提案年度</Form.Label><Col sm={9}><Form.Control type="number" name="proposalYear" value={settings.proposalYear} onChange={(e) => setSettings(p=>({...p, proposalYear: e.target.value}))}/></Col></Form.Group>
                         <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>締切日</Form.Label><Col sm={9}><Form.Control type="date" name="proposalDeadline" value={settings.proposalDeadline || ''} onChange={(e) => setSettings(p=>({...p, proposalDeadline: e.target.value}))}/></Col></Form.Group>
+                        <Form.Group as={Row} className="mb-3"><Form.Label column sm={3}>最低提案数</Form.Label><Col sm={9}><Form.Control type="number" name="proposalMinCount" value={settings.proposalMinCount} onChange={(e) => setSettings(p=>({...p, proposalMinCount: parseInt(e.target.value, 10)}))}/></Col></Form.Group>
+                        <StringListEditor title="種別の選択肢" list={settings.proposalTypes} onUpdate={(list) => setSettings(p => ({...p, proposalTypes: list}))} placeholder="例: セミナー" />
                     </Card.Body>
                 </Tab>
             </Tabs>
