@@ -31,16 +31,10 @@ export default function ProposalsPage() {
   const [proposals, setProposals] = useState<ProposalItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validated, setValidated] = useState(false);
 
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  
-  const proposerNameRef = useRef<HTMLSelectElement>(null);
-  const proposalCardRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  useEffect(() => {
-    proposalCardRefs.current = proposalCardRefs.current.slice(0, proposals.length);
-  }, [proposals]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -180,43 +174,33 @@ export default function ProposalsPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const form = event.currentTarget;
 
     if (!isSettingsLoaded) {
         alert('設定を読み込み中です。少し待ってからもう一度お試しください。');
         return;
     }
 
-    if (!proposerName) {
-        alert('氏名を入力してください。');
-        proposerNameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return;
-    }
-
     const filledProposals = proposals.filter(p => p.eventName || p.timing || p.type || p.content);
-
     if (filledProposals.length < settings.proposalMinCount) {
         alert(`最低${settings.proposalMinCount}件の提案を入力してください。（現在${filledProposals.length}件）`);
-        proposalCardRefs.current[proposals.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        const lastCard = form.querySelector('.card:last-of-type');
+        lastCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
 
-    let firstInvalidIndex = -1;
-    for (let i = 0; i < proposals.length; i++) {
-        const p = proposals[i];
-        if (p.eventName || p.timing || p.type || p.content) {
-            if (!p.eventName || !p.timing || !p.type || !p.content) {
-                firstInvalidIndex = i;
-                break;
-            }
+    if (form.checkValidity() === false) {
+        event.stopPropagation();
+        setValidated(true);
+        const firstInvalidField = form.querySelector(':invalid') as HTMLElement;
+        if (firstInvalidField) {
+            firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            alert('必須項目が未入力です。該当箇所にスクロールします。');
         }
-    }
-
-    if (firstInvalidIndex !== -1) {
-        alert('入力された提案のすべての項目（企画名、時期、種別、内容）を埋めてください。');
-        proposalCardRefs.current[firstInvalidIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
 
+    setValidated(true);
     setIsSubmitting(true);
     setSubmitStatus(null);
 
@@ -241,6 +225,7 @@ export default function ProposalsPage() {
       setProposals(Array.from({ length: settings.proposalMinCount }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
       localStorage.removeItem(getDraftKey());
       setIsDirty(false);
+      setValidated(false);
 
     } catch (error: unknown) {
       console.error("Failed to submit proposal", error);
@@ -277,62 +262,70 @@ export default function ProposalsPage() {
         </Alert>
       }
       <p>催事のアイデアを提案してください。項目は「+」ボタンで追加できます。</p>
-      <Form onSubmit={handleSubmit}>
+      <Form noValidate validated={validated} onSubmit={handleSubmit}>
         <Card className="mb-3">
             <Card.Body>
                 <Form.Group as={Row} className="align-items-center">
                     <Form.Label column sm={2} className="fw-bold">氏名</Form.Label>
                     <Col sm={10}>
-                        <Form.Select ref={proposerNameRef} value={proposerName} onChange={(e) => handleProposerChange(e.target.value)}>
+                        <Form.Select value={proposerName} onChange={(e) => handleProposerChange(e.target.value)} required>
                             <option value="">選択してください...</option>
                             {allowedUsers.map(user => (
                                 <option key={user.id} value={user.name}>{user.name}</option>
                             ))}
                         </Form.Select>
+                        <Form.Control.Feedback type="invalid">氏名を選択してください。</Form.Control.Feedback>
                     </Col>
                 </Form.Group>
             </Card.Body>
         </Card>
 
-        {proposals.map((proposal, index) => (
-          <Card key={proposal.id} className="mb-3" ref={el => { proposalCardRefs.current[index] = el; }}>
-            <Card.Header>
-                <div className="d-flex justify-content-between align-items-center">
-                    <strong>提案 {index + 1}</strong>
-                    {proposals.length > 1 && (
-                        <CloseButton onClick={() => removeProposal(proposal.id)} />
-                    )}
-                </div>
-            </Card.Header>
-            <Card.Body>
-              <Form.Group className="mb-3">
-                <Form.Label>企画(行事)名</Form.Label>
-                <Form.Control type="text" placeholder="〇〇セミナー" value={proposal.eventName} onChange={(e) => handleProposalChange(index, 'eventName', e.target.value)} />
-              </Form.Group>
-              <Row>
-                <Form.Group as={Col} md="6" className="mb-3">
-                  <Form.Label>時期</Form.Label>
-                  <Form.Control type="text" placeholder="〇月頃" value={proposal.timing} onChange={(e) => handleProposalChange(index, 'timing', e.target.value)} />
+        {proposals.map((proposal, index) => {
+          const isCardFilled = proposal.eventName || proposal.timing || proposal.type || proposal.content;
+          return (
+            <Card key={proposal.id} className="mb-3">
+              <Card.Header>
+                  <div className="d-flex justify-content-between align-items-center">
+                      <strong>提案 {index + 1}</strong>
+                      {proposals.length > settings.proposalMinCount && (
+                          <CloseButton onClick={() => removeProposal(proposal.id)} />
+                      )}
+                  </div>
+              </Card.Header>
+              <Card.Body>
+                <Form.Group className="mb-3">
+                  <Form.Label>企画(行事)名</Form.Label>
+                  <Form.Control required={isCardFilled} type="text" placeholder="〇〇セミナー" value={proposal.eventName} onChange={(e) => handleProposalChange(index, 'eventName', e.target.value)} />
+                  <Form.Control.Feedback type="invalid">企画名を入力してください。</Form.Control.Feedback>
                 </Form.Group>
-                <Form.Group as={Col} md="6" className="mb-3">
-                  <Form.Label>種別</Form.Label>
-                  <Form.Select value={proposal.type} onChange={(e) => handleProposalChange(index, 'type', e.target.value)}>
-                    <option value="">選択してください...</option>
-                    {settings.proposalTypes.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Row>
-              <Row>
-                <Form.Group as={Col}>
-                  <Form.Label>内容</Form.Label>
-                  <Form.Control as="textarea" rows={3} placeholder="具体的な内容を記入してください" value={proposal.content} onChange={(e) => handleProposalChange(index, 'content', e.target.value)} />
-                </Form.Group>
-              </Row>
-            </Card.Body>
-          </Card>
-        ))}
+                <Row>
+                  <Form.Group as={Col} md="6" className="mb-3">
+                    <Form.Label>時期</Form.Label>
+                    <Form.Control required={isCardFilled} type="text" placeholder="〇月頃" value={proposal.timing} onChange={(e) => handleProposalChange(index, 'timing', e.target.value)} />
+                    <Form.Control.Feedback type="invalid">時期を入力してください。</Form.Control.Feedback>
+                  </Form.Group>
+                  <Form.Group as={Col} md="6" className="mb-3">
+                    <Form.Label>種別</Form.Label>
+                    <Form.Select required={isCardFilled} value={proposal.type} onChange={(e) => handleProposalChange(index, 'type', e.target.value)}>
+                      <option value="">選択してください...</option>
+                      {settings.proposalTypes.map(type => (
+                          <option key={type} value={type}>{type}</option>
+                      ))}
+                    </Form.Select>
+                    <Form.Control.Feedback type="invalid">種別を選択してください。</Form.Control.Feedback>
+                  </Form.Group>
+                </Row>
+                <Row>
+                  <Form.Group as={Col}>
+                    <Form.Label>内容</Form.Label>
+                    <Form.Control required={isCardFilled} as="textarea" rows={3} placeholder="具体的な内容を記入してください" value={proposal.content} onChange={(e) => handleProposalChange(index, 'content', e.target.value)} />
+                    <Form.Control.Feedback type="invalid">内容を入力してください。</Form.Control.Feedback>
+                  </Form.Group>
+                </Row>
+              </Card.Body>
+            </Card>
+          )
+        })}
 
         <div className="d-flex justify-content-between mb-3">
             <Button variant="success" onClick={handleSaveDraft}>一時保存</Button>
