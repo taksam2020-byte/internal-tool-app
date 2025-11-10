@@ -30,6 +30,7 @@ function ApplicationsManagement() {
     const { triggerRefresh } = useSettings();
     const [applications, setApplications] = useState<Application[]>([]);
     const [users, setUsers] = useState<User[]>([]);
+    const [officeStaff, setOfficeStaff] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
@@ -76,6 +77,11 @@ function ApplicationsManagement() {
 
     useEffect(() => { fetchData(); }, []);
 
+    useEffect(() => {
+        const internalStaff = users.filter(user => user.role === '内勤' && user.is_active);
+        setOfficeStaff(internalStaff);
+    }, [users]);
+
     const handleShowModal = (app: Application) => {
         setSelectedApplication(app);
         setShowModal(true);
@@ -88,7 +94,7 @@ function ApplicationsManagement() {
         }
         try {
             await axios.put(`/api/applications/${id}`,
-                { status: newStatus, processed_by: processorName });
+                { status: newStatus, processed_by: newStatus === '処理済み' ? processorName : null });
             fetchData(); // Refresh the data
             triggerRefresh(); // Refresh the sidebar
         } catch (error) {
@@ -102,6 +108,14 @@ function ApplicationsManagement() {
     const indexOfFirstApplication = indexOfLastApplication - applicationsPerPage;
     const currentApplications = filteredApplications.slice(indexOfFirstApplication, indexOfLastApplication);
     const totalPages = Math.ceil(filteredApplications.length / applicationsPerPage);
+
+    const getRowVariant = (status: string) => {
+        switch (status) {
+            case '未処理': return 'table-warning';
+            case 'キャンセル': return 'table-secondary';
+            default: return '';
+        }
+    }
 
     return (
         <Card className="mb-4">
@@ -135,20 +149,21 @@ function ApplicationsManagement() {
                             </thead>
                             <tbody>
                                 {currentApplications.map(app => (
-                                    <tr key={app.id} className={app.status === '未処理' ? 'table-warning' : ''}>
+                                    <tr key={app.id} className={getRowVariant(app.status)}>
                                         <td>{applicationTypeMap[app.application_type] || app.application_type}</td>
                                         <td>{app.applicant_name}</td>
                                         <td>{new Date(app.submitted_at).toLocaleString()}</td>
                                         <td>
-                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleStatusChange(app.id, app.status, e.target.value)}>
+                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleStatusChange(app.id, app.status, e.target.value)} disabled={app.status !== '未処理'}>
                                                 <option value="">未選択</option>
-                                                {users.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                                                {officeStaff.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                                             </Form.Select>
                                         </td>
                                         <td>
                                             <Form.Select size="sm" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value, app.processed_by || '')}>
                                                 <option value="未処理">未処理</option>
                                                 <option value="処理済み">処理済み</option>
+                                                <option value="キャンセル">キャンセル</option>
                                             </Form.Select>
                                         </td>
                                         <td>{app.processed_at ? new Date(app.processed_at).toLocaleString() : ''}</td>
