@@ -34,7 +34,13 @@ export default function ProposalsPage() {
 
   const [submitStatus, setSubmitStatus] = useState<{success: boolean; message: string} | null>(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+  
+  const proposerNameRef = useRef<HTMLSelectElement>(null);
+  const proposalCardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    proposalCardRefs.current = proposalCardRefs.current.slice(0, proposals.length);
+  }, [proposals]);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -180,21 +186,34 @@ export default function ProposalsPage() {
         return;
     }
 
-    const filledProposals = proposals.filter(p => p.eventName || p.timing || p.type || p.content);
-
     if (!proposerName) {
         alert('氏名を入力してください。');
+        proposerNameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
+
+    const filledProposals = proposals.filter(p => p.eventName || p.timing || p.type || p.content);
 
     if (filledProposals.length < settings.proposalMinCount) {
         alert(`最低${settings.proposalMinCount}件の提案を入力してください。（現在${filledProposals.length}件）`);
+        proposalCardRefs.current[proposals.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'end' });
         return;
     }
 
-    const allFilled = filledProposals.every(p => p.eventName && p.timing && p.type && p.content);
-    if (!allFilled) {
+    let firstInvalidIndex = -1;
+    for (let i = 0; i < proposals.length; i++) {
+        const p = proposals[i];
+        if (p.eventName || p.timing || p.type || p.content) {
+            if (!p.eventName || !p.timing || !p.type || !p.content) {
+                firstInvalidIndex = i;
+                break;
+            }
+        }
+    }
+
+    if (firstInvalidIndex !== -1) {
         alert('入力された提案のすべての項目（企画名、時期、種別、内容）を埋めてください。');
+        proposalCardRefs.current[firstInvalidIndex]?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         return;
     }
 
@@ -258,13 +277,13 @@ export default function ProposalsPage() {
         </Alert>
       }
       <p>催事のアイデアを提案してください。項目は「+」ボタンで追加できます。</p>
-      <Form onSubmit={handleSubmit} ref={formRef}>
+      <Form onSubmit={handleSubmit}>
         <Card className="mb-3">
             <Card.Body>
                 <Form.Group as={Row} className="align-items-center">
                     <Form.Label column sm={2} className="fw-bold">氏名</Form.Label>
                     <Col sm={10}>
-                        <Form.Select value={proposerName} onChange={(e) => handleProposerChange(e.target.value)}>
+                        <Form.Select ref={proposerNameRef} value={proposerName} onChange={(e) => handleProposerChange(e.target.value)}>
                             <option value="">選択してください...</option>
                             {allowedUsers.map(user => (
                                 <option key={user.id} value={user.name}>{user.name}</option>
@@ -276,7 +295,7 @@ export default function ProposalsPage() {
         </Card>
 
         {proposals.map((proposal, index) => (
-          <Card key={proposal.id} className="mb-3">
+          <Card key={proposal.id} className="mb-3" ref={el => proposalCardRefs.current[index] = el}>
             <Card.Header>
                 <div className="d-flex justify-content-between align-items-center">
                     <strong>提案 {index + 1}</strong>
