@@ -281,7 +281,7 @@ export default function ProposalsPage() {
         </Card>
 
         {proposals.map((proposal, index) => {
-          const isCardFilled = proposal.eventName || proposal.timing || proposal.type || proposal.content;
+          const isCardFilled = !!(proposal.eventName || proposal.timing || proposal.type || proposal.content);
           return (
             <Card key={proposal.id} className="mb-3">
               <Card.Header>
