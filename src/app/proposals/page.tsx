@@ -83,16 +83,16 @@ export default function ProposalsPage() {
                     }
                 }
             } else {
-                setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
+                setProposals(Array.from({ length: settings.proposalMinCount }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
             }
         } catch (error) {
             console.error("Failed to load draft from localStorage", error);
-            setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
+            setProposals(Array.from({ length: settings.proposalMinCount }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
         }
         setIsLoaded(true);
         setIsDirty(false);
     }
-  }, [isSettingsLoaded, getDraftKey, settings.proposalYear]);
+  }, [isSettingsLoaded, getDraftKey, settings.proposalYear, settings.proposalMinCount]);
 
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -152,9 +152,11 @@ export default function ProposalsPage() {
   };
 
   const removeProposal = (id: number) => {
-    if (proposals.length > 1) {
+    if (proposals.length > settings.proposalMinCount) {
         setProposals(proposals.filter(p => p.id !== id));
         setIsDirty(true);
+    } else {
+        alert(`最低${settings.proposalMinCount}件の提案が必要です。`);
     }
   };
 
@@ -180,8 +182,13 @@ export default function ProposalsPage() {
 
     const filledProposals = proposals.filter(p => p.eventName || p.timing || p.type || p.content);
 
-    if (!proposerName || filledProposals.length === 0) {
-        alert('氏名と、最低1つの提案項目（企画名、時期、種別、内容）を入力してください。');
+    if (!proposerName) {
+        alert('氏名を入力してください。');
+        return;
+    }
+
+    if (filledProposals.length < settings.proposalMinCount) {
+        alert(`最低${settings.proposalMinCount}件の提案を入力してください。（現在${filledProposals.length}件）`);
         return;
     }
 
@@ -212,7 +219,7 @@ export default function ProposalsPage() {
       });
       setSubmitStatus({ success: true, message: '提案が正常に送信されました。' });
       setProposerName('');
-      setProposals(Array.from({ length: 5 }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
+      setProposals(Array.from({ length: settings.proposalMinCount }, (_, i) => ({ id: i, eventName: '', timing: '', type: '', content: '' })));
       localStorage.removeItem(getDraftKey());
       setIsDirty(false);
 
@@ -292,11 +299,9 @@ export default function ProposalsPage() {
                   <Form.Label>種別</Form.Label>
                   <Form.Select value={proposal.type} onChange={(e) => handleProposalChange(index, 'type', e.target.value)}>
                     <option value="">選択してください...</option>
-                    <option value="セミナー">セミナー</option>
-                    <option value="イベント(サロン様向け)">イベント(サロン様向け)</option>
-                    <option value="社内行事">社内行事</option>
-                    <option value="キャンペーン">キャンペーン</option>
-                    <option value="その他">その他</option>
+                    {settings.proposalTypes.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Row>
