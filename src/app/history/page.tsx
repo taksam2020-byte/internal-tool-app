@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Form, Button, Card, Row, Col, Spinner, Table, Modal, Pagination } from 'react-bootstrap';
 import axios from 'axios';
+import { useSettings } from '@/context/SettingsContext';
 
 interface User { id: number; name: string; role: '社長' | '営業' | '内勤'; is_trainee: boolean; is_active: boolean; }
 
@@ -26,6 +27,7 @@ const applicationTypeMap: { [key: string]: string } = {
 };
 
 function ApplicationsManagement() {
+    const { triggerRefresh } = useSettings();
     const [applications, setApplications] = useState<Application[]>([]);
     const [users, setUsers] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
@@ -88,6 +90,7 @@ function ApplicationsManagement() {
             await axios.put(`/api/applications/${id}`,
                 { status: newStatus, processed_by: processorName });
             fetchData(); // Refresh the data
+            triggerRefresh(); // Refresh the sidebar
         } catch (error) {
             console.error("Failed to update status", error);
             alert('ステータスの更新に失敗しました。');
