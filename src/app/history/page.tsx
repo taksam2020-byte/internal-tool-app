@@ -2,32 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Form, Button, Card, Row, Col, Spinner, Table, Modal, Pagination } from 'react-bootstrap';
-import axios from 'axios';
-import { useSettings } from '@/context/SettingsContext';
-
-interface User { id: number; name: string; role: '社長' | '営業' | '内勤'; is_trainee: boolean; is_active: boolean; }
-
-interface Application {
-  id: number;
-  application_type: string;
-  applicant_name: string;
-  title: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  details: Record<string, any>; // Allow details to be flexible
-  submitted_at: string;
-  status: string;
-  processed_by: string | null;
-  processed_at: string | null;
-}
-
-const applicationTypeMap: { [key: string]: string } = {
-  customer_registration: '得意先新規登録',
-  customer_change: '得意先情報変更',
-  facility_reservation: '施設予約',
-};
-
-import { useState, useEffect } from 'react';
-import { Form, Button, Card, Row, Col, Spinner, Table, Modal, Pagination } from 'react-bootstrap';
 import { Clipboard, ClipboardCheck } from 'react-bootstrap-icons';
 import axios from 'axios';
 import { useSettings } from '@/context/SettingsContext';
