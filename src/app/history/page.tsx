@@ -246,3 +246,5 @@ export default function HistoryPage() {
         </div>
     );
 }
+
+// Force redeploy to clear Vercel cache
