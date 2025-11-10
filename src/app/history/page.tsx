@@ -26,6 +26,33 @@ const applicationTypeMap: { [key: string]: string } = {
   facility_reservation: '施設予約',
 };
 
+import { useState, useEffect } from 'react';
+import { Form, Button, Card, Row, Col, Spinner, Table, Modal, Pagination } from 'react-bootstrap';
+import { Clipboard, ClipboardCheck } from 'react-bootstrap-icons';
+import axios from 'axios';
+import { useSettings } from '@/context/SettingsContext';
+
+interface User { id: number; name: string; role: '社長' | '営業' | '内勤'; is_trainee: boolean; is_active: boolean; }
+
+interface Application {
+  id: number;
+  application_type: string;
+  applicant_name: string;
+  title: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  details: Record<string, any>; // Allow details to be flexible
+  submitted_at: string;
+  status: string;
+  processed_by: string | null;
+  processed_at: string | null;
+}
+
+const applicationTypeMap: { [key: string]: string } = {
+  customer_registration: '得意先新規登録',
+  customer_change: '得意先情報変更',
+  facility_reservation: '施設予約',
+};
+
 function ApplicationsManagement() {
     const { triggerRefresh } = useSettings();
     const [applications, setApplications] = useState<Application[]>([]);
@@ -36,7 +63,7 @@ function ApplicationsManagement() {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
     const [showModal, setShowModal] = useState(false);
-    const [copyStatus, setCopyStatus] = useState('コピー');
+    const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const applicationsPerPage = 10;
 
     const displayOrder = [
@@ -104,33 +131,12 @@ function ApplicationsManagement() {
         }
     };
 
-    const handleCopyToClipboard = () => {
-        if (!selectedApplication) return;
-
-        const detailsInOrder = Object.entries(selectedApplication.details)
-            .sort(([keyA], [keyB]) => {
-                const indexA = displayOrder.indexOf(keyA);
-                const indexB = displayOrder.indexOf(keyB);
-                if (indexA === -1) return 1;
-                if (indexB === -1) return -1;
-                return indexA - indexB;
-            });
-
-        const textToCopy = [
-            `件名: ${selectedApplication.title}`,
-            `申請者: ${selectedApplication.applicant_name}`,
-            `申請日: ${new Date(selectedApplication.submitted_at).toLocaleString()}`,
-            '---',
-            ...detailsInOrder.map(([key, value]) => `${key}: ${value}`)
-        ].join('\n');
-
-        navigator.clipboard.writeText(textToCopy).then(() => {
-            setCopyStatus('コピーしました！');
-            setTimeout(() => setCopyStatus('コピー'), 2000);
+    const handleCopyToClipboard = (text: string, key: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            setCopiedKey(key);
+            setTimeout(() => setCopiedKey(null), 1500);
         }, (err) => {
             console.error('Could not copy text: ', err);
-            setCopyStatus('失敗');
-            setTimeout(() => setCopyStatus('コピー'), 2000);
         });
     };
 
@@ -211,7 +217,7 @@ function ApplicationsManagement() {
                 )}
             </Card.Body>
 
-            <Modal show={showModal} onHide={() => { setShowModal(false); setCopyStatus('コピー'); }} centered size="lg">
+            <Modal show={showModal} onHide={() => { setShowModal(false); setCopiedKey(null); }} centered size="lg">
                 <Modal.Header closeButton>
                     <Modal.Title>申請詳細</Modal.Title>
                 </Modal.Header>
@@ -235,7 +241,12 @@ function ApplicationsManagement() {
                                         .map(([key, value]) => (
                                             <tr key={key}>
                                                 <td><strong>{key}</strong></td>
-                                                <td>{value}</td>
+                                                <td className="d-flex justify-content-between align-items-center">
+                                                    {String(value)}
+                                                    <Button variant="link" size="sm" onClick={() => handleCopyToClipboard(String(value), key)} className="p-0 ms-2">
+                                                        {copiedKey === key ? <ClipboardCheck color="green" size={20} /> : <Clipboard size={20} />}
+                                                    </Button>
+                                                </td>
                                             </tr>
                                     ))}
                                 </tbody>
@@ -244,8 +255,7 @@ function ApplicationsManagement() {
                     )}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="outline-secondary" onClick={handleCopyToClipboard}>{copyStatus}</Button>
-                    <Button variant="secondary" onClick={() => { setShowModal(false); setCopyStatus('コピー'); }}>閉じる</Button>
+                    <Button variant="secondary" onClick={() => { setShowModal(false); setCopiedKey(null); }}>閉じる</Button>
                 </Modal.Footer>
             </Modal>
         </Card>
