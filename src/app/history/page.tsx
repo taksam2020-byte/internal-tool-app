@@ -217,9 +217,11 @@ function ApplicationsManagement() {
                                                 <td><strong>{key}</strong></td>
                                                 <td className="d-flex justify-content-between align-items-center">
                                                     {String(value)}
-                                                    <Button variant="link" size="sm" onClick={() => handleCopyToClipboard(String(value), key)} className="p-0 ms-2">
-                                                        {copiedKey === key ? <ClipboardCheck color="green" size={20} /> : <Clipboard size={20} />}
-                                                    </Button>
+                                                    {value && String(value).trim() !== '' && (
+                                                        <Button variant="link" size="sm" onClick={() => handleCopyToClipboard(String(value), key)} className="p-0 ms-2">
+                                                            {copiedKey === key ? <ClipboardCheck color="green" size={20} /> : <Clipboard size={20} />}
+                                                        </Button>
+                                                    )}
                                                 </td>
                                             </tr>
                                     ))}
