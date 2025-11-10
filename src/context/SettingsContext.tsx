@@ -84,7 +84,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             try {
                 const response = await axios.get('/api/settings');
                 if (response.data) {
-                    setSettings(response.data);
+                    setSettings(currentSettings => ({ ...defaultSettings, ...response.data }));
                 }
             } catch (error) {
                 console.error("Failed to load settings from DB", error);
