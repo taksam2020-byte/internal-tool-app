@@ -36,6 +36,7 @@ function ApplicationsManagement() {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
     const [showModal, setShowModal] = useState(false);
+    const [copyStatus, setCopyStatus] = useState('コピー');
     const applicationsPerPage = 10;
 
     const displayOrder = [
@@ -101,6 +102,36 @@ function ApplicationsManagement() {
             console.error("Failed to update status", error);
             alert('ステータスの更新に失敗しました。');
         }
+    };
+
+    const handleCopyToClipboard = () => {
+        if (!selectedApplication) return;
+
+        const detailsInOrder = Object.entries(selectedApplication.details)
+            .sort(([keyA], [keyB]) => {
+                const indexA = displayOrder.indexOf(keyA);
+                const indexB = displayOrder.indexOf(keyB);
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
+
+        const textToCopy = [
+            `件名: ${selectedApplication.title}`,
+            `申請者: ${selectedApplication.applicant_name}`,
+            `申請日: ${new Date(selectedApplication.submitted_at).toLocaleString()}`,
+            '---',
+            ...detailsInOrder.map(([key, value]) => `${key}: ${value}`)
+        ].join('\n');
+
+        navigator.clipboard.writeText(textToCopy).then(() => {
+            setCopyStatus('コピーしました！');
+            setTimeout(() => setCopyStatus('コピー'), 2000);
+        }, (err) => {
+            console.error('Could not copy text: ', err);
+            setCopyStatus('失敗');
+            setTimeout(() => setCopyStatus('コピー'), 2000);
+        });
     };
 
     const filteredApplications = applications.filter(app => filterType === 'all' || app.application_type === filterType);
@@ -180,7 +211,7 @@ function ApplicationsManagement() {
                 )}
             </Card.Body>
 
-            <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
+            <Modal show={showModal} onHide={() => { setShowModal(false); setCopyStatus('コピー'); }} centered size="lg">
                 <Modal.Header closeButton>
                     <Modal.Title>申請詳細</Modal.Title>
                 </Modal.Header>
@@ -213,7 +244,8 @@ function ApplicationsManagement() {
                     )}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowModal(false)}>閉じる</Button>
+                    <Button variant="outline-secondary" onClick={handleCopyToClipboard}>{copyStatus}</Button>
+                    <Button variant="secondary" onClick={() => { setShowModal(false); setCopyStatus('コピー'); }}>閉じる</Button>
                 </Modal.Footer>
             </Modal>
         </Card>
