@@ -295,7 +295,7 @@ export default function ProposalsPage() {
         </Card>
 
         {proposals.map((proposal, index) => (
-          <Card key={proposal.id} className="mb-3" ref={el => proposalCardRefs.current[index] = el}>
+          <Card key={proposal.id} className="mb-3" ref={el => { proposalCardRefs.current[index] = el; }}>
             <Card.Header>
                 <div className="d-flex justify-content-between align-items-center">
                     <strong>提案 {index + 1}</strong>
