@@ -7,15 +7,23 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     const { id } = await context.params;
     const { status, processed_by } = await request.json();
 
-    if (!status || !processed_by) {
-        return NextResponse.json({ message: 'Missing or invalid required fields' }, { status: 400 });
+    if (!status || (status === '処理済み' && !processed_by)) {
+        return NextResponse.json({ message: 'ステータスが「処理済み」の場合、処理者名は必須です。' }, { status: 400 });
     }
 
-    await sql`
-      UPDATE applications
-      SET status = ${status}, processed_by = ${processed_by}, processed_at = CURRENT_TIMESTAMP
-      WHERE id = ${id};
-    `;
+    if (status === '処理済み') {
+        await sql`
+            UPDATE applications
+            SET status = ${status}, processed_by = ${processed_by}, processed_at = CURRENT_TIMESTAMP
+            WHERE id = ${id};
+        `;
+    } else {
+        await sql`
+            UPDATE applications
+            SET status = ${status}, processed_by = NULL, processed_at = NULL
+            WHERE id = ${id};
+        `;
+    }
 
     return NextResponse.json({ message: 'Application status updated successfully' }, { status: 200 });
   } catch (error: unknown) {
