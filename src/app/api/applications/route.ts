@@ -61,22 +61,54 @@ export async function POST(request: Request) {
         const transporter = nodemailer.createTransport({
           host: 'smtp.gmail.com',
           port: 465,
-          secure: true, // true for 465, false for other ports
+          secure: true,
           auth: {
             user: process.env.GMAIL_ADDRESS,
             pass: process.env.GMAIL_APP_PASSWORD,
           },
         });
 
+        let emailBody = `<p><strong>申請種別:</strong> ${title}</p><p><strong>申請者:</strong> ${applicant_name}</p><hr>`;
+
+        if (application_type === 'proposal') {
+          const proposalYear = details.proposal_year || '';
+          emailBody += `<p><strong>提案年度:</strong> ${proposalYear}</p><br>`;
+          
+          const proposalItems: { [key: string]: string }[] = [];
+          const proposalKeys = Object.keys(details).filter(k => k.startsWith('提案'));
+          const proposalIndices = Array.from(new Set(proposalKeys.map(k => k.match(/(\d+)/)?.[0]))).filter(Boolean);
+
+          proposalIndices.forEach(index => {
+            proposalItems.push({
+              '企画名': details[`提案${index}_企画名`],
+              '時期': details[`提案${index}_時期`],
+              '種別': details[`提案${index}_種別`],
+              '内容': details[`提案${index}_内容`],
+            });
+          });
+
+          proposalItems.forEach((item, i) => {
+            emailBody += `<h4>--- 提案 ${i + 1} ---</h4>`;
+            emailBody += `<p><strong>企画(行事)名:</strong> ${item['企画名'] || ''}</p>`;
+            emailBody += `<p><strong>時期:</strong> ${item['時期'] || ''}</p>`;
+            emailBody += `<p><strong>種別:</strong> ${item['種別'] || ''}</p>`;
+            emailBody += `<p><strong>内容:</strong></p><p style="white-space: pre-wrap;">${item['内容'] || ''}</p>`;
+            emailBody += '<br>';
+          });
+
+        } else {
+          emailBody += Object.entries(details)
+            .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
+            .join('');
+        }
+
         await transporter.sendMail({
           from: `"社内ツール" <${process.env.GMAIL_ADDRESS}>`,
           to: emails.join(','),
           subject: `【社内ツール】新規申請のお知らせ: ${title}`,
-          html: `<p>新しい申請が提出されました。</p>
-                 <p><strong>申請種別:</strong> ${title}</p>
-                 <p><strong>申請者:</strong> ${applicant_name}</p>
-                 <p>詳細は社内ツールをご確認ください。</p>`,
+          html: emailBody,
         });
+
       } catch (emailError) {
         console.error('Failed to send email:', emailError);
         // Do not block the main response for email failure
