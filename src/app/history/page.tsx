@@ -105,33 +105,47 @@ function ApplicationsManagement() {
     };
 
     const handleStatusChange = async (id: number, newStatus: string) => {
-        console.log(`handleStatusChange: App ID: ${id}, New Status: ${newStatus}`); // Debug log
         const app = applications.find(a => a.id === id);
-        if (!app) {
-            console.warn(`handleStatusChange: Application with ID ${id} not found.`); // Debug log
+        if (!app) return;
+
+        const revertUI = () => {
+            const selectElement = document.querySelector(`tr[data-row-id="${id}"] .status-select`) as HTMLSelectElement;
+            if (selectElement) selectElement.value = app.status;
+        };
+
+        // Rule 1: Check processor requirement for final states
+        if ((newStatus === '処理済み' || newStatus === 'キャンセル') && !app.processed_by) {
+            alert(`ステータスを「${newStatus}」にするには、先に処理者を選択してください。`);
+            revertUI();
             return;
         }
 
-        if (newStatus === '処理済み' && !app.processed_by) {
-            alert('ステータスを「処理済み」にするには、先に処理者を選択してください。');
-            // Revert the dropdown visually if the check fails
-            const selectElement = document.querySelector(`tr[data-row-id="${id}"] select`) as HTMLSelectElement; // Simplified selector
-            if(selectElement) selectElement.value = app.status;
-            console.log(`handleStatusChange: Validation failed for App ID: ${id}, status: ${newStatus}`); // Debug log
-            return;
+        // Rule 2: Confirmation for changing an already processed/cancelled application
+        if (app.status !== '未処理' && app.status !== newStatus) {
+            if (!window.confirm(`ステータスを「${app.status}」から「${newStatus}」に変更します。よろしいですか？`)) {
+                revertUI();
+                return;
+            }
+        }
+
+        // Determine the processor based on the new status
+        let finalProcessor = app.processed_by;
+        // Rule 3: If status becomes '未処理', processor is cleared
+        if (newStatus === '未処理') {
+            finalProcessor = null;
         }
 
         try {
             await axios.put(`/api/applications/${id}`, { 
                 status: newStatus, 
-                processed_by: newStatus === '処理済み' ? app.processed_by : null 
+                processed_by: finalProcessor
             });
-            console.log(`handleStatusChange: API call successful for App ID: ${id}, status: ${newStatus}`); // Debug log
-            fetchData(); // Refresh the data
-            triggerRefresh(); // Refresh the sidebar
+            fetchData();
+            triggerRefresh();
         } catch (error) {
             console.error("Failed to update status", error);
             alert('ステータスの更新に失敗しました。');
+            revertUI();
         }
     };
 
@@ -165,8 +179,8 @@ function ApplicationsManagement() {
                 {loading ? <div className="text-center"><Spinner/></div> : (
                     <>
                         <Form.Group as={Row} className="mb-3 align-items-center">
-                            <Form.Label column sm={2}>申請種別で絞り込み</Form.Label>
-                            <Col sm={4}> {/* Adjusted from sm={10} to sm={4} */}
+                            <Form.Label sm={2}>申請種別で絞り込み</Form.Label>
+                            <Col sm={4}>
                                 <Form.Select value={filterType} onChange={e => setFilterType(e.target.value)}>
                                     <option value="all">すべて</option>
                                     {Object.entries(applicationTypeMap).map(([key, value]) => (
@@ -201,7 +215,7 @@ function ApplicationsManagement() {
                                             </Form.Select>
                                         </td>
                                         <td>
-                                            <Form.Select size="sm" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value)}>
+                                            <Form.Select size="sm" className="status-select" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value)}>
                                                 <option value="未処理">未処理</option>
                                                 <option value="処理済み">処理済み</option>
                                                 <option value="キャンセル">キャンセル</option>

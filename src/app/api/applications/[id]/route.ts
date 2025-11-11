@@ -18,25 +18,32 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
         return NextResponse.json({ message: 'Application processor updated successfully' }, { status: 200 });
     }
 
-    // Case 2: Updating the status (existing logic)
+    // Case 2: Updating the status
     if (!status) {
         return NextResponse.json({ message: 'Status field is required for status updates.' }, { status: 400 });
     }
     
-    if (status === '処理済み' && !processed_by) {
-        return NextResponse.json({ message: 'ステータスが「処理済み」の場合、処理者名は必須です。' }, { status: 400 });
+    // Validation: '処理済み' or 'キャンセル' status requires a processor
+    if ((status === '処理済み' || status === 'キャンセル') && !processed_by) {
+        return NextResponse.json({ message: `ステータスが「${status}」の場合、処理者名は必須です。` }, { status: 400 });
     }
 
-    if (status === '処理済み') {
+    if (status === '未処理') {
+        await sql`
+            UPDATE applications
+            SET status = ${status}, processed_by = NULL, processed_at = NULL
+            WHERE id = ${id};
+        `;
+    } else if (status === '処理済み') {
         await sql`
             UPDATE applications
             SET status = ${status}, processed_by = ${processed_by}, processed_at = CURRENT_TIMESTAMP
             WHERE id = ${id};
         `;
-    } else {
+    } else { // For 'キャンセル' and any other potential statuses
         await sql`
             UPDATE applications
-            SET status = ${status}, processed_by = NULL, processed_at = NULL
+            SET status = ${status}, processed_by = ${processed_by}, processed_at = NULL
             WHERE id = ${id};
         `;
     }
