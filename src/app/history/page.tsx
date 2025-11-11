@@ -185,7 +185,7 @@ function ApplicationsManagement() {
                                         <td>{app.applicant_name}</td>
                                         <td>{new Date(app.submitted_at).toLocaleString()}</td>
                                         <td>
-                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleProcessorChange(app.id, e.target.value)} disabled={app.status !== '未処理'}>
+                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleProcessorChange(app.id, e.target.value)}>
                                                 <option value="">未選択</option>
                                                 {officeStaff.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                                             </Form.Select>
