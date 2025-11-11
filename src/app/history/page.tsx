@@ -62,6 +62,7 @@ function ApplicationsManagement() {
                 axios.get<User[]>('/api/users'),
             ]);
             setApplications(appsRes.data);
+            console.log('fetchData: Applications fetched:', appsRes.data); // Debug log
             const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3, '営業研修生': 4, '内勤研修生': 5 };
             const sortedUsers = usersRes.data.sort((a, b) => {
                 const getSortKey = (user: User) => user.is_trainee ? `${user.role}研修生` : user.role;
@@ -71,7 +72,8 @@ function ApplicationsManagement() {
                 return a.id - b.id;
             });
             setUsers(sortedUsers);
-        } catch { 
+        } catch (error) { 
+            console.error('fetchData: Error fetching data:', error); // Debug log
             // setError('データの読み込みに失敗しました。'); 
         }
         finally { setLoading(false); }
@@ -90,8 +92,10 @@ function ApplicationsManagement() {
     }
 
     const handleProcessorChange = async (id: number, newProcessorName: string) => {
+        console.log(`handleProcessorChange: App ID: ${id}, New Processor: ${newProcessorName}`); // Debug log
         try {
             await axios.put(`/api/applications/${id}`, { processed_by: newProcessorName });
+            console.log(`handleProcessorChange: API call successful for App ID: ${id}`); // Debug log
             fetchData(); // Refresh the data
             triggerRefresh(); // Refresh the sidebar
         } catch (error) {
@@ -101,14 +105,19 @@ function ApplicationsManagement() {
     };
 
     const handleStatusChange = async (id: number, newStatus: string) => {
+        console.log(`handleStatusChange: App ID: ${id}, New Status: ${newStatus}`); // Debug log
         const app = applications.find(a => a.id === id);
-        if (!app) return;
+        if (!app) {
+            console.warn(`handleStatusChange: Application with ID ${id} not found.`); // Debug log
+            return;
+        }
 
         if (newStatus === '処理済み' && !app.processed_by) {
             alert('ステータスを「処理済み」にするには、先に処理者を選択してください。');
             // Revert the dropdown visually if the check fails
-            const selectElement = document.querySelector(`tr[data-row-id="${id}"] select[value="${app.status}"]`) as HTMLSelectElement;
+            const selectElement = document.querySelector(`tr[data-row-id="${id}"] select`) as HTMLSelectElement; // Simplified selector
             if(selectElement) selectElement.value = app.status;
+            console.log(`handleStatusChange: Validation failed for App ID: ${id}, status: ${newStatus}`); // Debug log
             return;
         }
 
@@ -117,6 +126,7 @@ function ApplicationsManagement() {
                 status: newStatus, 
                 processed_by: newStatus === '処理済み' ? app.processed_by : null 
             });
+            console.log(`handleStatusChange: API call successful for App ID: ${id}, status: ${newStatus}`); // Debug log
             fetchData(); // Refresh the data
             triggerRefresh(); // Refresh the sidebar
         } catch (error) {
@@ -156,7 +166,7 @@ function ApplicationsManagement() {
                     <>
                         <Form.Group as={Row} className="mb-3 align-items-center">
                             <Form.Label column sm={2}>申請種別で絞り込み</Form.Label>
-                            <Col sm={10}>
+                            <Col sm={4}> {/* Adjusted from sm={10} to sm={4} */}
                                 <Form.Select value={filterType} onChange={e => setFilterType(e.target.value)}>
                                     <option value="all">すべて</option>
                                     {Object.entries(applicationTypeMap).map(([key, value]) => (
