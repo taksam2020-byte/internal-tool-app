@@ -141,3 +141,24 @@ export async function POST(request: Request) {
             .map(([key, value]) => `<p><strong>${key}:</strong> ${value || ''}</p>`)
             .join('');
         }
+
+        await transporter.sendMail({
+          from: `"社内ツール" <${process.env.GMAIL_ADDRESS}>`,
+          to: emails.join(','),
+          subject: `【社内ツール】新規申請のお知らせ: ${title}`,
+          html: emailBody,
+        });
+
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+        // Do not block the main response for email failure
+      }
+    }
+
+    return NextResponse.json({ message: 'Application submitted successfully' }, { status: 201 });
+  } catch (error) {
+    console.error('API Error:', error);
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    return NextResponse.json({ message: 'Error submitting application', error: message }, { status: 500 });
+  }
+}
