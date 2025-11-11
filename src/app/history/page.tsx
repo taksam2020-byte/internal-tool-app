@@ -105,7 +105,10 @@ function ApplicationsManagement() {
         if (!app) return;
 
         if (newStatus === '処理済み' && !app.processed_by) {
-            alert('ステータスを「処理済み」にするには、処理者を指定してください。');
+            alert('ステータスを「処理済み」にするには、先に処理者を選択してください。');
+            // Revert the dropdown visually if the check fails
+            const selectElement = document.querySelector(`tr[data-row-id="${id}"] select[value="${app.status}"]`) as HTMLSelectElement;
+            if(selectElement) selectElement.value = app.status;
             return;
         }
 
@@ -177,7 +180,7 @@ function ApplicationsManagement() {
                             </thead>
                             <tbody>
                                 {currentApplications.map(app => (
-                                    <tr key={app.id} className={getRowVariant(app.status)}>
+                                    <tr key={app.id} className={getRowVariant(app.status)} data-row-id={app.id}>
                                         <td>{applicationTypeMap[app.application_type] || app.application_type}</td>
                                         <td>{app.applicant_name}</td>
                                         <td>{new Date(app.submitted_at).toLocaleString()}</td>
