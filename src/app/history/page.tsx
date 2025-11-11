@@ -30,7 +30,6 @@ const applicationTypeMap: { [key: string]: string } = {
 function ApplicationsManagement() {
     const { triggerRefresh } = useSettings();
     const [applications, setApplications] = useState<Application[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
     const [officeStaff, setOfficeStaff] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('all');
@@ -53,40 +52,33 @@ function ApplicationsManagement() {
         '備考',
     ];
 
-    const fetchData = async () => {
+    const fetchApplications = async () => {
         setLoading(true);
         try {
             const appTypes = ['customer_registration', 'customer_change', 'facility_reservation'];
-            const [appsRes, usersRes] = await Promise.all([
-                axios.get<Application[]>(`/api/applications?type=${appTypes.join(',')}`),
-                axios.get<User[]>('/api/users'),
-            ]);
-            setApplications(appsRes.data);
-            console.log('fetchData: Applications fetched:', appsRes.data); // Debug log
-            const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3, '営業研修生': 4, '内勤研修生': 5 };
-            const sortedUsers = usersRes.data.sort((a, b) => {
-                const getSortKey = (user: User) => user.is_trainee ? `${user.role}研修生` : user.role;
-                const orderA = roleOrder[getSortKey(a)] || 99;
-                const orderB = roleOrder[getSortKey(b)] || 99;
-                if (orderA !== orderB) return orderA - orderB;
-                return a.id - b.id;
-            });
-            setUsers(sortedUsers);
+            const res = await axios.get<Application[]>(`/api/applications?type=${appTypes.join(',')}`);
+            setApplications(res.data);
         } catch (error) { 
-            console.error('fetchData: Error fetching data:', error); // Debug log
-            // setError('データの読み込みに失敗しました。'); 
+            console.error('fetchApplications: Error fetching data:', error);
+        } finally {
+            setLoading(false);
         }
-        finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchData(); }, []);
-
+    // Fetch users only once on mount
     useEffect(() => {
-        const internalStaff = users.filter(user => user.role === '内勤' && user.is_active);
-        console.log('useEffect[users]: All users:', users); // Debug log
-        console.log('useEffect[users]: Filtered officeStaff:', internalStaff); // Debug log
-        setOfficeStaff(internalStaff);
-    }, [users]);
+        const fetchUsers = async () => {
+            try {
+                const usersRes = await axios.get<User[]>('/api/users');
+                const internalStaff = usersRes.data.filter(user => user.role === '内勤' && user.is_active);
+                setOfficeStaff(internalStaff);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        };
+        fetchUsers();
+        fetchApplications();
+    }, []);
 
     const handleShowModal = (app: Application) => {
         setSelectedApplication(app);
@@ -94,20 +86,10 @@ function ApplicationsManagement() {
     }
 
     const handleProcessorChange = async (id: number, newProcessorName: string) => {
-        console.log(`handleProcessorChange: App ID: ${id}, New Processor: ${newProcessorName}`); // Debug log
         try {
-            await axios.put(`/api/applications/${id}`, { processed_by: newProcessorName });
-            console.log(`handleProcessorChange: API call successful for App ID: ${id}`); // Debug log
-            
-            // Await fetchData to ensure state is updated before logging
-            await fetchData(); 
-            
-            // Log the state *after* it has been updated by fetchData
-            // Note: useState is async, so we use a temporary variable from the fetch to be sure
-            // This part is tricky, so we'll rely on the fetchData log for now.
-            // A better way would be to get the updated data back from the API.
-
-            triggerRefresh(); // Refresh the sidebar
+            await axios.put(`/api/applications/${id}`, { processed_by: newProcessorName || null });
+            await fetchApplications();
+            triggerRefresh();
         } catch (error) {
             console.error("Failed to update processor", error);
             alert('処理者の更新に失敗しました。');
@@ -150,7 +132,7 @@ function ApplicationsManagement() {
                 status: newStatus, 
                 processed_by: finalProcessor
             });
-            fetchData();
+            await fetchApplications();
             triggerRefresh();
         } catch (error) {
             console.error("Failed to update status", error);
