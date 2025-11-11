@@ -6,16 +6,32 @@ export const revalidate = 0; // Disable cache for this route
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const type = searchParams.get('type');
+  const status = searchParams.get('status');
 
   try {
     let query = 'SELECT * FROM applications';
+    const whereClauses = [];
+    const queryParams = [];
+    let paramIndex = 1;
+
     if (type) {
       const types = type.split(',');
-      query += ` WHERE application_type IN (${types.map((_, i) => `$${i + 1}`).join(',')})`;
+      whereClauses.push(`application_type IN (${types.map(() => `$${paramIndex++}`).join(',')})`);
+      queryParams.push(...types);
     }
+
+    if (status) {
+      whereClauses.push(`status = $${paramIndex++}`);
+      queryParams.push(status);
+    }
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
+    
     query += ' ORDER BY submitted_at DESC';
 
-    const { rows } = await sql.query(query, type ? type.split(',') : []);
+    const { rows } = await sql.query(query, queryParams);
     
     return NextResponse.json(rows);
   } catch (error) {
