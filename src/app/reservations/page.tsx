@@ -110,16 +110,20 @@ export default function ReservationsPage() {
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-        data.usageDate = dates.map(d => d?.toLocaleDateString('ja-JP')).join(', ');
-    
-        const details = Object.entries(data).reduce((acc, [key, value]) => {
-            const label = fieldLabels[key] || key;
-            acc[label] = value as string;
-            return acc;
-        }, {} as Record<string, string>);
-    
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Handle multiple checkboxes for equipment
+            const equipmentValues = formData.getAll('equipment');
+            data.equipment = equipmentValues.join(', ');
+        
+            data.usageDate = dates.map(d => d?.toLocaleDateString('ja-JP')).join(', ');
+        
+            const details = Object.entries(data).reduce((acc, [key, value]) => {
+                const label = fieldLabels[key] || key;
+                acc[label] = value as string;
+                return acc;
+            }, {} as Record<string, string>);    
         try {
           await axios.post('/api/applications', {
             application_type: 'facility_reservation',

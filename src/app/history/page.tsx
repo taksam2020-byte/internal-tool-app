@@ -245,6 +245,9 @@ function ApplicationsManagement() {
                             if (detailsToProcess['既存の自動引落に追加'] === 'on') {
                                 detailsToProcess['既存の自動引落に追加'] = 'はい';
                             }
+                            if (detailsToProcess['個人口座を含めて引き落とす'] === 'on') {
+                                detailsToProcess['個人口座を含めて引き落とす'] = 'はい';
+                            }
                         }
                         
                         let sortedDetails = Object.entries(detailsToProcess)
