@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
+export const revalidate = 0;
+
 // Minimal API to fetch all data for a given target.
 // All filtering and processing will be done on the client-side.
 

@@ -30,7 +30,6 @@ const applicationTypeMap: { [key: string]: string } = {
 function ApplicationsManagement() {
     const { triggerRefresh } = useSettings();
     const [applications, setApplications] = useState<Application[]>([]);
-    const [users, setUsers] = useState<User[]>([]);
     const [officeStaff, setOfficeStaff] = useState<User[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState('all');
@@ -53,58 +52,94 @@ function ApplicationsManagement() {
         '備考',
     ];
 
-    const fetchData = async () => {
+    const fetchApplications = async () => {
         setLoading(true);
         try {
             const appTypes = ['customer_registration', 'customer_change', 'facility_reservation'];
-            const [appsRes, usersRes] = await Promise.all([
-                axios.get<Application[]>(`/api/applications?type=${appTypes.join(',')}`),
-                axios.get<User[]>('/api/users'),
-            ]);
-            setApplications(appsRes.data);
-            const roleOrder: { [key: string]: number } = { '社長': 1, '営業': 2, '内勤': 3, '営業研修生': 4, '内勤研修生': 5 };
-            const sortedUsers = usersRes.data.sort((a, b) => {
-                const getSortKey = (user: User) => user.is_trainee ? `${user.role}研修生` : user.role;
-                const orderA = roleOrder[getSortKey(a)] || 99;
-                const orderB = roleOrder[getSortKey(b)] || 99;
-                if (orderA !== orderB) return orderA - orderB;
-                return a.id - b.id;
-            });
-            setUsers(sortedUsers);
-        } catch { 
-            // setError('データの読み込みに失敗しました。'); 
+            const res = await axios.get<Application[]>(`/api/applications?type=${appTypes.join(',')}`);
+            setApplications(res.data);
+        } catch (error) { 
+            console.error('fetchApplications: Error fetching data:', error);
+        } finally {
+            setLoading(false);
         }
-        finally { setLoading(false); }
     };
 
-    useEffect(() => { fetchData(); }, []);
-
+    // Fetch users only once on mount
     useEffect(() => {
-        const internalStaff = users.filter(user => user.role === '内勤' && user.is_active);
-        setOfficeStaff(internalStaff);
-    }, [users]);
+        const fetchUsers = async () => {
+            try {
+                const usersRes = await axios.get<User[]>('/api/users');
+                const internalStaff = usersRes.data.filter(user => user.role === '内勤' && user.is_active);
+                setOfficeStaff(internalStaff);
+            } catch (error) {
+                console.error('Error fetching users:', error);
+            }
+        };
+        fetchUsers();
+        fetchApplications();
+    }, []);
 
     const handleShowModal = (app: Application) => {
         setSelectedApplication(app);
         setShowModal(true);
     }
 
-    const handleStatusChange = async (id: number, newStatus: string, processorName: string) => {
-        if (!processorName && newStatus === '処理済み') {
-            alert('処理者を指定してください。');
-            return;
-        }
-        try {
-            await axios.put(`/api/applications/${id}`,
-                { status: newStatus, processed_by: newStatus === '処理済み' ? processorName : null });
-            fetchData(); // Refresh the data
-            triggerRefresh(); // Refresh the sidebar
-        } catch (error) {
-            console.error("Failed to update status", error);
-            alert('ステータスの更新に失敗しました。');
-        }
-    };
-
+        const handleProcessorChange = async (id: number, newProcessorName: string) => {
+            try {
+                await axios.put(`/api/applications/${id}`, { processed_by: newProcessorName || null });
+                await fetchApplications();
+                triggerRefresh();
+            } catch (error) {
+                console.error("Failed to update processor", error);
+                alert('処理者の更新に失敗しました。');
+            }
+        };
+    
+        const handleStatusChange = async (id: number, newStatus: string) => {
+            const app = applications.find(a => a.id === id);
+            if (!app) return;
+    
+            const revertUI = () => {
+                const selectElement = document.querySelector(`tr[data-row-id="${id}"] .status-select`) as HTMLSelectElement;
+                if (selectElement) selectElement.value = app.status;
+            };
+    
+            // Rule 1: Check processor requirement for final states ('処理済み' or 'キャンセル')
+            if ((newStatus === '処理済み' || newStatus === 'キャンセル') && !app.processed_by) {
+                alert(`ステータスを「${newStatus}」にするには、先に処理者を選択してください。`);
+                revertUI();
+                return;
+            }
+    
+            // Rule 2: Confirmation for changing an already processed/cancelled application
+            if (app.status !== '未処理' && app.status !== newStatus) {
+                if (!window.confirm(`ステータスを「${app.status}」から「${newStatus}」に変更します。よろしいですか？`)) {
+                    revertUI();
+                    return;
+                }
+            }
+    
+            // Determine the processor based on the new status
+            let finalProcessor = app.processed_by;
+            // Rule 3: If status becomes '未処理', processor is cleared
+            if (newStatus === '未処理') {
+                finalProcessor = null;
+            }
+    
+            try {
+                await axios.put(`/api/applications/${id}`, { 
+                    status: newStatus, 
+                    processed_by: finalProcessor
+                });
+                await fetchApplications();
+                triggerRefresh();
+            } catch (error) {
+                console.error("Failed to update status", error);
+                alert('ステータスの更新に失敗しました。');
+                revertUI();
+            }
+        };
     const handleCopyToClipboard = (text: string, key: string) => {
         navigator.clipboard.writeText(text).then(() => {
             setCopiedKey(key);
@@ -135,8 +170,8 @@ function ApplicationsManagement() {
                 {loading ? <div className="text-center"><Spinner/></div> : (
                     <>
                         <Form.Group as={Row} className="mb-3 align-items-center">
-                            <Form.Label column sm={2}>申請種別で絞り込み</Form.Label>
-                            <Col sm={10}>
+                            <Form.Label sm={2}>申請種別で絞り込み</Form.Label>
+                            <Col sm={4}>
                                 <Form.Select value={filterType} onChange={e => setFilterType(e.target.value)}>
                                     <option value="all">すべて</option>
                                     {Object.entries(applicationTypeMap).map(([key, value]) => (
@@ -160,18 +195,18 @@ function ApplicationsManagement() {
                             </thead>
                             <tbody>
                                 {currentApplications.map(app => (
-                                    <tr key={app.id} className={getRowVariant(app.status)}>
+                                    <tr key={app.id} className={getRowVariant(app.status)} data-row-id={app.id}>
                                         <td>{applicationTypeMap[app.application_type] || app.application_type}</td>
                                         <td>{app.applicant_name}</td>
                                         <td>{new Date(app.submitted_at).toLocaleString()}</td>
                                         <td>
-                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleStatusChange(app.id, app.status, e.target.value)} disabled={app.status !== '未処理'}>
+                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleProcessorChange(app.id, e.target.value)}>
                                                 <option value="">未選択</option>
                                                 {officeStaff.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                                             </Form.Select>
                                         </td>
                                         <td>
-                                            <Form.Select size="sm" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value, app.processed_by || '')}>
+                                            <Form.Select size="sm" className="status-select" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value)}>
                                                 <option value="未処理">未処理</option>
                                                 <option value="処理済み">処理済み</option>
                                                 <option value="キャンセル">キャンセル</option>
@@ -246,3 +281,5 @@ export default function HistoryPage() {
         </div>
     );
 }
+
+// Force redeploy to clear Vercel cache (3)
