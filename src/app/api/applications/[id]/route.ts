@@ -42,7 +42,7 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     const query = `UPDATE applications SET ${setClauses.join(', ')} WHERE id = $${paramIndex}`;
     queryParams.push(id);
 
-    await sql.query(query, queryParams.filter(p => p !== null || fieldsToUpdate.processed_at !== null));
+    await sql.query(query, queryParams);
 
     return NextResponse.json({ message: 'Application updated successfully' }, { status: 200 });
   } catch (error: unknown) {
