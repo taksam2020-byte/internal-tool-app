@@ -97,10 +97,9 @@ export async function POST(request: Request) {
           });
 
         } else {
-          let detailsToProcess = { ...details };
-          let orderedDetails: { [key: string]: any } = detailsToProcess;
-          
-          // Translate specific values for customer applications
+          const detailsToProcess: Record<string, any> = { ...details };
+
+          // Translate values
           if (application_type === 'customer_registration' || application_type === 'customer_change') {
             if (detailsToProcess['請求先'] === 'self') {
               detailsToProcess['請求先'] = 'この得意先へ請求（単独）';
@@ -116,34 +115,29 @@ export async function POST(request: Request) {
             }
           }
 
-          // Reorder for facility reservation
-          if (application_type === 'facility_reservation') {
-            const { 利用日, ...rest } = detailsToProcess;
-            orderedDetails = { '利用日': 利用日, ...rest };
+          // Handle array values
+          if (Array.isArray(detailsToProcess['設備利用'])) {
+              detailsToProcess['設備利用'] = detailsToProcess['設備利用'].join(', ');
           }
 
-          emailBody += Object.entries(orderedDetails)
+          // Define display order
+          const displayOrder = [
+            '利用日', '対象施設', '設備利用', '開始時間', '終了時間', '利用目的',
+            'サロン種別', '個人口座', '得意先名（正式）', '得意先名（略称）', '郵便番号', '住所1', '住所2', '電話番号', 'FAX番号', '代表者氏名', '担当者', '締日', 'メールアドレス', '請求先', '請求先名称', '請求先コード', '別得意先への個人口座請求', '既存の自動引落に追加', '個人口座を含めて引き落とす',
+            '変更元得意先コード', '変更元得意先名', '新しい得意先名（正式）', '新しい得意先名（略称）',
+            '備考'
+          ];
+
+          const sortedDetails = Object.entries(detailsToProcess)
+            .sort(([keyA], [keyB]) => {
+                const indexA = displayOrder.indexOf(keyA);
+                const indexB = displayOrder.indexOf(keyB);
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
+
+          emailBody += sortedDetails
             .map(([key, value]) => `<p><strong>${key}:</strong> ${value || ''}</p>`)
             .join('');
         }
-
-        await transporter.sendMail({
-          from: `"社内ツール" <${process.env.GMAIL_ADDRESS}>`,
-          to: emails.join(','),
-          subject: `【社内ツール】新規申請のお知らせ: ${title}`,
-          html: emailBody,
-        });
-
-      } catch (emailError) {
-        console.error('Failed to send email:', emailError);
-        // Do not block the main response for email failure
-      }
-    }
-
-    return NextResponse.json({ message: 'Application submitted successfully' }, { status: 201 });
-  } catch (error) {
-    console.error('API Error:', error);
-    const message = error instanceof Error ? error.message : 'An unknown error occurred';
-    return NextResponse.json({ message: 'Error submitting application', error: message }, { status: 500 });
-  }
-}

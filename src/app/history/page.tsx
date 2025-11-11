@@ -265,55 +265,36 @@ function ApplicationsManagement() {
                     {selectedApplication && (() => {
                         const detailsToProcess: Record<string, any> = { ...selectedApplication.details };
                         const appType = selectedApplication.application_type;
-                        let orderedDetails: Record<string, any> = {};
 
-                        // Apply translations and reordering based on application type
+                        // Translate values directly
                         if (appType === 'customer_registration' || appType === 'customer_change') {
-                            const customerOrder = [
-                                'サロン種別', '個人口座', '得意先名（正式）', '得意先名（略称）', '郵便番号', '住所1', '住所2', '電話番号', 'FAX番号', '代表者氏名', '担当者', '締日', 'メールアドレス', '請求先', '請求先名称', '請求先コード', '別得意先への個人口座請求', '既存の自動引落に追加', '個人口座を含めて引き落とす', '備考'
-                            ];
-                            customerOrder.forEach(key => {
-                                if (detailsToProcess[key] !== undefined) {
-                                    orderedDetails[key] = detailsToProcess[key];
-                                    delete detailsToProcess[key];
-                                }
-                            });
-                            orderedDetails = { ...orderedDetails, ...detailsToProcess }; // Add any remaining fields
+                            if (detailsToProcess['請求先'] === 'self') {
+                                detailsToProcess['請求先'] = 'この得意先へ請求（単独）';
+                            }
+                            if (detailsToProcess['請求先'] === 'other') {
+                                detailsToProcess['請求先'] = '別の得意先へ請求';
+                            }
+                            if (detailsToProcess['既存の自動引落に追加'] === 'on') {
+                                detailsToProcess['既存の自動引落に追加'] = 'はい';
+                            }
+                            if (detailsToProcess['個人口座を含めて引き落とす'] === 'on') {
+                                detailsToProcess['個人口座を含めて引き落とす'] = 'はい';
+                            }
+                        }
 
-                            if (orderedDetails['請求先'] === 'self') {
-                                orderedDetails['請求先'] = 'この得意先へ請求（単独）';
-                            }
-                            if (orderedDetails['請求先'] === 'other') {
-                                orderedDetails['請求先'] = '別の得意先へ請求';
-                            }
-                            if (orderedDetails['既存の自動引落に追加'] === 'on') {
-                                orderedDetails['既存の自動引落に追加'] = 'はい';
-                            }
-                            if (orderedDetails['個人口座を含めて引き落とす'] === 'on') {
-                                orderedDetails['個人口座を含めて引き落とす'] = 'はい';
-                            }
-                        } else if (appType === 'facility_reservation') {
-                            const facilityOrder = [
-                                '利用日', '対象施設', '設備利用', '開始時間', '終了時間', '利用目的', '申請者'
-                            ];
-                            facilityOrder.forEach(key => {
-                                if (detailsToProcess[key] !== undefined) {
-                                    orderedDetails[key] = detailsToProcess[key];
-                                    delete detailsToProcess[key];
-                                }
-                            });
-                            orderedDetails = { ...orderedDetails, ...detailsToProcess }; // Add any remaining fields
-                        } else {
-                            orderedDetails = detailsToProcess;
+                        // Handle array values
+                        if (Array.isArray(detailsToProcess['設備利用'])) {
+                            detailsToProcess['設備利用'] = detailsToProcess['設備利用'].join(', ');
                         }
                         
-                        const processedDetails = Object.entries(orderedDetails).map(([key, value]) => {
-                            let displayValue = value;
-                            if (key === '設備利用' && Array.isArray(value)) {
-                                displayValue = value.join(', ');
-                            }
-                            return [fieldLabels[key] || key, displayValue];
-                        });
+                        const sortedDetails = Object.entries(detailsToProcess)
+                            .sort(([keyA], [keyB]) => {
+                                const indexA = displayOrder.indexOf(keyA);
+                                const indexB = displayOrder.indexOf(keyB);
+                                if (indexA === -1) return 1;
+                                if (indexB === -1) return -1;
+                                return indexA - indexB;
+                            });
 
                         return (
                             <>
@@ -323,7 +304,7 @@ function ApplicationsManagement() {
                                 <hr />
                                 <Table striped bordered size="sm">
                                     <tbody>
-                                        {processedDetails.map(([key, value]) => (
+                                        {sortedDetails.map(([key, value]) => (
                                             <tr key={key}>
                                                 <td><strong>{key}</strong></td>
                                                 <td>
