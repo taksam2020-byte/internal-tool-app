@@ -98,9 +98,13 @@ export async function POST(request: Request) {
 
         } else {
           let detailsToProcess = { ...details };
+          let orderedDetails: { [key: string]: any } = detailsToProcess;
           
           // Translate specific values for customer applications
           if (application_type === 'customer_registration' || application_type === 'customer_change') {
+            if (detailsToProcess['請求先'] === 'self') {
+              detailsToProcess['請求先'] = 'この得意先へ請求（単独）';
+            }
             if (detailsToProcess['請求先'] === 'other') {
               detailsToProcess['請求先'] = '別の得意先へ請求';
             }
@@ -111,16 +115,12 @@ export async function POST(request: Request) {
 
           // Reorder for facility reservation
           if (application_type === 'facility_reservation') {
-            const orderedDetails: { [key: string]: any } = {
-              '利用日': detailsToProcess['利用日'],
-              ...detailsToProcess
-            };
-            delete orderedDetails['利用日']; // remove original to avoid duplication
-             detailsToProcess = orderedDetails;
+            const { 利用日, ...rest } = detailsToProcess;
+            orderedDetails = { '利用日': 利用日, ...rest };
           }
 
-          emailBody += Object.entries(detailsToProcess)
-            .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
+          emailBody += Object.entries(orderedDetails)
+            .map(([key, value]) => `<p><strong>${key}:</strong> ${value || ''}</p>`)
             .join('');
         }
 

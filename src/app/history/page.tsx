@@ -236,6 +236,9 @@ function ApplicationsManagement() {
                         const appType = selectedApplication.application_type;
 
                         if (appType === 'customer_registration' || appType === 'customer_change') {
+                            if (detailsToProcess['請求先'] === 'self') {
+                                detailsToProcess['請求先'] = 'この得意先へ請求（単独）';
+                            }
                             if (detailsToProcess['請求先'] === 'other') {
                                 detailsToProcess['請求先'] = '別の得意先へ請求';
                             }
