@@ -97,7 +97,29 @@ export async function POST(request: Request) {
           });
 
         } else {
-          emailBody += Object.entries(details)
+          let detailsToProcess = { ...details };
+          
+          // Translate specific values for customer applications
+          if (application_type === 'customer_registration' || application_type === 'customer_change') {
+            if (detailsToProcess['請求先'] === 'other') {
+              detailsToProcess['請求先'] = '別の得意先へ請求';
+            }
+            if (detailsToProcess['既存の自動引落に追加'] === 'on') {
+              detailsToProcess['既存の自動引落に追加'] = 'はい';
+            }
+          }
+
+          // Reorder for facility reservation
+          if (application_type === 'facility_reservation') {
+            const orderedDetails: { [key: string]: any } = {
+              '利用日': detailsToProcess['利用日'],
+              ...detailsToProcess
+            };
+            delete orderedDetails['利用日']; // remove original to avoid duplication
+             detailsToProcess = orderedDetails;
+          }
+
+          emailBody += Object.entries(detailsToProcess)
             .map(([key, value]) => `<p><strong>${key}:</strong> ${value}</p>`)
             .join('');
         }

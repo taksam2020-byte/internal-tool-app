@@ -231,23 +231,37 @@ function ApplicationsManagement() {
                     <Modal.Title>申請詳細</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    {selectedApplication && (
-                        <>
-                            <h5>{selectedApplication.title}</h5>
-                            <p><strong>申請者:</strong> {selectedApplication.applicant_name}</p>
-                            <p><strong>申請日:</strong> {new Date(selectedApplication.submitted_at).toLocaleString()}</p>
-                            <hr />
-                            <Table striped bordered size="sm">
-                                <tbody>
-                                    {Object.entries(selectedApplication.details)
-                                        .sort(([keyA], [keyB]) => {
-                                            const indexA = displayOrder.indexOf(keyA);
-                                            const indexB = displayOrder.indexOf(keyB);
-                                            if (indexA === -1) return 1;
-                                            if (indexB === -1) return -1;
-                                            return indexA - indexB;
-                                        })
-                                        .map(([key, value]) => (
+                    {selectedApplication && (() => {
+                        const detailsToProcess = { ...selectedApplication.details };
+                        const appType = selectedApplication.application_type;
+
+                        if (appType === 'customer_registration' || appType === 'customer_change') {
+                            if (detailsToProcess['請求先'] === 'other') {
+                                detailsToProcess['請求先'] = '別の得意先へ請求';
+                            }
+                            if (detailsToProcess['既存の自動引落に追加'] === 'on') {
+                                detailsToProcess['既存の自動引落に追加'] = 'はい';
+                            }
+                        }
+                        
+                        let sortedDetails = Object.entries(detailsToProcess)
+                            .sort(([keyA], [keyB]) => {
+                                const indexA = displayOrder.indexOf(keyA);
+                                const indexB = displayOrder.indexOf(keyB);
+                                if (indexA === -1) return 1;
+                                if (indexB === -1) return -1;
+                                return indexA - indexB;
+                            });
+
+                        return (
+                            <>
+                                <h5>{selectedApplication.title}</h5>
+                                <p><strong>申請者:</strong> {selectedApplication.applicant_name}</p>
+                                <p><strong>申請日:</strong> {new Date(selectedApplication.submitted_at).toLocaleString()}</p>
+                                <hr />
+                                <Table striped bordered size="sm">
+                                    <tbody>
+                                        {sortedDetails.map(([key, value]) => (
                                             <tr key={key}>
                                                 <td><strong>{key}</strong></td>
                                                 <td>
@@ -259,11 +273,12 @@ function ApplicationsManagement() {
                                                     )}
                                                 </td>
                                             </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </>
-                    )}
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            </>
+                        );
+                    })()}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => { setShowModal(false); setCopiedKey(null); }}>閉じる</Button>
