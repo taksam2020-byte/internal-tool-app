@@ -27,6 +27,37 @@ const applicationTypeMap: { [key: string]: string } = {
   facility_reservation: '施設予約',
 };
 
+const fieldLabels: { [key: string]: string } = {
+    salonType: 'サロン種別',
+    personalAccount: '個人口座',
+    customerNameFull: '得意先名（正式）',
+    customerNameShort: '得意先名（略称）',
+    zipCode: '郵便番号',
+    address1: '住所1',
+    address2: '住所2',
+    phone: '電話番号',
+    fax: 'FAX番号',
+    representativeName: '代表者氏名',
+    contactPerson: '担当者',
+    closingDay: '締日',
+    email: 'メールアドレス',
+    billingTarget: '請求先',
+    billingCustomerName: '請求先名称',
+    billingCustomerCode: '請求先コード',
+    includePersonalAccountInBilling: '別得意先への個人口座請求',
+    addToDirectDebit: '既存の自動引落に追加',
+    includePersonalAccountInDebit: '個人口座を含めて引き落とす',
+    remarks: '備考',
+    // Facility Reservation specific
+    applicant: '申請者',
+    usageDate: '利用日',
+    facility: '対象施設',
+    equipment: '設備利用',
+    startTime: '開始時間',
+    endTime: '終了時間',
+    purpose: '利用目的',
+};
+
 function ApplicationsManagement() {
     const { triggerRefresh } = useSettings();
     const [applications, setApplications] = useState<Application[]>([]);
@@ -231,23 +262,49 @@ function ApplicationsManagement() {
                     <Modal.Title>申請詳細</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    {selectedApplication && (
-                        <>
-                            <h5>{selectedApplication.title}</h5>
-                            <p><strong>申請者:</strong> {selectedApplication.applicant_name}</p>
-                            <p><strong>申請日:</strong> {new Date(selectedApplication.submitted_at).toLocaleString()}</p>
-                            <hr />
-                            <Table striped bordered size="sm">
-                                <tbody>
-                                    {Object.entries(selectedApplication.details)
-                                        .sort(([keyA], [keyB]) => {
-                                            const indexA = displayOrder.indexOf(keyA);
-                                            const indexB = displayOrder.indexOf(keyB);
-                                            if (indexA === -1) return 1;
-                                            if (indexB === -1) return -1;
-                                            return indexA - indexB;
-                                        })
-                                        .map(([key, value]) => (
+                    {selectedApplication && (() => {
+                        const detailsToProcess: Record<string, any> = { ...selectedApplication.details };
+                        const appType = selectedApplication.application_type;
+
+                        // Translate values directly
+                        if (appType === 'customer_registration' || appType === 'customer_change') {
+                            if (detailsToProcess['請求先'] === 'self') {
+                                detailsToProcess['請求先'] = 'この得意先へ請求（単独）';
+                            }
+                            if (detailsToProcess['請求先'] === 'other') {
+                                detailsToProcess['請求先'] = '別の得意先へ請求';
+                            }
+                            if (detailsToProcess['既存の自動引落に追加'] === 'on') {
+                                detailsToProcess['既存の自動引落に追加'] = 'はい';
+                            }
+                            if (detailsToProcess['個人口座を含めて引き落とす'] === 'on') {
+                                detailsToProcess['個人口座を含めて引き落とす'] = 'はい';
+                            }
+                        }
+
+                        // Handle array values
+                        if (Array.isArray(detailsToProcess['設備利用'])) {
+                            detailsToProcess['設備利用'] = detailsToProcess['設備利用'].join(', ');
+                        }
+                        
+                        const sortedDetails = Object.entries(detailsToProcess)
+                            .sort(([keyA], [keyB]) => {
+                                const indexA = displayOrder.indexOf(keyA);
+                                const indexB = displayOrder.indexOf(keyB);
+                                if (indexA === -1) return 1;
+                                if (indexB === -1) return -1;
+                                return indexA - indexB;
+                            });
+
+                        return (
+                            <>
+                                <h5>{selectedApplication.title}</h5>
+                                <p><strong>申請者:</strong> {selectedApplication.applicant_name}</p>
+                                <p><strong>申請日:</strong> {new Date(selectedApplication.submitted_at).toLocaleString()}</p>
+                                <hr />
+                                <Table striped bordered size="sm">
+                                    <tbody>
+                                        {sortedDetails.map(([key, value]) => (
                                             <tr key={key}>
                                                 <td><strong>{key}</strong></td>
                                                 <td>
@@ -259,11 +316,12 @@ function ApplicationsManagement() {
                                                     )}
                                                 </td>
                                             </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </>
-                    )}
+                                        ))}
+                                    </tbody>
+                                </Table>
+                            </>
+                        );
+                    })()}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => { setShowModal(false); setCopiedKey(null); }}>閉じる</Button>
