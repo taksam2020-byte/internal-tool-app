@@ -5,9 +5,25 @@ import { sql } from '@vercel/postgres';
 export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await context.params;
-    const { status, processed_by } = await request.json();
+    const body = await request.json();
+    const { status, processed_by } = body;
 
-    if (!status || (status === '処理済み' && !processed_by)) {
+    // Case 1: Only updating the processor
+    if (processed_by && !status) {
+        await sql`
+            UPDATE applications
+            SET processed_by = ${processed_by}
+            WHERE id = ${id};
+        `;
+        return NextResponse.json({ message: 'Application processor updated successfully' }, { status: 200 });
+    }
+
+    // Case 2: Updating the status (existing logic)
+    if (!status) {
+        return NextResponse.json({ message: 'Status field is required for status updates.' }, { status: 400 });
+    }
+    
+    if (status === '処理済み' && !processed_by) {
         return NextResponse.json({ message: 'ステータスが「処理済み」の場合、処理者名は必須です。' }, { status: 400 });
     }
 

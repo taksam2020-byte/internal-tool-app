@@ -89,14 +89,31 @@ function ApplicationsManagement() {
         setShowModal(true);
     }
 
-    const handleStatusChange = async (id: number, newStatus: string, processorName: string) => {
-        if (!processorName && newStatus === '処理済み') {
-            alert('処理者を指定してください。');
+    const handleProcessorChange = async (id: number, newProcessorName: string) => {
+        try {
+            await axios.put(`/api/applications/${id}`, { processed_by: newProcessorName });
+            fetchData(); // Refresh the data
+            triggerRefresh(); // Refresh the sidebar
+        } catch (error) {
+            console.error("Failed to update processor", error);
+            alert('処理者の更新に失敗しました。');
+        }
+    };
+
+    const handleStatusChange = async (id: number, newStatus: string) => {
+        const app = applications.find(a => a.id === id);
+        if (!app) return;
+
+        if (newStatus === '処理済み' && !app.processed_by) {
+            alert('ステータスを「処理済み」にするには、処理者を指定してください。');
             return;
         }
+
         try {
-            await axios.put(`/api/applications/${id}`,
-                { status: newStatus, processed_by: newStatus === '処理済み' ? processorName : null });
+            await axios.put(`/api/applications/${id}`, { 
+                status: newStatus, 
+                processed_by: newStatus === '処理済み' ? app.processed_by : null 
+            });
             fetchData(); // Refresh the data
             triggerRefresh(); // Refresh the sidebar
         } catch (error) {
@@ -165,13 +182,13 @@ function ApplicationsManagement() {
                                         <td>{app.applicant_name}</td>
                                         <td>{new Date(app.submitted_at).toLocaleString()}</td>
                                         <td>
-                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleStatusChange(app.id, app.status, e.target.value)} disabled={app.status !== '未処理'}>
+                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleProcessorChange(app.id, e.target.value)} disabled={app.status !== '未処理'}>
                                                 <option value="">未選択</option>
                                                 {officeStaff.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                                             </Form.Select>
                                         </td>
                                         <td>
-                                            <Form.Select size="sm" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value, app.processed_by || '')}>
+                                            <Form.Select size="sm" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value)}>
                                                 <option value="未処理">未処理</option>
                                                 <option value="処理済み">処理済み</option>
                                                 <option value="キャンセル">キャンセル</option>
