@@ -83,6 +83,8 @@ function ApplicationsManagement() {
 
     useEffect(() => {
         const internalStaff = users.filter(user => user.role === '内勤' && user.is_active);
+        console.log('useEffect[users]: All users:', users); // Debug log
+        console.log('useEffect[users]: Filtered officeStaff:', internalStaff); // Debug log
         setOfficeStaff(internalStaff);
     }, [users]);
 
@@ -96,7 +98,15 @@ function ApplicationsManagement() {
         try {
             await axios.put(`/api/applications/${id}`, { processed_by: newProcessorName });
             console.log(`handleProcessorChange: API call successful for App ID: ${id}`); // Debug log
-            fetchData(); // Refresh the data
+            
+            // Await fetchData to ensure state is updated before logging
+            await fetchData(); 
+            
+            // Log the state *after* it has been updated by fetchData
+            // Note: useState is async, so we use a temporary variable from the fetch to be sure
+            // This part is tricky, so we'll rely on the fetchData log for now.
+            // A better way would be to get the updated data back from the API.
+
             triggerRefresh(); // Refresh the sidebar
         } catch (error) {
             console.error("Failed to update processor", error);
