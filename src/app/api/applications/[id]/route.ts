@@ -2,56 +2,52 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-export async function PUT(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, context: { params: Promise<{ id:string }> }) {
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { status, processed_by } = body;
+    
+    const fieldsToUpdate: { [key: string]: unknown } = {};
+    const queryParams: unknown[] = [];
+    let paramIndex = 1;
 
-    // Case 1: Only updating the processor (processed_by key exists, status key does not)
-    if (Object.prototype.hasOwnProperty.call(body, 'processed_by') && !Object.prototype.hasOwnProperty.call(body, 'status')) {
-        await sql`
-            UPDATE applications
-            SET processed_by = ${processed_by || null}
-            WHERE id = ${id};
-        `;
-        return NextResponse.json({ message: 'Application processor updated successfully' }, { status: 200 });
+    if (Object.prototype.hasOwnProperty.call(body, 'status')) {
+      fieldsToUpdate.status = body.status;
+      queryParams.push(body.status);
+    }
+    if (Object.prototype.hasOwnProperty.call(body, 'processed_by')) {
+      fieldsToUpdate.processed_by = body.processed_by || null;
+      queryParams.push(body.processed_by || null);
     }
 
-    // Case 2: Updating the status
-    if (!status) {
-        return NextResponse.json({ message: 'Status field is required for status updates.' }, { status: 400 });
+    // Handle processed_at separately
+    if (body.status === '処理済み') {
+      fieldsToUpdate.processed_at = 'CURRENT_TIMESTAMP';
+    } else if (Object.prototype.hasOwnProperty.call(body, 'status')) {
+      fieldsToUpdate.processed_at = null;
+      queryParams.push(null);
     }
     
-    // Validation: '処理済み' or 'キャンセル' status requires a processor
-    if ((status === '処理済み' || status === 'キャンセル') && !processed_by) {
-        return NextResponse.json({ message: `ステータスが「${status}」の場合、処理者名は必須です。` }, { status: 400 });
+    if (Object.keys(fieldsToUpdate).length === 0) {
+      return NextResponse.json({ message: 'No fields to update' }, { status: 400 });
     }
 
-    if (status === '未処理') {
-        await sql`
-            UPDATE applications
-            SET status = ${status}, processed_by = NULL, processed_at = NULL
-            WHERE id = ${id};
-        `;
-    } else if (status === '処理済み') {
-        await sql`
-            UPDATE applications
-            SET status = ${status}, processed_by = ${processed_by}, processed_at = CURRENT_TIMESTAMP
-            WHERE id = ${id};
-        `;
-    } else { // For 'キャンセル' and any other potential statuses
-        await sql`
-            UPDATE applications
-            SET status = ${status}, processed_by = ${processed_by}, processed_at = NULL
-            WHERE id = ${id};
-        `;
-    }
+    const setClauses = Object.keys(fieldsToUpdate).map(key => {
+      if (key === 'processed_at' && fieldsToUpdate[key] === 'CURRENT_TIMESTAMP') {
+        return `${key} = CURRENT_TIMESTAMP`;
+      }
+      return `${key} = $${paramIndex++}`;
+    });
+    
+    const query = `UPDATE applications SET ${setClauses.join(', ')} WHERE id = $${paramIndex}`;
+    queryParams.push(id);
 
-    return NextResponse.json({ message: 'Application status updated successfully' }, { status: 200 });
+    await sql.query(query, queryParams.filter(p => p !== null || fieldsToUpdate.processed_at !== null));
+
+    return NextResponse.json({ message: 'Application updated successfully' }, { status: 200 });
   } catch (error: unknown) {
     console.error('API Error:', error);
     const message = error instanceof Error ? error.message : 'An unknown error occurred';
-    return NextResponse.json({ message: 'Error updating application status', error: message }, { status: 500 });
+    return NextResponse.json({ message: 'Error updating application', error: message }, { status: 500 });
   }
 }

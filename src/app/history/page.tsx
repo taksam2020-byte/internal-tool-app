@@ -85,62 +85,31 @@ function ApplicationsManagement() {
         setShowModal(true);
     }
 
-    const handleProcessorChange = async (id: number, newProcessorName: string) => {
-        try {
-            await axios.put(`/api/applications/${id}`, { processed_by: newProcessorName || null });
-            await fetchApplications();
-            triggerRefresh();
-        } catch (error) {
-            console.error("Failed to update processor", error);
-            alert('処理者の更新に失敗しました。');
-        }
-    };
-
-    const handleStatusChange = async (id: number, newStatus: string) => {
-        const app = applications.find(a => a.id === id);
-        if (!app) return;
-
-        const revertUI = () => {
-            const selectElement = document.querySelector(`tr[data-row-id="${id}"] .status-select`) as HTMLSelectElement;
-            if (selectElement) selectElement.value = app.status;
-        };
-
-        // Rule 1: Check processor requirement for final states
-        if ((newStatus === '処理済み' || newStatus === 'キャンセル') && !app.processed_by) {
-            alert(`ステータスを「${newStatus}」にするには、先に処理者を選択してください。`);
-            revertUI();
-            return;
-        }
-
-        // Rule 2: Confirmation for changing an already processed/cancelled application
-        if (app.status !== '未処理' && app.status !== newStatus) {
-            if (!window.confirm(`ステータスを「${app.status}」から「${newStatus}」に変更します。よろしいですか？`)) {
-                revertUI();
-                return;
+        const handleProcessorChange = async (id: number, newProcessorName: string) => {
+            try {
+                await axios.put(`/api/applications/${id}`, { processed_by: newProcessorName || null });
+                await fetchApplications();
+            } catch (error) {
+                console.error("Failed to update processor", error);
+                alert('処理者の更新に失敗しました。');
             }
-        }
-
-        // Determine the processor based on the new status
-        let finalProcessor = app.processed_by;
-        // Rule 3: If status becomes '未処理', processor is cleared
-        if (newStatus === '未処理') {
-            finalProcessor = null;
-        }
-
-        try {
-            await axios.put(`/api/applications/${id}`, { 
-                status: newStatus, 
-                processed_by: finalProcessor
-            });
-            await fetchApplications();
-            triggerRefresh();
-        } catch (error) {
-            console.error("Failed to update status", error);
-            alert('ステータスの更新に失敗しました。');
-            revertUI();
-        }
-    };
-
+        };
+    
+        const handleStatusChange = async (id: number, newStatus: string) => {
+            const app = applications.find(a => a.id === id);
+            if (!app) return;
+    
+            try {
+                await axios.put(`/api/applications/${id}`, {
+                    status: newStatus,
+                    processed_by: app.processed_by // Send current processor along with status
+                });
+                await fetchApplications();
+            } catch (error) {
+                console.error("Failed to update status", error);
+                alert('ステータスの更新に失敗しました。');
+            }
+        };
     const handleCopyToClipboard = (text: string, key: string) => {
         navigator.clipboard.writeText(text).then(() => {
             setCopiedKey(key);
