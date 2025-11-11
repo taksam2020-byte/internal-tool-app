@@ -8,11 +8,11 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
     const body = await request.json();
     const { status, processed_by } = body;
 
-    // Case 1: Only updating the processor
-    if (processed_by && !status) {
+    // Case 1: Only updating the processor (processed_by key exists, status key does not)
+    if (Object.prototype.hasOwnProperty.call(body, 'processed_by') && !Object.prototype.hasOwnProperty.call(body, 'status')) {
         await sql`
             UPDATE applications
-            SET processed_by = ${processed_by}
+            SET processed_by = ${processed_by || null}
             WHERE id = ${id};
         `;
         return NextResponse.json({ message: 'Application processor updated successfully' }, { status: 200 });
