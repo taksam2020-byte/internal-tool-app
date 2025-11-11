@@ -89,6 +89,7 @@ function ApplicationsManagement() {
             try {
                 await axios.put(`/api/applications/${id}`, { processed_by: newProcessorName || null });
                 await fetchApplications();
+                triggerRefresh();
             } catch (error) {
                 console.error("Failed to update processor", error);
                 alert('処理者の更新に失敗しました。');
@@ -105,6 +106,7 @@ function ApplicationsManagement() {
                     processed_by: app.processed_by // Send current processor along with status
                 });
                 await fetchApplications();
+                triggerRefresh();
             } catch (error) {
                 console.error("Failed to update status", error);
                 alert('ステータスの更新に失敗しました。');
