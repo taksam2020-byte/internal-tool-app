@@ -6,6 +6,12 @@ export async function PUT(request: NextRequest, context: { params: Promise<{ id:
   try {
     const { id } = await context.params;
     const body = await request.json();
+    const { status, processed_by } = body;
+
+    // Re-implement validation for '処理済み' and 'キャンセル' statuses
+    if ((status === '処理済み' || status === 'キャンセル') && !processed_by) {
+      return NextResponse.json({ message: `ステータスが「${status}」の場合、処理者名は必須です。` }, { status: 400 });
+    }
     
     const fieldsToUpdate: { [key: string]: unknown } = {};
     const queryParams: unknown[] = [];
