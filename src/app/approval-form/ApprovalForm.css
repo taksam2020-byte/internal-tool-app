@@ -1,31 +1,43 @@
 @page {
   size: A4 portrait;
-  margin: 15mm;
+  margin: 15mm; /* 余白を15mmに縮小 */
 }
 
+/* 画面表示用のコンテナ。中央寄せではなく、コンテンツの幅に合わせる */
 .approval-form-container {
-  max-width: 900px;
+  /* max-width: 900px;  削除または調整 */
 }
 
+/* プレビュー表示セクションのスタイル */
 .print-preview-section {
   background-color: #f0f0f0;
   padding: 20px;
   margin-top: 2rem;
+  /* 画面上でもA4比率で表示するためのスタイル */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 29.7cm; /* A4 height */
+  overflow: hidden; /* for scaling */
 }
 
-/* Print Area Styles */
+/* 印刷エリア（画面上のプレビュー） */
 .print-area {
   background-color: white;
   border: 1px solid #ccc;
-  margin: 0 auto;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
   color: black;
-  width: 100%;
-  height: auto; /* Adjust to content */
+  width: 210mm; /* A4 width */
+  min-height: 297mm; /* A4 height */
+  box-sizing: border-box; /* padding/border included in width/height */
+  
+  /* 親要素に合わせて縮小表示 */
+  transform-origin: top center;
+  transform: scale(0.8); /* 画面サイズに合わせて調整 */
 }
 
 .print-area-content {
-    padding: 2cm;
+    padding: 1.5cm; /* 画面表示時のプレビュー内余白 */
 }
 
 .print-area h1 {
@@ -98,23 +110,28 @@
     height: auto;
     margin: 0;
     padding: 0;
-    visibility: hidden;
   }
-  
-  .print-area, .print-area * {
-    visibility: visible;
+
+  /* 画面上の不要な要素を非表示 */
+  body > *:not(.print-area), .print-hide, .form-section {
+    display: none !important;
   }
   
   .print-area {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: auto;
-    margin: 0;
-    padding: 0;
-    border: none;
-    box-shadow: none;
+    position: static; /* 印刷時にはstaticに戻す */
+    width: 100% !important; /* 印刷時には実際の幅に */
+    height: auto !important; /* 印刷時にはコンテンツの高さに合わせる */
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: none !important; /* 印刷時にはスケールを元に戻す */
+    background-color: white !important;
+    color: black !important;
+  }
+
+  .print-area-content {
+    padding: 1.5cm !important; /* 印刷時の内側余白 */
   }
   
   .bg-light {
