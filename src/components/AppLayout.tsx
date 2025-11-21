@@ -89,6 +89,10 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
         <Link href="/history" passHref legacyBehavior><Nav.Link className="text-white d-flex justify-content-between align-items-center" onClick={(e) => handleLinkClick(e, '/history')}>申請履歴 {pendingCount > 0 && <Badge pill bg="danger">{pendingCount}</Badge>}</Nav.Link></Link>
       </Nav.Item>
 
+      <Nav.Item className="mb-2">
+        <Link href="/approval-form" passHref legacyBehavior><Nav.Link className="text-white" onClick={(e) => handleLinkClick(e, '/approval-form')}>サンプル申請</Nav.Link></Link>
+      </Nav.Item>
+
       {settings.isEvaluationOpen && (
         <>
           <Nav.Item className="mb-2">

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card, Col, Row, Badge } from 'react-bootstrap';
 import Link from 'next/link';
 import { useSettings } from '@/context/SettingsContext';
-import { PersonPlus, Building, Lightbulb, GearFill, PencilSquare, BarChart, ClockHistory, CalendarWeek } from 'react-bootstrap-icons';
+import { PersonPlus, Building, Lightbulb, GearFill, PencilSquare, BarChart, ClockHistory, CalendarWeek, FileEarmarkText } from 'react-bootstrap-icons';
 import axios from 'axios';
 
 import Image from 'next/image';
@@ -65,6 +65,14 @@ export default function HomePage() {
       icon: <ClockHistory size={40} />,
       style: { backgroundColor: '#6f42c1' },
       badge: pendingApplicationsCount > 0 ? pendingApplicationsCount : null,
+      show: true
+    },
+    {
+      href: '/approval-form',
+      title: 'サンプル申請',
+      description: '承認印欄付きの申請書を作成・印刷します。',
+      icon: <FileEarmarkText size={40} />,
+      bg: 'warning',
       show: true
     },
     {
