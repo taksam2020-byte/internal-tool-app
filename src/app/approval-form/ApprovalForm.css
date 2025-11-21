@@ -17,19 +17,10 @@
   border: 1px solid #ccc;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
   color: black;
-  width: 210mm; /* A4 width */
-  min-height: 297mm; /* A4 height */
+  width: 210mm;
+  padding: 1.5cm;
   transform-origin: top center;
-  transform: scale(0.8); /* Scale down for preview */
-}
-
-.print-area-content {
-    padding: 1.5cm;
-}
-
-/* Styles for the actual printed content */
-.print-only {
-  display: none; /* Hidden on screen */
+  transform: scale(0.8);
 }
 
 /* Other shared styles */
@@ -90,12 +81,28 @@
 
 /* --- Print-specific Styles --- */
 @media print {
-  body > *:not(.print-only) {
+  body > *:not(.print-preview-section) {
     display: none !important;
   }
   
-  .print-only {
-    display: block; /* Make the print container visible */
+  .print-preview-section {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+  }
+
+  .print-area {
+    transform: none;
+    box-shadow: none;
+    border: none;
+    width: 100%;
+    height: auto;
   }
 
   .bg-light {
