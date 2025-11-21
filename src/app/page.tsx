@@ -4,10 +4,22 @@ import { useState, useEffect } from 'react';
 import { Card, Col, Row, Badge } from 'react-bootstrap';
 import Link from 'next/link';
 import { useSettings } from '@/context/SettingsContext';
-import { PersonPlus, Building, Lightbulb, GearFill, PencilSquare, BarChart, ClockHistory } from 'react-bootstrap-icons';
+import { PersonPlus, Building, Lightbulb, GearFill, PencilSquare, BarChart, ClockHistory, CalendarWeek } from 'react-bootstrap-icons';
 import axios from 'axios';
 
 import Image from 'next/image';
+
+interface MenuItem {
+  href: string;
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  bg?: string;
+  style?: React.CSSProperties;
+  show: boolean;
+  badge?: number | null;
+  isExternal?: boolean;
+}
 
 export default function HomePage() {
   const { settings, isSettingsLoaded } = useSettings();
@@ -29,7 +41,7 @@ export default function HomePage() {
     }
   }, [isSettingsLoaded]);
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       href: '/customers',
       title: '得意先登録',
@@ -87,6 +99,15 @@ export default function HomePage() {
       bg: 'secondary',
       show: true
     },
+    {
+        href: 'https://shift-management-app-sage.vercel.app/',
+        title: 'シフト管理',
+        description: 'シフト管理アプリへ移動します。',
+        icon: <CalendarWeek size={40} />,
+        bg: 'info',
+        isExternal: true, // Mark as external link
+        show: true
+    },
   ];
 
   if (!isSettingsLoaded) {
@@ -102,18 +123,31 @@ export default function HomePage() {
       <Row xs={1} md={2} lg={3} className="g-4">
         {menuItems.filter(item => item.show).map((item, idx) => (
           <Col key={idx}>
-            <Link href={item.href} passHref legacyBehavior>
-              <Card as="a" bg={item.bg} text="white" style={item.style} className="h-100 text-decoration-none position-relative">
-                {item.badge && <Badge pill bg="danger" className="position-absolute top-0 start-100 translate-middle">{item.badge}</Badge>}
-                <Card.Body className="d-flex align-items-center">
-                  <div className="me-3">{item.icon}</div>
-                  <div>
-                    <Card.Title as="h5">{item.title}</Card.Title>
-                    <Card.Text>{item.description}</Card.Text>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Link>
+            {item.isExternal ? (
+                <Card as="a" href={item.href} target="_blank" rel="noopener noreferrer" bg={item.bg} text="white" style={item.style} className="h-100 text-decoration-none position-relative">
+                    {item.badge && <Badge pill bg="danger" className="position-absolute top-0 start-100 translate-middle">{item.badge}</Badge>}
+                    <Card.Body className="d-flex align-items-center">
+                      <div className="me-3">{item.icon}</div>
+                      <div>
+                        <Card.Title as="h5">{item.title}</Card.Title>
+                        <Card.Text>{item.description}</Card.Text>
+                      </div>
+                    </Card.Body>
+                </Card>
+            ) : (
+                <Link href={item.href} passHref legacyBehavior>
+                  <Card as="a" bg={item.bg} text="white" style={item.style} className="h-100 text-decoration-none position-relative">
+                    {item.badge && <Badge pill bg="danger" className="position-absolute top-0 start-100 translate-middle">{item.badge}</Badge>}
+                    <Card.Body className="d-flex align-items-center">
+                      <div className="me-3">{item.icon}</div>
+                      <div>
+                        <Card.Title as="h5">{item.title}</Card.Title>
+                        <Card.Text>{item.description}</Card.Text>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Link>
+            )}
           </Col>
         ))}
       </Row>
