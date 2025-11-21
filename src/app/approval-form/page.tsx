@@ -613,28 +613,28 @@ export default function ApprovalFormPage() {
                           <div className="footer-section">
 
 
-                              <div className="order-info">
+                                              <div className="order-info">
 
 
-                                  <Form.Group as={Row} className="align-items-center">
+                                                  <Form.Group as={Row} className="align-items-center">
 
 
-                                      <Form.Label column xs="auto" className="fw-bold">受注番号:</Form.Label>
+                                                      <Form.Label column xs="auto" className="fw-bold">受注番号:</Form.Label>
 
 
-                                      <Col>
+                                                      <Col>
 
 
-                                          <Form.Control type="text" className="order-number-input"/>
+                                                          <Form.Control type="text" className="order-number-input print-hide"/>
 
 
-                                      </Col>
+                                                      </Col>
 
 
-                                  </Form.Group>
+                                                  </Form.Group>
 
 
-                              </div>
+                                              </div>
 
 
                               <div className="approval-stamps">
