@@ -143,21 +143,27 @@ export default function ChangeCustomerPage() {
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-    
-        const details = Object.fromEntries(
-            Array.from(formData.keys()).map(key => [fieldLabels[key] || key, formData.get(key)])
-        );
-    
-        try {
-          await axios.post('/api/applications', {
-            application_type: 'customer_change',
-            applicant_name: data.contactPerson as string,        title: '得意先変更申請',
-        details: details,
-        emails: settings.customerEmails
-      });
-      setSubmitStatus({ success: true, message: `申請が正常に送信されました。` });
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+        
+            const [contactPersonId, contactPersonName] = (data.contactPerson as string).split(':');
+        
+            const details = Object.fromEntries(
+                Array.from(formData.keys()).map(key => [fieldLabels[key] || key, formData.get(key)])
+            );
+        
+            // Overwrite/add contact person fields
+            details['担当者'] = contactPersonName;
+            details['担当者ID'] = contactPersonId;
+        
+            try {
+              await axios.post('/api/applications', {
+                application_type: 'customer_change',
+                applicant_name: contactPersonName,
+                title: '得意先変更申請',
+                details: details,
+                emails: settings.customerEmails
+              });      setSubmitStatus({ success: true, message: `申請が正常に送信されました。` });
       form.reset();
       setValidated(false);
       setSelectedFields([]);
@@ -191,7 +197,7 @@ export default function ChangeCustomerPage() {
                     }
                     <select required name="contactPerson" defaultValue="" className="form-select">
                         <option value="" disabled>選択してください...</option>
-                        {allowedUsers.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}
+                        {allowedUsers.map(user => (<option key={user.id} value={`${user.id}:${user.name}`}>{user.name}</option>))}
                     </select>
                 </Form.Group>
             </Row>

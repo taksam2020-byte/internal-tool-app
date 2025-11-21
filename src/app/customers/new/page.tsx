@@ -123,24 +123,30 @@ export default function NewCustomerPage() {
     setIsSubmitting(true);
     setSubmitStatus(null);
 
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-    
-        const details = Object.keys(fieldLabels).reduce((acc, key) => {
-            if (formData.has(key)) {
-                acc[fieldLabels[key]] = formData.get(key) as string;
-            }
-            return acc;
-        }, {} as Record<string, string>);
-    
-        try {
-          await axios.post('/api/applications', {
-            application_type: 'customer_registration',
-            applicant_name: data.contactPerson as string,        title: '得意先新規登録申請',
-        details: details,
-        emails: settings.customerEmails
-      });
-      setSubmitStatus({ success: true, message: `申請が正常に送信されました。` });
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData.entries());
+        
+            const [contactPersonId, contactPersonName] = (data.contactPerson as string).split(':');
+        
+            const details = Object.keys(fieldLabels).reduce((acc, key) => {
+                if (formData.has(key)) {
+                    acc[fieldLabels[key]] = formData.get(key) as string;
+                }
+                return acc;
+            }, {} as Record<string, string>);
+        
+            // Overwrite/add contact person fields
+            details['担当者'] = contactPersonName;
+            details['担当者ID'] = contactPersonId;
+        
+            try {
+              await axios.post('/api/applications', {
+                application_type: 'customer_registration',
+                applicant_name: contactPersonName,
+                title: '得意先新規登録申請',
+                details: details,
+                emails: settings.customerEmails
+              });      setSubmitStatus({ success: true, message: `申請が正常に送信されました。` });
       form.reset();
       setValidated(false);
       setZipCode('');
@@ -232,7 +238,7 @@ export default function NewCustomerPage() {
                     }
                     <select required name="contactPerson" defaultValue="" className="form-select">
                         <option value="" disabled>選択してください...</option>
-                        {allowedUsers.map(user => (<option key={user.id} value={user.name}>{user.name}</option>))}
+                        {allowedUsers.map(user => (<option key={user.id} value={`${user.id}:${user.name}`}>{user.name}</option>))}
                     </select>
                 </Form.Group>
             </Row>
