@@ -415,49 +415,16 @@ export default function ApprovalFormPage() {
   
 
 
-              <div className="d-grid my-4">
+                          <div className="d-grid my-4 print-hide">
 
 
-                  <Button onClick={handlePrint} size="lg">印刷またはPDFとして保存</Button>
+  
 
 
-              </div>
+                              <Button onClick={handlePrint} size="lg">印刷またはPDFとして保存</Button>
 
 
-            </Col>
-
-
-          </Row>
-
-
-          <Row>
-
-
-            <Col>
-
-
-              <div className="print-preview-section">
-
-
-                  <div className="print-area" ref={printAreaRef}>
-
-
-                      <div className="print-area-content">
-
-
-                          <h1 className="text-center">サンプル申請書</h1>
-
-
-                          
-
-
-                          <div className="header-info">
-
-
-                              <span>申請日: {applicationDate}</span>
-
-
-                              <span>申請者: {applicant}</span>
+  
 
 
                           </div>
@@ -466,199 +433,475 @@ export default function ApprovalFormPage() {
   
 
 
-                          <Table bordered className="mt-3">
-
-
-                              <tbody>
-
-
-                              <tr>
-
-
-                                  <th className="bg-light">メーカー名</th>
-
-
-                                  <td>{manufacturerName}</td>
-
-
-                                  <th className="bg-light">メーカー担当者名</th>
-
-
-                                  <td>{manufacturerContact ? `${manufacturerContact} 様` : ''}</td>
-
-
-                              </tr>
-
-
-                              <tr>
-
-
-                                  <th className="bg-light">サロンコード</th>
-
-
-                                  <td>{salonCode}</td>
-
-
-                                  <th className="bg-light">サロン名</th>
-
-
-                                  <td>{salonName ? `${salonName} 様` : ''}</td>
-
-
-                              </tr>
-
-
-                              <tr>
-
-
-                                  <th className="bg-light">申請目的</th>
-
-
-                                  <td colSpan={3}>{purpose}</td>
-
-
-                              </tr>
-
-
-                              <tr>
-
-
-                                  <th className="bg-light">申請理由・条件</th>
-
-
-                                  <td colSpan={3} style={{whiteSpace: 'pre-wrap'}}>{reason}</td>
-
-
-                              </tr>
-
-
-                              </tbody>
-
-
-                          </Table>
+                        </Col>
 
 
   
 
 
-                          <h5 className="mt-4">申請商品リスト</h5>
-
-
-                          <Table bordered striped>
-
-
-                              <thead>
-
-
-                              <tr>
-
-
-                                  <th>商品名</th>
-
-
-                                  <th>容量</th>
-
-
-                                  <th>数量</th>
-
-
-                              </tr>
-
-
-                              </thead>
-
-
-                              <tbody>
-
-
-                              {products.map(p => (
-
-
-                                  <tr key={p.id}>
-
-
-                                  <td>{p.name}</td>
-
-
-                                  <td>{p.volume}</td>
-
-
-                                  <td>{p.quantity}</td>
-
-
-                                  </tr>
-
-
-                              ))}
-
-
-                              {Array.from({ length: Math.max(0, 8 - products.length) }).map((_, i) => (
-
-
-                                  <tr key={`empty-${i}`}><td style={{height: '34px'}}>&nbsp;</td><td></td><td></td></tr>
-
-
-                              ))}
-
-
-                              </tbody>
-
-
-                          </Table>
+                      </Row>
 
 
   
 
 
-                          <div className="footer-section">
+                      <Row>
 
 
-                                              <div className="order-info">
+  
 
 
-                                                  <Form.Group as={Row} className="align-items-center">
+                        <Col>
 
 
-                                                      <Form.Label column xs="auto" className="fw-bold">受注番号:</Form.Label>
+  
 
 
-                                                      <Col>
+                          <div className="print-preview-section">
 
 
-                                                          <Form.Control type="text" className="order-number-input print-hide"/>
+  
 
 
-                                                      </Col>
+                              <div className="print-area">
 
 
-                                                  </Form.Group>
+  
 
 
-                                              </div>
+                                  <div className="print-area-content">
 
 
-                              <div className="approval-stamps">
+  
 
 
-                              <div className="stamp-box">受注者</div>
+                                      <h1 className="text-center">サンプル申請書</h1>
 
 
-                              <div className="stamp-box">承認</div>
+  
+
+
+                                      
+
+
+  
+
+
+                                      <div className="header-info">
+
+
+  
+
+
+                                          <span>申請日: {applicationDate}</span>
+
+
+  
+
+
+                                          <span>申請者: {applicant}</span>
+
+
+  
+
+
+                                      </div>
+
+
+  
+
+
+              
+
+
+  
+
+
+                                      <Table bordered className="mt-3">
+
+
+  
+
+
+                                          <tbody>
+
+
+  
+
+
+                                          <tr>
+
+
+  
+
+
+                                              <th className="bg-light">メーカー名</th>
+
+
+  
+
+
+                                              <td>{manufacturerName}</td>
+
+
+  
+
+
+                                              <th className="bg-light">メーカー担当者名</th>
+
+
+  
+
+
+                                              <td>{manufacturerContact ? `${manufacturerContact} 様` : ''}</td>
+
+
+  
+
+
+                                          </tr>
+
+
+  
+
+
+                                          <tr>
+
+
+  
+
+
+                                              <th className="bg-light">サロンコード</th>
+
+
+  
+
+
+                                              <td>{salonCode}</td>
+
+
+  
+
+
+                                              <th className="bg-light">サロン名</th>
+
+
+  
+
+
+                                              <td>{salonName ? `${salonName} 様` : ''}</td>
+
+
+  
+
+
+                                          </tr>
+
+
+  
+
+
+                                          <tr>
+
+
+  
+
+
+                                              <th className="bg-light">申請目的</th>
+
+
+  
+
+
+                                              <td colSpan={3}>{purpose}</td>
+
+
+  
+
+
+                                          </tr>
+
+
+  
+
+
+                                          <tr>
+
+
+  
+
+
+                                              <th className="bg-light">申請理由・条件</th>
+
+
+  
+
+
+                                              <td colSpan={3} style={{whiteSpace: 'pre-wrap'}}>{reason}</td>
+
+
+  
+
+
+                                          </tr>
+
+
+  
+
+
+                                          </tbody>
+
+
+  
+
+
+                                      </Table>
+
+
+  
+
+
+              
+
+
+  
+
+
+                                      <h5 className="mt-4">申請商品リスト</h5>
+
+
+  
+
+
+                                      <Table bordered striped>
+
+
+  
+
+
+                                          <thead>
+
+
+  
+
+
+                                          <tr>
+
+
+  
+
+
+                                              <th>商品名</th>
+
+
+  
+
+
+                                              <th>容量</th>
+
+
+  
+
+
+                                              <th>数量</th>
+
+
+  
+
+
+                                          </tr>
+
+
+  
+
+
+                                          </thead>
+
+
+  
+
+
+                                          <tbody>
+
+
+  
+
+
+                                          {products.map(p => (
+
+
+  
+
+
+                                              <tr key={`print-prod-${p.id}`}>
+
+
+  
+
+
+                                                  <td>{p.name}</td>
+
+
+  
+
+
+                                                  <td>{p.volume}</td>
+
+
+  
+
+
+                                                  <td>{p.quantity}</td>
+
+
+  
+
+
+                                              </tr>
+
+
+  
+
+
+                                          ))}
+
+
+  
+
+
+                                          {Array.from({ length: Math.max(0, 8 - products.length) }).map((_, i) => (
+
+
+  
+
+
+                                              <tr key={`empty-${i}`}><td style={{height: '34px'}}>&nbsp;</td><td></td><td></td></tr>
+
+
+  
+
+
+                                          ))}
+
+
+  
+
+
+                                          </tbody>
+
+
+  
+
+
+                                      </Table>
+
+
+  
+
+
+              
+
+
+  
+
+
+                                      <div className="footer-section">
+
+
+  
+
+
+                                          <div className="order-info">
+
+
+  
+
+
+                                              <Form.Group as={Row} className="align-items-center">
+
+
+  
+
+
+                                                  <Form.Label column xs="auto" className="fw-bold">受注番号:</Form.Label>
+
+
+  
+
+
+                                                  <Col>
+
+
+  
+
+
+                                                      <Form.Control type="text" className="order-number-input print-hide"/>
+
+
+  
+
+
+                                                  </Col>
+
+
+  
+
+
+                                              </Form.Group>
+
+
+  
+
+
+                                          </div>
+
+
+  
+
+
+                                          <div className="approval-stamps">
+
+
+  
+
+
+                                          <div className="stamp-box">受注者</div>
+
+
+  
+
+
+                                          <div className="stamp-box">承認</div>
+
+
+  
+
+
+                                          </div>
+
+
+  
+
+
+                                      </div>
+
+
+  
+
+
+                                  </div>
+
+
+  
 
 
                               </div>
 
 
+  
+
+
                           </div>
-
-
-                      </div>
-
-
-                  </div>
-
-
-              </div>
 
 
             </Col>

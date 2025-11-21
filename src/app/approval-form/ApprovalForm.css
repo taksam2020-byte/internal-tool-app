@@ -124,9 +124,10 @@
   }
   
   .print-preview-section {
-      padding: 0;
-      margin: 0;
-      background-color: transparent;
+      padding: 0 !important;
+      margin: 0 !important;
+      background-color: transparent !important;
+      min-height: initial !important; /* Reset min-height for printing */
   }
   
   .print-area {
@@ -138,10 +139,12 @@
     border: none;
     box-shadow: none;
     transform: none;
+    background-color: white;
+    color: black;
   }
 
   .print-area-content {
-      padding: 0;
+    padding: 0 !important; /* Use @page margin instead */
   }
   
   .bg-light {
