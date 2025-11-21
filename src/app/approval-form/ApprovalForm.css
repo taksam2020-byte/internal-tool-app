@@ -3,43 +3,22 @@
   margin: 20mm;
 }
 
-/* General Layout */
 .approval-form-container {
-  max-width: 1600px;
+  max-width: 900px; /* Adjusted for a single column layout */
 }
 
-.form-input-section {
-  height: calc(100vh - 100px);
-  overflow-y: auto;
-  padding-right: 20px;
+/* Hide print layout from screen view */
+.print-only {
+    display: none;
 }
 
-.print-preview-section {
-  background-color: #f0f0f0;
-  padding: 20px;
-  height: calc(100vh - 100px);
-  overflow-y: auto;
-}
-
-/* Print Area Styles */
+/* Styles for the content that will be printed */
 .print-area {
   background-color: white;
-  border: 1px solid #ccc;
-  margin: 0 auto;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
   color: black;
-
-  /* A4 aspect ratio for preview */
-  width: 21cm;
-  height: 29.7cm;
-
-  /* Use transform to scale down for preview, not affecting the print itself */
-  transform-origin: top center;
-  transform: scale(0.9);
 }
-
 .print-area-content {
-    padding: 2.5cm;
+    padding: 1cm; /* Padding for the content within the page */
 }
 
 .print-area h1 {
@@ -72,6 +51,8 @@
   justify-content: space-between;
   margin-top: 40px;
   align-items: flex-end;
+  /* Add a break-inside rule to avoid splitting this section across pages */
+  break-inside: avoid;
 }
 
 .order-info {
@@ -104,54 +85,30 @@
   margin-left: -1px; /* Overlap borders */
 }
 
-/* --- Responsive Adjustments --- */
-@media (max-width: 768px) {
-    .form-input-section, .print-preview-section {
-        height: auto;
-        overflow-y: visible;
-    }
-    .print-preview-section {
-        margin-top: 20px;
-    }
-    .print-area {
-        transform: scale(1);
-        width: 100%;
-        height: auto;
-        padding: 1cm;
-    }
-    .print-area-content {
-        padding: 1cm;
-    }
-}
-
-
 /* --- Print-specific Styles --- */
 @media print {
-  body * {
+  body, .approval-form-container {
     visibility: hidden;
+    padding: 0;
+    margin: 0;
   }
-  .print-hide, .print-hide * {
-      display: none !important;
-  }
-
-  .print-area, .print-area * {
+  
+  .print-only, .print-only * {
     visibility: visible;
   }
-
-  .print-area {
+  
+  .print-only {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
-    height: auto;
-    margin: 0;
-    padding: 0;
-    border: none;
-    box-shadow: none;
-    transform: scale(1);
+  }
+
+  .print-area {
+    width: 100%;
+    height: auto; /* Let content define the height */
   }
   
-  /* Ensure bootstrap background colors print */
   .bg-light {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
