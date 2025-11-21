@@ -94,7 +94,7 @@ export default function ApprovalFormPage() {
     <Container className="approval-form-container">
       <Row>
         {/* --- Form Input Column --- */}
-        <Col md={5} className="form-input-section">
+        <Col md={12}>
           <Card>
             <Card.Header as="h3">サンプル申請フォーム</Card.Header>
             <Card.Body>
@@ -208,13 +208,12 @@ export default function ApprovalFormPage() {
             </Card.Body>
           </Card>
         </Col>
-
-        {/* --- Print Preview Column --- */}
-        <Col md={7} className="print-preview-section">
-            <div className="d-flex justify-content-end mb-2 print-hide">
-                <Button onClick={handlePrint}>印刷またはPDFとして保存</Button>
-            </div>
-            <div className="print-area" ref={printAreaRef}>
+      </Row>
+      
+      {/* --- Print Layout (Hidden on screen) --- */}
+      <div className="print-only">
+        <div className="print-area" ref={printAreaRef}>
+            <div className="print-area-content">
               <h1 className="text-center">サンプル申請書</h1>
               
               <div className="header-info">
@@ -264,8 +263,7 @@ export default function ApprovalFormPage() {
                       <td>{p.quantity}</td>
                     </tr>
                   ))}
-                  {/* Add empty rows for layout */}
-                  {Array.from({ length: Math.max(0, 5 - products.length) }).map((_, i) => (
+                  {Array.from({ length: Math.max(0, 8 - products.length) }).map((_, i) => (
                     <tr key={`empty-${i}`}><td style={{height: '34px'}}>&nbsp;</td><td></td><td></td></tr>
                   ))}
                 </tbody>
@@ -286,8 +284,8 @@ export default function ApprovalFormPage() {
                 </div>
               </div>
             </div>
-        </Col>
-      </Row>
+        </div>
+      </div>
     </Container>
   );
 }
