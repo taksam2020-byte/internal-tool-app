@@ -73,7 +73,47 @@ export default function ApprovalFormPage() {
         return;
     }
     setValidated(false);
-    window.print();
+
+    const printAreaNode = document.querySelector('.print-area');
+    if (!printAreaNode) {
+        alert('印刷エリアが見つかりません。');
+        return;
+    }
+
+    const printContent = printAreaNode.innerHTML;
+    
+    // Get all stylesheets
+    const stylesheets = Array.from(document.styleSheets)
+      .map(sheet => {
+        try {
+          return Array.from(sheet.cssRules)
+            .map(rule => rule.cssText)
+            .join('');
+        } catch (e) {
+          // Ignore inaccessible stylesheets (e.g., cross-origin)
+          return '';
+        }
+      })
+      .join('\n');
+
+    const printWindow = window.open('', '', 'height=800,width=800');
+    if (printWindow) {
+      printWindow.document.write('<html><head><title>印刷</title>');
+      printWindow.document.write('<style>');
+      printWindow.document.write(stylesheets);
+      // Add a simple print-specific style to ensure full width
+      printWindow.document.write(`
+        @page { size: A4 portrait; margin: 15mm; }
+        body { margin: 0; padding: 0; }
+      `);
+      printWindow.document.write('</style></head><body>');
+      printWindow.document.write(printContent);
+      printWindow.document.write('</body></html>');
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      printWindow.close();
+    }
   };
 
   const renderPrintContent = () => (

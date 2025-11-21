@@ -18,9 +18,13 @@
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
   color: black;
   width: 210mm;
-  padding: 1.5cm;
+  min-height: 297mm;
   transform-origin: top center;
   transform: scale(0.8);
+}
+
+.print-area-content {
+    padding: 1.5cm;
 }
 
 /* Other shared styles */
@@ -77,36 +81,4 @@
   padding-top: 5px;
   font-size: 10pt;
   margin-left: -1px;
-}
-
-/* --- Print-specific Styles --- */
-@media print {
-  body > *:not(.print-preview-section) {
-    display: none !important;
-  }
-  
-  .print-preview-section {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: auto;
-    padding: 0;
-    margin: 0;
-    background-color: transparent;
-  }
-
-  .print-area {
-    transform: none;
-    box-shadow: none;
-    border: none;
-    width: 100%;
-    height: auto;
-  }
-
-  .bg-light {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
 }
