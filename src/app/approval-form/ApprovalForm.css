@@ -1,6 +1,6 @@
 @page {
   size: A4 portrait;
-  margin: 20mm;
+  margin: 15mm;
 }
 
 .approval-form-container {
@@ -94,7 +94,10 @@
 
 /* --- Print-specific Styles --- */
 @media print {
-  body * {
+  body, html {
+    height: auto;
+    margin: 0;
+    padding: 0;
     visibility: hidden;
   }
   
