@@ -92,22 +92,12 @@ export default function ApprovalFormPage() {
         <div>
 
 
-          <Row>
-
-
-            <Col>
-
-
-              <Card>
-
-
-                <Card.Header as="h3">サンプル申請フォーム</Card.Header>
-
-
-                <Card.Body>
-
-
-                  <Form noValidate validated={validated} id="approval-form">
+        <Row>
+          <Col>
+            <Card className="mb-4 form-section">
+              <Card.Header as="h3">サンプル申請フォーム</Card.Header>
+              <Card.Body>
+                <Form noValidate validated={validated} id="approval-form">
 
 
                     {/* Form fields... */}

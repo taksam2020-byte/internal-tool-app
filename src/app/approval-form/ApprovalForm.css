@@ -110,28 +110,38 @@
     height: auto;
     margin: 0;
     padding: 0;
+    background-color: white; /* Avoids potential browser inconsistencies */
   }
 
-  /* 画面上の不要な要素を非表示 */
-  body > *:not(.print-area), .print-hide, .form-section {
+  /* Hide elements that should not be printed */
+  .print-hide,
+  .form-section,
+  header, /* Hides any site-wide header if it exists */
+  nav,    /* Hides any site-wide navigation */
+  footer  /* Hides any site-wide footer */
+  {
     display: none !important;
   }
   
+  .print-preview-section {
+      padding: 0;
+      margin: 0;
+      background-color: transparent;
+  }
+  
   .print-area {
-    position: static; /* 印刷時にはstaticに戻す */
-    width: 100% !important; /* 印刷時には実際の幅に */
-    height: auto !important; /* 印刷時にはコンテンツの高さに合わせる */
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    box-shadow: none !important;
-    transform: none !important; /* 印刷時にはスケールを元に戻す */
-    background-color: white !important;
-    color: black !important;
+    position: static;
+    width: 100%;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    transform: none;
   }
 
   .print-area-content {
-    padding: 1.5cm !important; /* 印刷時の内側余白 */
+      padding: 0;
   }
   
   .bg-light {
