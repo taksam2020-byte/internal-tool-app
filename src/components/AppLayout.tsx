@@ -103,6 +103,10 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
         </Nav.Item>
       )}
 
+      <Nav.Item className="mb-2">
+        <Nav.Link href="https://shift-management-app-sage.vercel.app/" target="_blank" rel="noopener noreferrer" className="text-white">シフト管理</Nav.Link>
+      </Nav.Item>
+
       <Nav.Item>
         <Link href="/admin" passHref legacyBehavior><Nav.Link className="text-white" onClick={(e) => handleLinkClick(e, '/admin')}>管理画面</Nav.Link></Link>
       </Nav.Item>

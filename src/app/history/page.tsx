@@ -212,45 +212,87 @@ function ApplicationsManagement() {
                             </Col>
                         </Form.Group>
 
-                        <Table striped bordered hover size="sm">
-                            <thead>
-                                <tr>
-                                    <th>申請種別</th>
-                                    <th>申請者</th>
-                                    <th>申請日</th>
-                                    <th>処理者</th>
-                                    <th>ステータス</th>
-                                    <th>処理日</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {currentApplications.map(app => (
-                                    <tr key={app.id} className={getRowVariant(app.status)} data-row-id={app.id}>
-                                        <td>{applicationTypeMap[app.application_type] || app.application_type}</td>
-                                        <td>{app.applicant_name}</td>
-                                        <td>{new Date(app.submitted_at).toLocaleString()}</td>
-                                        <td>
-                                            <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleProcessorChange(app.id, e.target.value)}>
-                                                <option value="">未選択</option>
-                                                {officeStaff.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                                            </Form.Select>
-                                        </td>
-                                        <td>
-                                            <Form.Select size="sm" className="status-select" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value)}>
-                                                <option value="未処理">未処理</option>
-                                                <option value="処理済み">処理済み</option>
-                                                <option value="キャンセル">キャンセル</option>
-                                            </Form.Select>
-                                        </td>
-                                        <td>{app.processed_at ? new Date(app.processed_at).toLocaleString() : ''}</td>
-                                        <td>
-                                            <Button variant="outline-primary" size="sm" onClick={() => handleShowModal(app)}>詳細</Button>
-                                        </td>
+                        {/* Desktop View: Table */}
+                        <div className="d-none d-md-block">
+                            <Table striped bordered hover size="sm">
+                                <thead>
+                                    <tr>
+                                        <th>申請種別</th>
+                                        <th>申請者</th>
+                                        <th>申請日</th>
+                                        <th>処理者</th>
+                                        <th>ステータス</th>
+                                        <th>処理日</th>
+                                        <th>操作</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </Table>
+                                </thead>
+                                <tbody>
+                                    {currentApplications.map(app => (
+                                        <tr key={app.id} className={getRowVariant(app.status)} data-row-id={app.id}>
+                                            <td>{applicationTypeMap[app.application_type] || app.application_type}</td>
+                                            <td>{app.applicant_name}</td>
+                                            <td>{new Date(app.submitted_at).toLocaleString()}</td>
+                                            <td>
+                                                <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleProcessorChange(app.id, e.target.value)}>
+                                                    <option value="">未選択</option>
+                                                    {officeStaff.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                                                </Form.Select>
+                                            </td>
+                                            <td>
+                                                <Form.Select size="sm" className="status-select" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value)}>
+                                                    <option value="未処理">未処理</option>
+                                                    <option value="処理済み">処理済み</option>
+                                                    <option value="キャンセル">キャンセル</option>
+                                                </Form.Select>
+                                            </td>
+                                            <td>{app.processed_at ? new Date(app.processed_at).toLocaleString() : ''}</td>
+                                            <td>
+                                                <Button variant="outline-primary" size="sm" onClick={() => handleShowModal(app)}>詳細</Button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </div>
+
+                        {/* Mobile View: Cards */}
+                        <div className="d-md-none">
+                            {currentApplications.map(app => (
+                                <Card key={app.id} className={`mb-3 ${getRowVariant(app.status)}`}>
+                                    <Card.Body>
+                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 className="mb-0">{applicationTypeMap[app.application_type] || app.application_type}</h6>
+                                            <Button variant="outline-primary" size="sm" onClick={() => handleShowModal(app)}>詳細</Button>
+                                        </div>
+                                        <p className="mb-1"><strong>申請者:</strong> {app.applicant_name}</p>
+                                        <p className="text-muted small mb-2">{new Date(app.submitted_at).toLocaleString()}</p>
+                                        <Row>
+                                            <Col xs={6}>
+                                                <Form.Group>
+                                                    <Form.Label className="small">処理者</Form.Label>
+                                                    <Form.Select size="sm" value={app.processed_by || ''} onChange={(e) => handleProcessorChange(app.id, e.target.value)}>
+                                                        <option value="">未選択</option>
+                                                        {officeStaff.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
+                                            <Col xs={6}>
+                                                <Form.Group>
+                                                    <Form.Label className="small">ステータス</Form.Label>
+                                                    <Form.Select size="sm" className="status-select" value={app.status} onChange={(e) => handleStatusChange(app.id, e.target.value)}>
+                                                        <option value="未処理">未処理</option>
+                                                        <option value="処理済み">処理済み</option>
+                                                        <option value="キャンセル">キャンセル</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
+                                        </Row>
+                                        {app.processed_at && <p className="text-muted small mt-2 mb-0">処理日: {new Date(app.processed_at).toLocaleString()}</p>}
+                                    </Card.Body>
+                                </Card>
+                            ))}
+                        </div>
+
 
                         {totalPages > 1 && <Pagination>{Array.from({ length: totalPages }, (_, i) => <Pagination.Item key={i + 1} active={i + 1 === currentPage} onClick={() => setCurrentPage(i + 1)}>{i + 1}</Pagination.Item>)}</Pagination>}
                     </>

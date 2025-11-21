@@ -275,6 +275,13 @@ function DataManagement() {
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedYear, setSelectedYear] = useState('');
+    
+    // Pagination state for proposals
+    const [proposalsCurrentPage, setProposalsCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    // Pagination state for evaluations
+    const [evaluationsCurrentPage, setEvaluationsCurrentPage] = useState(1);
 
     const proposalYears = Array.from(new Set(applications.filter(a => a.application_type === 'proposal' && a.details?.proposal_year).map(a => a.details.proposal_year))).sort((a, b) => b.localeCompare(a));
 
@@ -341,9 +348,20 @@ function DataManagement() {
         }
     };
 
-
     const proposals = applications.filter(a => a.application_type === 'proposal');
     const evaluations = applications.filter(a => a.application_type === 'evaluation');
+    
+    // Pagination logic for proposals
+    const proposalsTotalPages = Math.ceil(proposals.length / itemsPerPage);
+    const proposalsIndexOfLastItem = proposalsCurrentPage * itemsPerPage;
+    const proposalsIndexOfFirstItem = proposalsIndexOfLastItem - itemsPerPage;
+    const currentProposals = proposals.slice(proposalsIndexOfFirstItem, proposalsIndexOfLastItem);
+
+    // Pagination logic for evaluations
+    const evaluationsTotalPages = Math.ceil(evaluations.length / itemsPerPage);
+    const evaluationsIndexOfLastItem = evaluationsCurrentPage * itemsPerPage;
+    const evaluationsIndexOfFirstItem = evaluationsIndexOfLastItem - itemsPerPage;
+    const currentEvaluations = evaluations.slice(evaluationsIndexOfFirstItem, evaluationsIndexOfLastItem);
 
     return (
         <Card className="mb-4">
@@ -359,21 +377,23 @@ function DataManagement() {
                              <Table striped bordered hover size="sm">
                                 <thead><tr><th>提出日</th><th>提案者</th><th>件名</th></tr></thead>
                                 <tbody>
-                                    {proposals.map((s) => (
+                                    {currentProposals.map((s) => (
                                         <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{s.applicant_name}</td><td>{s.title}</td></tr>
                                     ))}
                                 </tbody>
                             </Table>
+                            {proposalsTotalPages > 1 && <Pagination>{Array.from({ length: proposalsTotalPages }, (_, i) => <Pagination.Item key={i + 1} active={i + 1 === proposalsCurrentPage} onClick={() => setProposalsCurrentPage(i + 1)}>{i + 1}</Pagination.Item>)}</Pagination>}
                         </Tab>
                         <Tab eventKey="evaluations" title={`新人考課 (${evaluations.length})`}>
-                            <Table striped bordered hover size="sm">
+                             <Table striped bordered hover size="sm">
                                 <thead><tr><th>提出日</th><th>回答者</th><th>対象者</th></tr></thead>
                                 <tbody>
-                                    {evaluations.map((s) => (
-                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{String(s.details?.evaluator || '')}</td><td>{String(s.details?.targetEmployee || '')}</td></tr>
+                                    {currentEvaluations.map((s) => (
+                                        <tr key={s.id}><td>{new Date(s.submitted_at).toLocaleString()}</td><td>{String(s.details?.evaluator || s.details?.考課者 || '')}</td><td>{String(s.details?.targetEmployee || s.details?.考課対象者 || '')}</td></tr>
                                     ))}
                                 </tbody>
                             </Table>
+                            {evaluationsTotalPages > 1 && <Pagination>{Array.from({ length: evaluationsTotalPages }, (_, i) => <Pagination.Item key={i + 1} active={i + 1 === evaluationsCurrentPage} onClick={() => setEvaluationsCurrentPage(i + 1)}>{i + 1}</Pagination.Item>)}</Pagination>}
                         </Tab>
                     </Tabs>
                 )}
