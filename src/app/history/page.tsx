@@ -46,7 +46,7 @@ const fieldLabels: { [key: string]: string } = {
     billingCustomerCode: '請求先コード',
     includePersonalAccountInBilling: '別得意先への個人口座請求',
     addToDirectDebit: '既存の自動引落に追加',
-    includePersonalAccountInDebit: '個人口座を含めて引き落とす',
+    includePersonalAccountInDebit: '個人口座を含めて請求',
     remarks: '備考',
     // Facility Reservation specific
     applicant: '申請者',

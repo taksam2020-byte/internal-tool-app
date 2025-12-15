@@ -39,7 +39,7 @@ const fieldLabels: { [key: string]: string } = {
     billingCustomerName: '請求先名称',
     billingCustomerCode: '請求先コード',
     addToDirectDebit: '既存の自動引落に追加',
-    includePersonalAccountInDebit: '個人口座を含めて引き落とす',
+    includePersonalAccountInDebit: '個人口座を含めて請求',
     remarks: '備考',
 };
 
@@ -227,7 +227,11 @@ export default function ChangeCustomerPage() {
             {selectedFields.includes('representative') && (<Form.Group className="mb-3"><Form.Label>{changeableFields.representative}</Form.Label><Form.Control type="text" name="representativeName" placeholder="山田 太郎" /></Form.Group>)}
             {selectedFields.includes('closingDay') && (<Form.Group className="mb-3"><Form.Label>{changeableFields.closingDay}</Form.Label><div><Form.Check inline label="20日" type="radio" name="closingDay" value="20" /><Form.Check inline label="末日" type="radio" name="closingDay" value="末日" /></div></Form.Group>)}
             {selectedFields.includes('email') && (<Form.Group className="mb-3"><Form.Label>{changeableFields.email}</Form.Label><Form.Control type="email" name="email" placeholder="example@example.com" /></Form.Group>)}
-            {selectedFields.includes('billing') && (<Form.Group className="mb-3"><Form.Label>{changeableFields.billing}</Form.Label><div><Form.Check inline label="この得意先へ請求（単独）" name="billingTarget" type="radio" value="self" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} /><Form.Check inline label="別の得意先へ請求（親子or名寄せ）" name="billingTarget" type="radio" value="other" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} /></div>{billingTarget === 'other' && (<div className="mt-2 p-3 border rounded"><Row><Col md={6}><Form.Control required name="billingCustomerName" placeholder="請求先名称" /></Col><Col md={6}><Form.Control name="billingCustomerCode" placeholder="請求先コード" /></Col></Row><Form.Group as={Row} className="mt-3"><Col><Form.Check type="checkbox" name="addToDirectDebit" label="既存の自動引落に追加" /></Col></Form.Group>{personalAccount === '要' && (<Form.Group as={Row} className="mt-3"><Col><Form.Check type="checkbox" name="includePersonalAccountInDebit" label="個人口座を含めて引き落とす" /></Col></Form.Group>)}</div>)}</Form.Group>)}
+            {selectedFields.includes('billing') && (<Form.Group className="mb-3"><Form.Label>{changeableFields.billing}</Form.Label><div><Form.Check inline label="この得意先へ請求（単独）" name="billingTarget" type="radio" value="self" checked={billingTarget === 'self'} onChange={(e) => setBillingTarget(e.target.value)} /><Form.Check inline label="別の得意先へ請求（親子or名寄せ）" name="billingTarget" type="radio" value="other" checked={billingTarget === 'other'} onChange={(e) => setBillingTarget(e.target.value)} /></div>{billingTarget === 'other' && (<div className="mt-2 p-3 border rounded"><Row><Col md={6}><Form.Control required name="billingCustomerName" placeholder="請求先名称" /></Col><Col md={6}><Form.Control name="billingCustomerCode" placeholder="請求先コード" /></Col></Row><Form.Group as={Row} className="mt-3"><Col><Form.Check type="checkbox" name="addToDirectDebit" label="既存の自動引落に追加" /></Col></Form.Group>{personalAccount === '要' && (                            <Form.Group as={Row} className="mt-3">
+                                <Col>
+                                    <Form.Check type="checkbox" name="includePersonalAccountInDebit" label="個人口座を含めて請求" />
+                                </Col>
+                            </Form.Group>)}</div>)}</Form.Group>)}
 
             <hr />
 
