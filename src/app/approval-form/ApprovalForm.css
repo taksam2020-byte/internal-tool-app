@@ -1,6 +1,6 @@
 @page {
   size: A4 portrait;
-  margin: 15mm;
+  margin: 10mm;
 }
 
 /* On-screen preview styles */
@@ -44,15 +44,16 @@
 .print-area .table {
   font-size: 10pt;
   color: black;
+  margin-bottom: 1rem; /* Add some space between tables */
 }
 .print-area .table th, .print-area .table td {
   vertical-align: middle;
-  padding: 8px;
+  padding: 6px; /* Reduce padding slightly */
 }
 .footer-section {
   display: flex;
   justify-content: space-between;
-  margin-top: 40px;
+  margin-top: 30px; /* Reduce top margin */
   align-items: flex-end;
   break-inside: avoid;
 }
@@ -75,10 +76,57 @@
 }
 .stamp-box {
   border: 1px solid black;
-  width: 80px;
-  height: 80px;
+  width: 75px; /* Slightly reduce size */
+  height: 75px;
   text-align: center;
   padding-top: 5px;
   font-size: 10pt;
   margin-left: -1px;
+}
+
+/* --- Print-specific Styles --- */
+@media print {
+  body > *:not(.print-preview-section) {
+    display: none !important;
+  }
+  
+  .print-preview-section {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+  }
+
+  .print-area {
+    transform: none;
+    box-shadow: none;
+    border: none;
+    width: 100%;
+    height: auto;
+    min-height: initial;
+    padding: 0;
+  }
+
+  .print-area-content {
+      padding: 0;
+  }
+
+  .print-area h1 {
+    margin-top: 0;
+  }
+
+  .print-area h5 {
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+  }
+  
+  .bg-light {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
