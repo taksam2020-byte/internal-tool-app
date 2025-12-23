@@ -80,39 +80,33 @@ export default function ApprovalFormPage() {
         return;
     }
 
-    const printContent = printAreaNode.innerHTML;
+    const printContent = printAreaNode.outerHTML;
     
-    // Get all stylesheets
-    const stylesheets = Array.from(document.styleSheets)
-      .map(sheet => {
-        try {
-          return Array.from(sheet.cssRules)
-            .map(rule => rule.cssText)
-            .join('');
-        } catch (e) {
-          // Ignore inaccessible stylesheets (e.g., cross-origin)
-          return '';
-        }
-      })
-      .join('\n');
-
     const printWindow = window.open('', '', 'height=800,width=800');
     if (printWindow) {
       printWindow.document.write('<html><head><title>印刷</title>');
-      printWindow.document.write('<style>');
-      printWindow.document.write(stylesheets);
-      // Add a simple print-specific style to ensure full width
+      // Link to Bootstrap CSS
+      printWindow.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">');
+      // Link to the local CSS file
+      printWindow.document.write('<link rel="stylesheet" href="/approval-form/ApprovalForm.css">');
+
       printWindow.document.write(`
-        @page { size: A4 portrait; margin: 15mm; }
-        body { margin: 0; padding: 0; }
+        <style>
+          @page { size: A4 portrait; margin: 0; }
+          body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-area { border: none !important; box-shadow: none !important; transform: none !important; width: 210mm !important; min-height: 297mm !important; }
+        </style>
       `);
-      printWindow.document.write('</style></head><body>');
+      printWindow.document.write('</head><body>');
       printWindow.document.write(printContent);
       printWindow.document.write('</body></html>');
       printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-      printWindow.close();
+      
+      printWindow.onload = function() {
+        printWindow.focus();
+        printWindow.print();
+        printWindow.close();
+      };
     }
   };
 
