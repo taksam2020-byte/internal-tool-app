@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Button, Row, Col, Card, InputGroup, Container, Table } from 'react-bootstrap';
 import { PlusCircleFill, TrashFill } from 'react-bootstrap-icons';
 import axios from 'axios';
@@ -85,11 +85,24 @@ export default function ApprovalFormPage() {
     const printWindow = window.open('', '', 'height=800,width=800');
     if (printWindow) {
       printWindow.document.write('<html><head><title>印刷</title>');
-      // Link to Bootstrap CSS from CDN
-      printWindow.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">');
-      // Link to the local CSS file
-      printWindow.document.write(`<link rel="stylesheet" href="${window.location.origin}/approval-form/ApprovalForm.css">`);
-
+      
+      // Copy all stylesheets from the current document
+      Array.from(document.styleSheets).forEach(sheet => {
+        try {
+          // For <link> tags (external CSS)
+          if (sheet.href) {
+            printWindow.document.write(`<link rel="stylesheet" href="${sheet.href}">`);
+          } 
+          // For <style> blocks (inline CSS) or CSS imported into <link> that gets embedded
+          else if (sheet.ownerNode) {
+            printWindow.document.write(`<style>${Array.from(sheet.cssRules).map(rule => rule.cssText).join('')}</style>`);
+          }
+        } catch (e) {
+          // Handle security errors for cross-origin stylesheets
+          console.warn("Could not copy stylesheet:", e);
+        }
+      });
+      
       printWindow.document.write(`
         <style>
           @page { size: A4 portrait; margin: 10mm; }
@@ -104,8 +117,8 @@ export default function ApprovalFormPage() {
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       
+      // Wait for all content (especially images and fonts) to load before printing
       printWindow.onload = function() {
-        // Give a short delay to ensure rendering and font loading
         setTimeout(() => {
             printWindow.focus();
             printWindow.print();
@@ -114,7 +127,7 @@ export default function ApprovalFormPage() {
       };
       // Fallback timeout in case onload doesn't fire
       setTimeout(() => {
-        if (!printWindow.closed && !printWindow.document.hidden) {
+        if (!printWindow.closed && !printWindow.document.hidden) { // Check if window is still open and visible
           printWindow.focus();
           printWindow.print();
           printWindow.close();
@@ -294,75 +307,9 @@ export default function ApprovalFormPage() {
             <div className="d-grid my-4 print-hide">
                 <Button onClick={handlePrint} size="lg">印刷またはPDFとして保存</Button>
             </div>
-            <div className="print-area-container">
+            <div id="printable-area" className="print-area-container">
               <div className="print-area">
-                <div className="print-area-content">
-                    <h1 className="text-center">サンプル申請書</h1>
-                    <div className="header-info">
-                        <span>申請日: {applicationDate}</span>
-                        <span>申請者: {applicant}</span>
-                    </div>
-                    <Table bordered className="mt-3">
-                        <tbody>
-                            <tr>
-                                <th className="bg-light">メーカー名</th>
-                                <td>{manufacturerName}</td>
-                                <th className="bg-light">メーカー担当者名</th>
-                                <td>{manufacturerContact ? `${manufacturerContact} 様` : ''}</td>
-                            </tr>
-                            <tr>
-                                <th className="bg-light">サロンコード</th>
-                                <td>{salonCode}</td>
-                                <th className="bg-light">サロン名</th>
-                                <td>{salonName ? `${salonName} 様` : ''}</td>
-                            </tr>
-                            <tr>
-                                <th className="bg-light">申請目的</th>
-                                <td colSpan={3}>{purpose}</td>
-                            </tr>
-                            <tr>
-                                <th className="bg-light">申請理由・条件</th>
-                                <td colSpan={3} style={{ whiteSpace: 'pre-wrap' }}>{reason}</td>
-                            </tr>
-                        </tbody>
-                    </Table>
-                    <h5 className="mt-4">申請商品リスト</h5>
-                    <Table bordered striped>
-                        <thead>
-                            <tr>
-                                <th>商品名</th>
-                                <th>容量</th>
-                                <th>数量</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {products.map(p => (
-                                <tr key={`print-prod-${p.id}`}>
-                                    <td>{p.name}</td>
-                                    <td>{p.volume}</td>
-                                    <td>{p.quantity}</td>
-                                </tr>
-                            ))}
-                            {Array.from({ length: Math.max(0, 8 - products.length) }).map((_, i) => (
-                                <tr key={`empty-${i}`}><td style={{ height: '34px' }}>&nbsp;</td><td></td><td></td></tr>
-                            ))}
-                        </tbody>
-                    </Table>
-                    <div className="footer-section">
-                        <div className="order-info">
-                            <Form.Group as={Row} className="align-items-center">
-                                <Form.Label column xs="auto" className="fw-bold">受注番号:</Form.Label>
-                                <Col>
-                                    <Form.Control type="text" className="order-number-input" />
-                                </Col>
-                            </Form.Group>
-                        </div>
-                        <div className="approval-stamps">
-                            <div className="stamp-box">受注者</div>
-                            <div className="stamp-box">承認</div>
-                        </div>
-                    </div>
-                </div>
+                {renderPrintContent()}
               </div>
             </div>
           </Col>
