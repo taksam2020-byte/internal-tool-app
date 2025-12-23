@@ -3,7 +3,14 @@
   margin: 10mm;
 }
 
-/* On-screen preview styles */
+.form-section, .print-hide {
+  /* These will be hidden by the print logic in page.tsx */
+}
+
+.print-area-container {
+  /* This container is hidden by default in print media */
+}
+
 .print-preview-section {
   background-color: #f0f0f0;
   padding: 20px;
@@ -27,7 +34,6 @@
     padding: 1.5cm;
 }
 
-/* Other shared styles */
 .print-area h1 {
   font-size: 24pt;
   font-weight: bold;
@@ -44,16 +50,16 @@
 .print-area .table {
   font-size: 10pt;
   color: black;
-  margin-bottom: 1rem; /* Add some space between tables */
+  margin-bottom: 1rem;
 }
 .print-area .table th, .print-area .table td {
   vertical-align: middle;
-  padding: 6px; /* Reduce padding slightly */
+  padding: 6px;
 }
 .footer-section {
   display: flex;
   justify-content: space-between;
-  margin-top: 30px; /* Reduce top margin */
+  margin-top: 30px;
   align-items: flex-end;
   break-inside: avoid;
 }
@@ -76,7 +82,7 @@
 }
 .stamp-box {
   border: 1px solid black;
-  width: 75px; /* Slightly reduce size */
+  width: 75px;
   height: 75px;
   text-align: center;
   padding-top: 5px;

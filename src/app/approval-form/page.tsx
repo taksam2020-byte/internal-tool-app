@@ -30,7 +30,7 @@ export default function ApprovalFormPage() {
   const [purpose, setPurpose] = useState('');
   const [reason, setReason] = useState('');
   const [products, setProducts] = useState<ProductItem[]>([
-    { id: 0, name: '', volume: '', quantity: '1' } // Set default quantity to 1
+    { id: 0, name: '', volume: '', quantity: '1' }
   ]);
   const [users, setUsers] = useState<User[]>([]);
   const [validated, setValidated] = useState(false);
@@ -38,7 +38,6 @@ export default function ApprovalFormPage() {
   useEffect(() => {
     const today = new Date();
     setApplicationDate(today.toLocaleDateString('ja-JP'));
-
     const fetchUsers = async () => {
       try {
         const res = await axios.get('/api/users');
@@ -52,7 +51,7 @@ export default function ApprovalFormPage() {
   }, []);
 
   const handleAddProduct = () => {
-    setProducts([...products, { id: nextProductId++, name: '', volume: '', quantity: '1' }]); // Default quantity 1
+    setProducts([...products, { id: nextProductId++, name: '', volume: '', quantity: '1' }]);
   };
 
   const handleRemoveProduct = (id: number) => {
@@ -85,20 +84,14 @@ export default function ApprovalFormPage() {
     const printWindow = window.open('', '', 'height=800,width=800');
     if (printWindow) {
       printWindow.document.write('<html><head><title>印刷</title>');
-      
-      // Copy all stylesheets from the current document
       Array.from(document.styleSheets).forEach(sheet => {
         try {
-          // For <link> tags (external CSS)
           if (sheet.href) {
             printWindow.document.write(`<link rel="stylesheet" href="${sheet.href}">`);
-          } 
-          // For <style> blocks (inline CSS) or CSS imported into <link> that gets embedded
-          else if (sheet.ownerNode) {
+          } else if (sheet.ownerNode) {
             printWindow.document.write(`<style>${Array.from(sheet.cssRules).map(rule => rule.cssText).join('')}</style>`);
           }
         } catch (e) {
-          // Handle security errors for cross-origin stylesheets
           console.warn("Could not copy stylesheet:", e);
         }
       });
@@ -109,7 +102,6 @@ export default function ApprovalFormPage() {
           body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-area { border: none !important; box-shadow: none !important; transform: none !important; width: 100% !important; min-height: initial !important; padding: 0 !important; }
           .print-area-content { padding: 0 !important; }
-          /* Add any other necessary print styles here to match preview */
         </style>
       `);
       printWindow.document.write('</head><body>');
@@ -117,25 +109,24 @@ export default function ApprovalFormPage() {
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       
-      // Wait for all content (especially images and fonts) to load before printing
       printWindow.onload = function() {
         setTimeout(() => {
             printWindow.focus();
             printWindow.print();
             printWindow.close();
-        }, 300); // 300ms delay
+        }, 300);
       };
-      // Fallback timeout in case onload doesn't fire
       setTimeout(() => {
-        if (!printWindow.closed && !printWindow.document.hidden) { // Check if window is still open and visible
+        if (!printWindow.closed && !printWindow.document.hidden) {
           printWindow.focus();
           printWindow.print();
           printWindow.close();
         }
-      }, 2000); // Max 2 seconds for fallback
+      }, 2000);
     }
   };
 
+  // Helper function to render the printable content
   const renderPrintContent = () => (
     <div className="print-area-content">
         <h1 className="text-center">サンプル申請書</h1>
