@@ -74,58 +74,47 @@ export default function ApprovalFormPage() {
     }
     setValidated(false);
 
-    const printAreaNode = document.querySelector('.print-area');
-    if (!printAreaNode) {
+    const printContentElement = document.getElementById('printable-area');
+    if (!printContentElement) {
         alert('印刷エリアが見つかりません。');
         return;
     }
 
-    const printContent = printAreaNode.outerHTML;
+    const printContentHtml = printContentElement.outerHTML;
     
     const printWindow = window.open('', '', 'height=800,width=800');
     if (printWindow) {
       printWindow.document.write('<html><head><title>印刷</title>');
-      
-      // Copy all stylesheets from the current document
-      Array.from(document.styleSheets).forEach(sheet => {
-        try {
-          // For <link> tags (external CSS)
-          if (sheet.href) {
-            printWindow.document.write(`<link rel="stylesheet" href="${sheet.href}">`);
-          } 
-          // For <style> blocks (inline CSS) or CSS imported into <link> that gets embedded
-          else if (sheet.ownerNode) {
-            printWindow.document.write(`<style>${Array.from(sheet.cssRules).map(rule => rule.cssText).join('')}</style>`);
-          }
-        } catch (e) {
-          // Handle security errors for cross-origin stylesheets
-          console.warn("Could not copy stylesheet:", e);
-        }
-      });
-      
+      // Link to Bootstrap CSS from CDN
+      printWindow.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">');
+      // Link to the local CSS file
+      printWindow.document.write(`<link rel="stylesheet" href="${window.location.origin}/approval-form/ApprovalForm.css">`);
+
       printWindow.document.write(`
         <style>
-          @page { size: A4 portrait; margin: 10mm; } /* Use 10mm margin for printing */
+          @page { size: A4 portrait; margin: 10mm; }
           body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-area { border: none !important; box-shadow: none !important; transform: none !important; width: 100% !important; min-height: initial !important; }
+          .print-area { border: none !important; box-shadow: none !important; transform: none !important; width: 100% !important; min-height: initial !important; padding: 0 !important; }
+          .print-area-content { padding: 0 !important; }
+          /* Add any other necessary print styles here to match preview */
         </style>
       `);
       printWindow.document.write('</head><body>');
-      printWindow.document.write(printContent);
+      printWindow.document.write(printContentHtml);
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       
-      // Wait for all content (especially images and fonts) to load before printing
       printWindow.onload = function() {
+        // Give a short delay to ensure rendering and font loading
         setTimeout(() => {
             printWindow.focus();
             printWindow.print();
             printWindow.close();
-        }, 500); // 500ms delay to ensure rendering
+        }, 300); // 300ms delay
       };
-      // If onload doesn't fire (e.g., cached content), use a fallback timeout
+      // Fallback timeout in case onload doesn't fire
       setTimeout(() => {
-        if (!printWindow.closed && !printWindow.document.hidden) { // Check if window is still open and visible
+        if (!printWindow.closed && !printWindow.document.hidden) {
           printWindow.focus();
           printWindow.print();
           printWindow.close();
@@ -205,29 +194,28 @@ export default function ApprovalFormPage() {
   );
 
   return (
-    <>
-      <Container>
-        <Row>
-          <Col className="form-section">
-            <Card className="mb-4">
-              <Card.Header as="h3">サンプル申請フォーム</Card.Header>
-              <Card.Body>
-                <Form noValidate validated={validated} id="approval-form">
-                    <Row className="mb-3">
-                        <Form.Group as={Col}>
-                            <Form.Label>申請者</Form.Label>
-                            <Form.Control required type="text" list="user-list" value={applicant} onChange={e => setApplicant(e.target.value)} placeholder="氏名を入力または選択"/>
-                            <datalist id="user-list">
-                                {users.map(user => <option key={user.id} value={user.name} />)}
-                            </datalist>
-                            <Form.Control.Feedback type="invalid">申請者を入力してください。</Form.Control.Feedback>
-                        </Form.Group>
-                        <Form.Group as={Col}>
-                            <Form.Label>申請日</Form.Label>
-                            <Form.Control type="text" value={applicationDate} readOnly disabled />
-                        </Form.Group>
-                    </Row>
-                    <Row className="mb-3">
+    <Container>
+      <Row>
+        <Col className="form-section">
+          <Card className="mb-4">
+            <Card.Header as="h3">サンプル申請フォーム</Card.Header>
+            <Card.Body>
+              <Form noValidate validated={validated} id="approval-form">
+                  <Row className="mb-3">
+                    <Form.Group as={Col}>
+                      <Form.Label>申請者</Form.Label>
+                      <Form.Control required type="text" list="user-list" value={applicant} onChange={e => setApplicant(e.target.value)} placeholder="氏名を入力または選択"/>
+                      <datalist id="user-list">
+                          {users.map(user => <option key={user.id} value={user.name} />)}
+                      </datalist>
+                      <Form.Control.Feedback type="invalid">申請者を入力してください。</Form.Control.Feedback>
+                    </Form.Group>
+                    <Form.Group as={Col}>
+                      <Form.Label>申請日</Form.Label>
+                      <Form.Control type="text" value={applicationDate} readOnly disabled />
+                    </Form.Group>
+                  </Row>
+                  <Row className="mb-3">
                         <Form.Group as={Col}>
                             <Form.Label>メーカー名</Form.Label>
                             <Form.Control required value={manufacturerName} onChange={e => setManufacturerName(e.target.value)} />
@@ -306,7 +294,7 @@ export default function ApprovalFormPage() {
             <div className="d-grid my-4 print-hide">
                 <Button onClick={handlePrint} size="lg">印刷またはPDFとして保存</Button>
             </div>
-            <div className="print-preview-section">
+            <div className="print-area-container">
               <div className="print-area">
                 <div className="print-area-content">
                     <h1 className="text-center">サンプル申請書</h1>
