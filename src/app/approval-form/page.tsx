@@ -85,16 +85,29 @@ export default function ApprovalFormPage() {
     const printWindow = window.open('', '', 'height=800,width=800');
     if (printWindow) {
       printWindow.document.write('<html><head><title>印刷</title>');
-      // Link to Bootstrap CSS
-      printWindow.document.write('<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">');
-      // Link to the local CSS file
-      printWindow.document.write('<link rel="stylesheet" href="/approval-form/ApprovalForm.css">');
-
+      
+      // Copy all stylesheets from the current document
+      Array.from(document.styleSheets).forEach(sheet => {
+        try {
+          // For <link> tags (external CSS)
+          if (sheet.href) {
+            printWindow.document.write(`<link rel="stylesheet" href="${sheet.href}">`);
+          } 
+          // For <style> blocks (inline CSS) or CSS imported into <link> that gets embedded
+          else if (sheet.ownerNode) {
+            printWindow.document.write(`<style>${Array.from(sheet.cssRules).map(rule => rule.cssText).join('')}</style>`);
+          }
+        } catch (e) {
+          // Handle security errors for cross-origin stylesheets
+          console.warn("Could not copy stylesheet:", e);
+        }
+      });
+      
       printWindow.document.write(`
         <style>
-          @page { size: A4 portrait; margin: 10mm; }
+          @page { size: A4 portrait; margin: 10mm; } /* Use 10mm margin for printing */
           body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-area { border: none !important; box-shadow: none !important; transform: none !important; width: 210mm !important; min-height: 297mm !important; }
+          .print-area { border: none !important; box-shadow: none !important; transform: none !important; width: 100% !important; min-height: initial !important; }
         </style>
       `);
       printWindow.document.write('</head><body>');
@@ -102,11 +115,22 @@ export default function ApprovalFormPage() {
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       
+      // Wait for all content (especially images and fonts) to load before printing
       printWindow.onload = function() {
-        printWindow.focus();
-        printWindow.print();
-        printWindow.close();
+        setTimeout(() => {
+            printWindow.focus();
+            printWindow.print();
+            printWindow.close();
+        }, 500); // 500ms delay to ensure rendering
       };
+      // If onload doesn't fire (e.g., cached content), use a fallback timeout
+      setTimeout(() => {
+        if (!printWindow.closed && !printWindow.document.hidden) { // Check if window is still open and visible
+          printWindow.focus();
+          printWindow.print();
+          printWindow.close();
+        }
+      }, 2000); // Max 2 seconds for fallback
     }
   };
 
