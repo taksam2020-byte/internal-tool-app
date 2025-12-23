@@ -92,7 +92,7 @@ export default function ApprovalFormPage() {
 
       printWindow.document.write(`
         <style>
-          @page { size: A4 portrait; margin: 0; }
+          @page { size: A4 portrait; margin: 10mm; }
           body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-area { border: none !important; box-shadow: none !important; transform: none !important; width: 210mm !important; min-height: 297mm !important; }
         </style>
