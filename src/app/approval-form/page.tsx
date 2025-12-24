@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Form, Button, Row, Col, Card, InputGroup, Container, Table } from 'react-bootstrap';
 import { PlusCircleFill, TrashFill } from 'react-bootstrap-icons';
 import axios from 'axios';
@@ -83,36 +83,29 @@ export default function ApprovalFormPage() {
     
     const printWindow = window.open('', '', 'height=800,width=800');
     if (printWindow) {
-      // Collect all active stylesheets, prioritizing external link sheets
-      const styleHtml = Array.from(document.styleSheets)
-        .filter(sheet => {
-            // Filter out empty or non-CSS sheets
-            return sheet.cssRules.length > 0 || sheet.href;
-        })
-        .map(sheet => {
-          if (sheet.href) {
-            // For <link> tags (external CSS), recreate the link tag
-            // Use window.location.origin to correctly resolve relative paths for local stylesheets
-            const href = sheet.href.startsWith(window.location.origin) 
-                         ? sheet.href.replace(window.location.origin, '') 
-                         : sheet.href;
-            return `<link rel="stylesheet" href="${href}">`;
-          } else {
-            // For <style> blocks (inline CSS or embedded CSS)
-            return `<style>${Array.from(sheet.cssRules).map(rule => rule.cssText).join('')}</style>`;
-          }
-        }).join('\n');
-      
       printWindow.document.write('<html><head><title>印刷</title>');
-      printWindow.document.write(styleHtml); // Include all collected CSS
-
-      // Add print-specific styles to ensure content fits A4 and removes preview-specific styling
+      
+      // Copy all stylesheets from the current document
+      Array.from(document.styleSheets).forEach(sheet => {
+        try {
+          // For <link> tags (external CSS)
+          if (sheet.href) {
+            printWindow.document.write(`<link rel="stylesheet" href="${sheet.href}">`);
+          } 
+          // For <style> blocks (inline CSS) or CSS imported into <link> that gets embedded
+          else if (sheet.ownerNode) {
+            printWindow.document.write(`<style>${Array.from(sheet.cssRules).map(rule => rule.cssText).join('')}</style>`);
+          }
+        } catch (e) {
+          // Handle security errors for cross-origin stylesheets
+          console.warn("Could not copy stylesheet:", e);
+        }
+      });
+      
       printWindow.document.write(`
         <style>
           @page { size: A4 portrait; margin: 10mm; }
           body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          /* Reset preview-specific styles for print output */
-          .print-area-container { border: none !important; box-shadow: none !important; transform: none !important; width: 100% !important; min-height: initial !important; padding: 0 !important; }
           .print-area { border: none !important; box-shadow: none !important; transform: none !important; width: 100% !important; min-height: initial !important; padding: 0 !important; }
           .print-area-content { padding: 0 !important; }
         </style>
@@ -123,21 +116,19 @@ export default function ApprovalFormPage() {
       printWindow.document.close();
       
       printWindow.onload = function() {
-        // Give a short delay to ensure rendering and font loading
         setTimeout(() => {
             printWindow.focus();
             printWindow.print();
             printWindow.close();
-        }, 300); // 300ms delay
+        }, 300);
       };
-      // Fallback timeout in case onload doesn't fire
       setTimeout(() => {
-        if (!printWindow.closed && !printWindow.document.hidden) { // Check if window is still open and visible
+        if (!printWindow.closed && !printWindow.document.hidden) {
           printWindow.focus();
           printWindow.print();
           printWindow.close();
         }
-      }, 2000); // Max 2 seconds for fallback
+      }, 2000);
     }
   };
 
