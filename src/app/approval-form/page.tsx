@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Button, Row, Col, Card, InputGroup, Container, Table } from 'react-bootstrap';
 import { PlusCircleFill, TrashFill } from 'react-bootstrap-icons';
 import axios from 'axios';
@@ -85,19 +85,14 @@ export default function ApprovalFormPage() {
     if (printWindow) {
       printWindow.document.write('<html><head><title>印刷</title>');
       
-      // Copy all stylesheets from the current document
       Array.from(document.styleSheets).forEach(sheet => {
         try {
-          // For <link> tags (external CSS)
           if (sheet.href) {
             printWindow.document.write(`<link rel="stylesheet" href="${sheet.href}">`);
-          } 
-          // For <style> blocks (inline CSS) or CSS imported into <link> that gets embedded
-          else if (sheet.ownerNode) {
+          } else if (sheet.ownerNode) {
             printWindow.document.write(`<style>${Array.from(sheet.cssRules).map(rule => rule.cssText).join('')}</style>`);
           }
         } catch (e) {
-          // Handle security errors for cross-origin stylesheets
           console.warn("Could not copy stylesheet:", e);
         }
       });
@@ -120,7 +115,7 @@ export default function ApprovalFormPage() {
             printWindow.focus();
             printWindow.print();
             printWindow.close();
-        }, 300);
+        }, 500);
       };
       setTimeout(() => {
         if (!printWindow.closed && !printWindow.document.hidden) {
@@ -132,7 +127,6 @@ export default function ApprovalFormPage() {
     }
   };
 
-  // Helper function to render the printable content
   const renderPrintContent = () => (
     <div className="print-area-content">
         <h1 className="text-center">サンプル申請書</h1>
