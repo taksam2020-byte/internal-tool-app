@@ -80,12 +80,54 @@
 .approval-stamps {
   display: flex;
 }
-.stamp-box {
-  border: 1px solid black;
-  width: 75px;
-  height: 75px;
-  text-align: center;
-  padding-top: 5px;
-  font-size: 10pt;
-  margin-left: -1px;
+
+
+/* --- Responsive Adjustments for Mobile View --- */
+@media (max-width: 768px) {
+  .print-preview-section {
+    padding: 0;
+    background-color: transparent;
+  }
+  .print-area {
+    transform: none;
+    width: 100%;
+    min-height: unset;
+    border: 1px solid #dee2e6; /* Add a light border for context */
+    box-shadow: none;
+  }
+  .print-area-content {
+    padding: 1cm;
+  }
+}
+
+/* --- Print-specific Styles --- */
+@media print {
+  body > *:not(.print-preview-section) {
+    display: none !important;
+  }
+  
+  .print-preview-section {
+    display: block !important;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    background-color: transparent;
+  }
+
+  .print-area {
+    transform: none;
+    box-shadow: none;
+    border: none;
+    width: 100%;
+    height: auto;
+  }
+
+  .bg-light {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
