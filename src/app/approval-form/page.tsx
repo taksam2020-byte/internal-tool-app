@@ -127,6 +127,7 @@ export default function ApprovalFormPage() {
     }
   };
 
+  // Helper function to render the printable content
   const renderPrintContent = () => (
     <div className="print-area-content">
         <h1 className="text-center">サンプル申請書</h1>
