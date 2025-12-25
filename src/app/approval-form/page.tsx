@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Button, Row, Col, Card, InputGroup, Container, Table } from 'react-bootstrap';
 import { PlusCircleFill, TrashFill } from 'react-bootstrap-icons';
 import axios from 'axios';
@@ -101,6 +101,7 @@ export default function ApprovalFormPage() {
         <style>
           @page { size: A4 portrait; margin: 10mm; }
           body { margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          #printable-area { display: block !important; }
           .print-area { border: none !important; box-shadow: none !important; transform: none !important; width: 100% !important; min-height: initial !important; padding: 0 !important; }
           .print-area-content { padding: 0 !important; }
         </style>
@@ -127,100 +128,31 @@ export default function ApprovalFormPage() {
     }
   };
 
-  // Helper function to render the printable content
-  const renderPrintContent = () => (
-    <div className="print-area-content">
-        <h1 className="text-center">サンプル申請書</h1>
-        <div className="header-info">
-            <span>申請日: {applicationDate}</span>
-            <span>申請者: {applicant}</span>
-        </div>
-        <Table bordered className="mt-3">
-            <tbody>
-                <tr>
-                    <th className="bg-light">メーカー名</th>
-                    <td>{manufacturerName}</td>
-                    <th className="bg-light">メーカー担当者名</th>
-                    <td>{manufacturerContact ? `${manufacturerContact} 様` : ''}</td>
-                </tr>
-                <tr>
-                    <th className="bg-light">サロンコード</th>
-                    <td>{salonCode}</td>
-                    <th className="bg-light">サロン名</th>
-                    <td>{salonName ? `${salonName} 様` : ''}</td>
-                </tr>
-                <tr>
-                    <th className="bg-light">申請目的</th>
-                    <td colSpan={3}>{purpose}</td>
-                </tr>
-                <tr>
-                    <th className="bg-light">申請理由・条件</th>
-                    <td colSpan={3} style={{ whiteSpace: 'pre-wrap' }}>{reason}</td>
-                </tr>
-            </tbody>
-        </Table>
-        <h5 className="mt-4">申請商品リスト</h5>
-        <Table bordered striped>
-            <thead>
-                <tr>
-                    <th>商品名</th>
-                    <th>容量</th>
-                    <th>数量</th>
-                </tr>
-            </thead>
-            <tbody>
-                {products.map(p => (
-                    <tr key={`print-prod-${p.id}`}>
-                        <td>{p.name}</td>
-                        <td>{p.volume}</td>
-                        <td>{p.quantity}</td>
-                    </tr>
-                ))}
-                {Array.from({ length: Math.max(0, 8 - products.length) }).map((_, i) => (
-                    <tr key={`empty-${i}`}><td style={{ height: '34px' }}>&nbsp;</td><td></td><td></td></tr>
-                ))}
-            </tbody>
-        </Table>
-        <div className="footer-section">
-            <div className="order-info">
-                <Form.Group as={Row} className="align-items-center">
-                    <Form.Label column xs="auto" className="fw-bold">受注番号:</Form.Label>
-                    <Col>
-                        <Form.Control type="text" className="order-number-input" />
-                    </Col>
-                </Form.Group>
-            </div>
-            <div className="approval-stamps">
-                <div className="stamp-box">受注者</div>
-                <div className="stamp-box">承認</div>
-            </div>
-        </div>
-    </div>
-  );
-
   return (
-    <Container>
-      <Row>
-        <Col className="form-section">
-          <Card className="mb-4">
-            <Card.Header as="h3">サンプル申請フォーム</Card.Header>
-            <Card.Body>
-              <Form noValidate validated={validated} id="approval-form">
-                  <Row className="mb-3">
-                    <Form.Group as={Col}>
-                      <Form.Label>申請者</Form.Label>
-                      <Form.Control required type="text" list="user-list" value={applicant} onChange={e => setApplicant(e.target.value)} placeholder="氏名を入力または選択"/>
-                      <datalist id="user-list">
-                          {users.map(user => <option key={user.id} value={user.name} />)}
-                      </datalist>
-                      <Form.Control.Feedback type="invalid">申請者を入力してください。</Form.Control.Feedback>
-                    </Form.Group>
-                    <Form.Group as={Col}>
-                      <Form.Label>申請日</Form.Label>
-                      <Form.Control type="text" value={applicationDate} readOnly disabled />
-                    </Form.Group>
-                  </Row>
-                  <Row className="mb-3">
+    <>
+      <Container>
+        <Row>
+          <Col className="form-section">
+            <Card className="mb-4">
+              <Card.Header as="h3">サンプル申請フォーム</Card.Header>
+              <Card.Body>
+                <Form noValidate validated={validated} id="approval-form">
+                    {/* Form fields... */}
+                    <Row className="mb-3">
+                        <Form.Group as={Col}>
+                            <Form.Label>申請者</Form.Label>
+                            <Form.Control required type="text" list="user-list" value={applicant} onChange={e => setApplicant(e.target.value)} placeholder="氏名を入力または選択"/>
+                            <datalist id="user-list">
+                                {users.map(user => <option key={user.id} value={user.name} />)}
+                            </datalist>
+                            <Form.Control.Feedback type="invalid">申請者を入力してください。</Form.Control.Feedback>
+                        </Form.Group>
+                        <Form.Group as={Col}>
+                            <Form.Label>申請日</Form.Label>
+                            <Form.Control type="text" value={applicationDate} readOnly disabled />
+                        </Form.Group>
+                    </Row>
+                    <Row className="mb-3">
                         <Form.Group as={Col}>
                             <Form.Label>メーカー名</Form.Label>
                             <Form.Control required value={manufacturerName} onChange={e => setManufacturerName(e.target.value)} />
@@ -299,14 +231,81 @@ export default function ApprovalFormPage() {
             <div className="d-grid my-4 print-hide">
                 <Button onClick={handlePrint} size="lg">印刷またはPDFとして保存</Button>
             </div>
-            <div id="printable-area" className="print-area-container">
-              <div className="print-area">
-                {renderPrintContent()}
-              </div>
-            </div>
           </Col>
         </Row>
       </Container>
+      
+      <div id="printable-area" className="print-area-container">
+        <div className="print-area">
+          <div className="print-area-content">
+              <h1 className="text-center">サンプル申請書</h1>
+              <div className="header-info">
+                  <span>申請日: {applicationDate}</span>
+                  <span>申請者: {applicant}</span>
+              </div>
+              <Table bordered className="mt-3">
+                  <tbody>
+                      <tr>
+                          <th className="bg-light">メーカー名</th>
+                          <td>{manufacturerName}</td>
+                          <th className="bg-light">メーカー担当者名</th>
+                          <td>{manufacturerContact ? `${manufacturerContact} 様` : ''}</td>
+                      </tr>
+                      <tr>
+                          <th className="bg-light">サロンコード</th>
+                          <td>{salonCode}</td>
+                          <th className="bg-light">サロン名</th>
+                          <td>{salonName ? `${salonName} 様` : ''}</td>
+                      </tr>
+                      <tr>
+                          <th className="bg-light">申請目的</th>
+                          <td colSpan={3}>{purpose}</td>
+                      </tr>
+                      <tr>
+                          <th className="bg-light">申請理由・条件</th>
+                          <td colSpan={3} style={{ whiteSpace: 'pre-wrap' }}>{reason}</td>
+                      </tr>
+                  </tbody>
+              </Table>
+              <h5 className="mt-4">申請商品リスト</h5>
+              <Table bordered striped>
+                  <thead>
+                      <tr>
+                          <th>商品名</th>
+                          <th>容量</th>
+                          <th>数量</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      {products.map(p => (
+                          <tr key={`print-prod-${p.id}`}>
+                              <td>{p.name}</td>
+                              <td>{p.volume}</td>
+                              <td>{p.quantity}</td>
+                          </tr>
+                      ))}
+                      {Array.from({ length: Math.max(0, 8 - products.length) }).map((_, i) => (
+                          <tr key={`empty-${i}`}><td style={{ height: '34px' }}>&nbsp;</td><td></td><td></td></tr>
+                      ))}
+                  </tbody>
+              </Table>
+              <div className="footer-section">
+                  <div className="order-info">
+                      <Form.Group as={Row} className="align-items-center">
+                          <Form.Label column xs="auto" className="fw-bold">受注番号:</Form.Label>
+                          <Col>
+                              <Form.Control type="text" className="order-number-input" />
+                          </Col>
+                      </Form.Group>
+                  </div>
+                  <div className="approval-stamps">
+                      <div className="stamp-box">受注者</div>
+                      <div className="stamp-box">承認</div>
+                  </div>
+              </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
