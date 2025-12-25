@@ -94,7 +94,7 @@ export default function ApprovalFormPage() {
                   <Row className="mb-3">
                         <Form.Group as={Col}>
                             <Form.Label>メーカー名</Form.Label>
-                            <Form.Control required value={manufacturerName} onChange={e => setManufacturerName(e.target.value)} onChange={e => setManufacturerName(e.target.value)} />
+                            <Form.Control required value={manufacturerName} onChange={e => setManufacturerName(e.target.value)} />
                             <Form.Control.Feedback type="invalid">メーカー名を入力してください。</Form.Control.Feedback>
                         </Form.Group>
                         <Form.Group as={Col}>
