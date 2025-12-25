@@ -85,19 +85,14 @@ export default function ApprovalFormPage() {
     if (printWindow) {
       printWindow.document.write('<html><head><title>印刷</title>');
       
-      // Copy all stylesheets from the current document
       Array.from(document.styleSheets).forEach(sheet => {
         try {
-          // For <link> tags (external CSS)
           if (sheet.href) {
             printWindow.document.write(`<link rel="stylesheet" href="${sheet.href}">`);
-          } 
-          // For <style> blocks (inline CSS) or CSS imported into <link> that gets embedded
-          else if (sheet.ownerNode) {
+          } else if (sheet.ownerNode) {
             printWindow.document.write(`<style>${Array.from(sheet.cssRules).map(rule => rule.cssText).join('')}</style>`);
           }
         } catch (e) {
-          // Handle security errors for cross-origin stylesheets
           console.warn("Could not copy stylesheet:", e);
         }
       });
