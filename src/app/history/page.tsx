@@ -350,9 +350,14 @@ function ApplicationsManagement() {
                                             <tr key={key}>
                                                 <td><strong>{key}</strong></td>
                                                 <td>
-                                                    {String(value)}
+                                                    {key === '郵便番号' && typeof value === 'string' && value.match(/^\d{7}$/)
+                                                        ? `${value.substring(0, 3)}-${value.substring(3, 7)}`
+                                                        : String(value)}
                                                     {value && String(value).trim() !== '' && (
-                                                        <Button variant="link" size="sm" onClick={() => handleCopyToClipboard(String(value), key)} className="p-0 ms-2 float-end">
+                                                        <Button variant="link" size="sm" onClick={() => handleCopyToClipboard(
+                                                            key === '郵便番号' && typeof value === 'string' && value.match(/^\d{7}$/)
+                                                            ? `${value.substring(0, 3)}-${value.substring(3, 7)}`
+                                                            : String(value), key)} className="p-0 ms-2 float-end">
                                                             {copiedKey === key ? <ClipboardCheck color="green" size={20} /> : <Clipboard size={20} />}
                                                         </Button>
                                                     )}
