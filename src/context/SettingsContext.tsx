@@ -24,6 +24,7 @@ export interface AppSettings {
     isEvaluationOpen: boolean;
     evaluationMonth: string;
     evaluationDeadline: string;
+    show_approval_form_menu: boolean;
 }
 
 interface SettingsContextType {
@@ -57,6 +58,7 @@ const defaultSettings: AppSettings = {
     isEvaluationOpen: true,
     evaluationMonth: (new Date().getMonth() + 1).toString(),
     evaluationDeadline: '',
+    show_approval_form_menu: true,
 };
 
 const SettingsContext = createContext<SettingsContextType>({
