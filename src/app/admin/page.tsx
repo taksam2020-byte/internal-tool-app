@@ -232,6 +232,21 @@ function MenuManagement() {
                         <StringListEditor title="種別の選択肢" list={settings.proposalTypes} onUpdate={(list) => setSettings(p => ({...p, proposalTypes: list}))} placeholder="例: セミナー" />
                     </Card.Body>
                 </Tab>
+                <Tab eventKey="approval-form" title="サンプル申請">
+                    <Card.Body>
+                        <Form.Group as={Row} className="mb-3">
+                            <Form.Label column sm={3}>「サンプル申請」メニューを表示</Form.Label>
+                            <Col sm={9}>
+                                <Form.Check 
+                                    type="switch" 
+                                    label={settings.show_approval_form_menu ? "表示中" : "非表示"} 
+                                    checked={settings.show_approval_form_menu} 
+                                    onChange={(e) => setSettings(p => ({...p, show_approval_form_menu: e.target.checked}))}
+                                />
+                            </Col>
+                        </Form.Group>
+                    </Card.Body>
+                </Tab>
             </Tabs>
         </Card>
     );
