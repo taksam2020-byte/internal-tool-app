@@ -73,7 +73,7 @@ export default function HomePage() {
       description: '承認印欄付きの申請書を作成・印刷します。',
       icon: <FileEarmarkText size={40} />,
       bg: 'warning',
-      show: true
+      show: settings.show_approval_form_menu
     },
     {
       href: '/proposals',
