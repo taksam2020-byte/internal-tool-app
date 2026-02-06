@@ -316,14 +316,16 @@ function ApplicationsManagement() {
                             if (detailsToProcess['請求先'] === 'other') {
                                 detailsToProcess['請求先'] = '別の得意先へ請求';
                             }
+                            // 既存の自動引落に追加
                             if (detailsToProcess['既存の自動引落に追加'] === 'on') {
                                 detailsToProcess['既存の自動引落に追加'] = 'はい';
-                            } else if (detailsToProcess['既存の自動引落に追加'] === 'off') {
+                            } else {
                                 detailsToProcess['既存の自動引落に追加'] = 'いいえ';
                             }
+                            // 個人口座を含めて引き落とす
                             if (detailsToProcess['個人口座を含めて引き落とす'] === 'on') {
                                 detailsToProcess['個人口座を含めて引き落とす'] = 'はい';
-                            } else if (detailsToProcess['個人口座を含めて引き落とす'] === 'off') {
+                            } else {
                                 detailsToProcess['個人口座を含めて引き落とす'] = 'いいえ';
                             }
                         }
