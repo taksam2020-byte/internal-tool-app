@@ -318,9 +318,13 @@ function ApplicationsManagement() {
                             }
                             if (detailsToProcess['既存の自動引落に追加'] === 'on') {
                                 detailsToProcess['既存の自動引落に追加'] = 'はい';
+                            } else if (detailsToProcess['既存の自動引落に追加'] === 'off') {
+                                detailsToProcess['既存の自動引落に追加'] = 'いいえ';
                             }
                             if (detailsToProcess['個人口座を含めて引き落とす'] === 'on') {
                                 detailsToProcess['個人口座を含めて引き落とす'] = 'はい';
+                            } else if (detailsToProcess['個人口座を含めて引き落とす'] === 'off') {
+                                detailsToProcess['個人口座を含めて引き落とす'] = 'いいえ';
                             }
                         }
 
