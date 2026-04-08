@@ -240,7 +240,10 @@ export default function ReservationsPage() {
 
             <Form.Group>
                 <Form.Label>利用目的</Form.Label>
-                <Form.Control required as="textarea" name="purpose" rows={4} placeholder="〇〇セミナー" />
+                <Form.Control required as="textarea" name="purpose" rows={4} placeholder="例: メーカー名・サロン名 〇〇セミナー" />
+                <Form.Text className="text-muted">
+                    勉強会やセミナーの際はメーカー名やサロン様名も明記してください。
+                </Form.Text>
             </Form.Group>
           </Form>
         </Card.Body>
