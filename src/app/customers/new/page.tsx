@@ -8,6 +8,7 @@ import axios from 'axios';
 interface User { id: number; name: string; role: string; is_active: boolean; is_trainee: boolean; }
 
 const fieldLabels: { [key: string]: string } = {
+    route: '経路',
     salonType: 'サロン種別',
     personalAccount: '個人口座',
     customerNameFull: '得意先名（正式）',
@@ -166,6 +167,19 @@ export default function NewCustomerPage() {
       <Card>
         <Card.Body>
           <Form noValidate validated={validated} onSubmit={handleSubmit} ref={formRef}>
+            <Form.Group className="mb-3">
+                <Form.Label>経路<span className="text-danger">*</span></Form.Label>
+                <Form.Select required name="route">
+                    <option value="">選択してください...</option>
+                    <option value="新店オープン">新店オープン</option>
+                    <option value="独立">独立</option>
+                    <option value="紹介">紹介</option>
+                    <option value="TAK-CHU(HP)問合せ">TAK-CHU(HP)問合せ</option>
+                    <option value="飛び込み">飛び込み</option>
+                </Form.Select>
+                <Form.Control.Feedback type="invalid">経路を選択してください。</Form.Control.Feedback>
+            </Form.Group>
+
             <Row className="mb-3">
               <Form.Group as={Col} md="6">
                 <Form.Label>サロン種別<span className="text-danger">*</span></Form.Label>
