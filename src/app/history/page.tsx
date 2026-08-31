@@ -352,24 +352,27 @@ function ApplicationsManagement() {
                                 <hr />
                                 <Table striped bordered size="sm">
                                     <tbody>
-                                        {sortedDetails.map(([key, value]) => (
-                                            <tr key={key}>
-                                                <td><strong>{key}</strong></td>
-                                                <td>
-                                                    {key === '郵便番号' && typeof value === 'string' && value.match(/^\d{7}$/)
-                                                        ? `${value.substring(0, 3)}-${value.substring(3, 7)}`
-                                                        : String(value)}
-                                                    {value && String(value).trim() !== '' && (
-                                                        <Button variant="link" size="sm" onClick={() => handleCopyToClipboard(
-                                                            key === '郵便番号' && typeof value === 'string' && value.match(/^\d{7}$/)
+                                        {sortedDetails.map(([key, value]) => {
+                                            const isHighlight = key === '既存の自動引落に追加' && value === 'はい';
+                                            return (
+                                                <tr key={key} className={isHighlight ? 'table-danger' : ''}>
+                                                    <td className={isHighlight ? 'text-danger align-middle' : 'align-middle'}><strong>{key}</strong></td>
+                                                    <td className={isHighlight ? 'text-danger fw-bold align-middle fs-5' : 'align-middle'}>
+                                                        {key === '郵便番号' && typeof value === 'string' && value.match(/^\d{7}$/)
                                                             ? `${value.substring(0, 3)}-${value.substring(3, 7)}`
-                                                            : String(value), key)} className="p-0 ms-2 float-end">
-                                                            {copiedKey === key ? <ClipboardCheck color="green" size={20} /> : <Clipboard size={20} />}
-                                                        </Button>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                            : String(value)}
+                                                        {value && String(value).trim() !== '' && (
+                                                            <Button variant="link" size="sm" onClick={() => handleCopyToClipboard(
+                                                                key === '郵便番号' && typeof value === 'string' && value.match(/^\d{7}$/)
+                                                                ? `${value.substring(0, 3)}-${value.substring(3, 7)}`
+                                                                : String(value), key)} className="p-0 ms-2 float-end">
+                                                                {copiedKey === key ? <ClipboardCheck color="green" size={20} /> : <Clipboard size={20} />}
+                                                            </Button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </Table>
                             </>

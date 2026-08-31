@@ -7,10 +7,20 @@ export async function GET() {
   try {
     const { rows } = await sql`SELECT value FROM app_settings WHERE key = 'default';`;
     if (rows.length > 0) {
-      return NextResponse.json(rows[0].value, { status: 200 });
+      const settings = rows[0].value;
+      // Ensure the new setting has a default value if not present
+      if (typeof settings.show_approval_form_menu === 'undefined') {
+        settings.show_approval_form_menu = true;
+      }
+      return NextResponse.json(settings, { status: 200 });
     }
-    // If no settings are found, return a 404
-    return new NextResponse('Settings not found', { status: 404 });
+    // If no settings are found, return a default structure
+    return NextResponse.json({
+      show_admin_menu: true,
+      show_customer_menu: true,
+      show_history_menu: true,
+      show_approval_form_menu: true, // Default to true
+    }, { status: 200 });
   } catch (error) {
     console.error('Failed to fetch settings:', error);
     return NextResponse.json({ message: 'Failed to fetch settings' }, { status: 500 });
