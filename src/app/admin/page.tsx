@@ -247,6 +247,24 @@ function MenuManagement() {
                         </Form.Group>
                     </Card.Body>
                 </Tab>
+                <Tab eventKey="flyer-maker" title="チラシ作成">
+                    <Card.Body>
+                        <Form.Group as={Row} className="mb-3">
+                            <Form.Label column sm={3}>「セミナーチラシ作成」メニューを表示</Form.Label>
+                            <Col sm={9}>
+                                <Form.Check 
+                                    type="switch" 
+                                    label={settings.show_flyer_maker_menu ? "表示中" : "非表示"} 
+                                    checked={settings.show_flyer_maker_menu} 
+                                    onChange={(e) => setSettings(p => ({...p, show_flyer_maker_menu: e.target.checked}))}
+                                />
+                            </Col>
+                        </Form.Group>
+                        <Alert variant="info" className="mb-0 mt-3">
+                            ※ 現在、別でVercelにデプロイされたツールへの外部リンクになっています。（テスト中はオフを推奨します）
+                        </Alert>
+                    </Card.Body>
+                </Tab>
             </Tabs>
         </Card>
     );

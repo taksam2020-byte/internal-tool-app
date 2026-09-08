@@ -25,6 +25,7 @@ export interface AppSettings {
     evaluationMonth: string;
     evaluationDeadline: string;
     show_approval_form_menu: boolean;
+    show_flyer_maker_menu: boolean;
 }
 
 interface SettingsContextType {
@@ -59,6 +60,7 @@ const defaultSettings: AppSettings = {
     evaluationMonth: (new Date().getMonth() + 1).toString(),
     evaluationDeadline: '',
     show_approval_form_menu: true,
+    show_flyer_maker_menu: false,
 };
 
 const SettingsContext = createContext<SettingsContextType>({

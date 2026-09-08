@@ -12,6 +12,9 @@ export async function GET() {
       if (typeof settings.show_approval_form_menu === 'undefined') {
         settings.show_approval_form_menu = true;
       }
+      if (typeof settings.show_flyer_maker_menu === 'undefined') {
+        settings.show_flyer_maker_menu = false;
+      }
       return NextResponse.json(settings, { status: 200 });
     }
     // If no settings are found, return a default structure
@@ -20,6 +23,7 @@ export async function GET() {
       show_customer_menu: true,
       show_history_menu: true,
       show_approval_form_menu: true, // Default to true
+      show_flyer_maker_menu: false, // Default to false for internal testing
     }, { status: 200 });
   } catch (error) {
     console.error('Failed to fetch settings:', error);

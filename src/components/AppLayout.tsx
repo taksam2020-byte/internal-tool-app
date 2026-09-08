@@ -95,6 +95,14 @@ function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
         </Nav.Item>
       )}
 
+      {settings.show_flyer_maker_menu && (
+        <Nav.Item className="mb-2">
+          <Nav.Link href="https://seminar-flyer-maker.vercel.app" target="_blank" rel="noopener noreferrer" className="text-white d-flex align-items-center justify-content-between">
+            <span>セミナーチラシ作成 <i className="bi bi-box-arrow-up-right ms-1" style={{ fontSize: '0.8rem' }}></i></span>
+          </Nav.Link>
+        </Nav.Item>
+      )}
+
       {settings.isEvaluationOpen && (
         <>
           <Nav.Item className="mb-2">
