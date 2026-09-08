@@ -116,6 +116,15 @@ export default function HomePage() {
         isExternal: true, // Mark as external link
         show: true
     },
+    {
+        href: 'https://seminar-flyer-maker.vercel.app',
+        title: 'セミナーチラシ作成',
+        description: 'ChatGPTを使ってサロン向けのセミナー案内チラシを作成するプロンプトを出力します。',
+        icon: <PencilSquare size={40} />,
+        style: { backgroundColor: '#e83e8c' }, // ピンク系の色で強調
+        isExternal: true,
+        show: settings.show_flyer_maker_menu
+    },
   ];
 
   if (!isSettingsLoaded) {
