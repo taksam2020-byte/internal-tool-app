@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Form, Button, Card, Row, Col, Spinner, Table, Modal, Pagination } from 'react-bootstrap';
+import { Form, Button, Card, Row, Col, Spinner, Table, Modal, Pagination, Badge } from 'react-bootstrap';
 import { Clipboard, ClipboardCheck } from 'react-bootstrap-icons';
 import axios from 'axios';
 import { useSettings } from '@/context/SettingsContext';
@@ -294,7 +294,28 @@ function ApplicationsManagement() {
                         </div>
 
 
-                        {totalPages > 1 && <Pagination>{Array.from({ length: totalPages }, (_, i) => <Pagination.Item key={i + 1} active={i + 1 === currentPage} onClick={() => setCurrentPage(i + 1)}>{i + 1}</Pagination.Item>)}</Pagination>}
+                        {totalPages > 1 && (
+                            <Pagination className="flex-wrap mt-3 justify-content-center">
+                                {Array.from({ length: totalPages }, (_, i) => {
+                                    const pageApps = filteredApplications.slice(i * applicationsPerPage, (i + 1) * applicationsPerPage);
+                                    const unprocessedCount = pageApps.filter(app => app.status === '未処理').length;
+                                    return (
+                                        <Pagination.Item 
+                                            key={i + 1} 
+                                            active={i + 1 === currentPage} 
+                                            onClick={() => setCurrentPage(i + 1)}
+                                        >
+                                            {i + 1}
+                                            {unprocessedCount > 0 && (
+                                                <Badge bg="danger" pill className="ms-1" style={{ fontSize: '0.75em' }}>
+                                                    {unprocessedCount}
+                                                </Badge>
+                                            )}
+                                        </Pagination.Item>
+                                    );
+                                })}
+                            </Pagination>
+                        )}
                     </>
                 )}
             </Card.Body>
@@ -317,16 +338,20 @@ function ApplicationsManagement() {
                                 detailsToProcess['請求先'] = '別の得意先へ請求';
                             }
                             // 既存の自動引落に追加
-                            if (detailsToProcess['既存の自動引落に追加'] === 'on') {
-                                detailsToProcess['既存の自動引落に追加'] = 'はい';
-                            } else {
-                                detailsToProcess['既存の自動引落に追加'] = 'いいえ';
+                            if ('既存の自動引落に追加' in detailsToProcess) {
+                                if (detailsToProcess['既存の自動引落に追加'] === 'on') {
+                                    detailsToProcess['既存の自動引落に追加'] = 'はい';
+                                } else {
+                                    detailsToProcess['既存の自動引落に追加'] = 'いいえ';
+                                }
                             }
                             // 個人口座を含めて請求
-                            if (detailsToProcess['個人口座を含めて請求'] === 'on') {
-                                detailsToProcess['個人口座を含めて請求'] = 'はい';
-                            } else {
-                                detailsToProcess['個人口座を含めて請求'] = 'いいえ';
+                            if ('個人口座を含めて請求' in detailsToProcess) {
+                                if (detailsToProcess['個人口座を含めて請求'] === 'on') {
+                                    detailsToProcess['個人口座を含めて請求'] = 'はい';
+                                } else {
+                                    detailsToProcess['個人口座を含めて請求'] = 'いいえ';
+                                }
                             }
                         }
 
@@ -353,11 +378,27 @@ function ApplicationsManagement() {
                                 <Table striped bordered size="sm">
                                     <tbody>
                                         {sortedDetails.map(([key, value]) => {
-                                            const isHighlight = key === '既存の自動引落に追加' && value === 'はい';
+                                            const isHighlightRed = key === '既存の自動引落に追加' && value === 'はい';
+                                            const isHighlightBlue = key === 'サロン種別' && value === 'SPC';
+
+                                            let trClass = '';
+                                            let tdTitleClass = 'align-middle';
+                                            let tdValueClass = 'align-middle';
+
+                                            if (isHighlightRed) {
+                                                trClass = 'table-danger';
+                                                tdTitleClass = 'text-danger align-middle';
+                                                tdValueClass = 'text-danger fw-bold align-middle fs-5';
+                                            } else if (isHighlightBlue) {
+                                                trClass = 'table-primary';
+                                                tdTitleClass = 'text-primary align-middle';
+                                                tdValueClass = 'text-primary fw-bold align-middle fs-5';
+                                            }
+
                                             return (
-                                                <tr key={key} className={isHighlight ? 'table-danger' : ''}>
-                                                    <td className={isHighlight ? 'text-danger align-middle' : 'align-middle'}><strong>{key}</strong></td>
-                                                    <td className={isHighlight ? 'text-danger fw-bold align-middle fs-5' : 'align-middle'}>
+                                                <tr key={key} className={trClass}>
+                                                    <td className={tdTitleClass}><strong>{key}</strong></td>
+                                                    <td className={tdValueClass}>
                                                         {key === '郵便番号' && typeof value === 'string' && value.match(/^\d{7}$/)
                                                             ? `${value.substring(0, 3)}-${value.substring(3, 7)}`
                                                             : String(value)}
